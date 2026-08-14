@@ -35,6 +35,7 @@ steps:
     evidence_ids: list[string]
     claim_ids: list[string]
     cer_decision_id: string|null
+    human_decision_id: string|null
     errors: list[string]
     checkpoint_ref: string|null
 cost:
@@ -45,7 +46,10 @@ risk:
   level: [low, medium, high, critical]
   requires_human: boolean
 human_feedback:
-  action: [none, approve, edit, reject]
+  decision_id: string|null
+  action: [none, approve, edit, reject, retry, escalate]
+  actor_id: string|null
+  reason: string|null
   correction_ref: string|null
 outcome:
   status: [success, partial, failed, abstained]
