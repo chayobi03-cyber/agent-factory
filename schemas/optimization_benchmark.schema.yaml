@@ -35,6 +35,7 @@ experiment:
   optimizer_id: string
   optimizer_version: string
   run_config_hash: string
+  run_id: string|null
   started_at: datetime
   completed_at: datetime|null
   execution_manifest_refs: list[string]
