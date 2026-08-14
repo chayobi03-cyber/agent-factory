@@ -46,16 +46,26 @@ class CERGateRuntime:
         evidence: Sequence[EvidenceCandidate],
         risk_level: str = "low",
     ) -> CERDecision:
-        evidence_ids = {item.evidence_id for item in evidence}
+        evidence_by_id = {item.evidence_id: item for item in evidence}
         claim_ids = tuple(claim.claim_id for claim in claims)
-        evidence_refs = tuple(sorted(evidence_ids))
-        unsupported = [claim for claim in claims if not any(eid in evidence_ids for eid in claim.evidence_ids)]
+        evidence_refs = tuple(sorted(evidence_by_id))
+        unsupported = [claim for claim in claims if not any(eid in evidence_by_id for eid in claim.evidence_ids)]
+        contradictory = [
+            claim for claim in claims
+            if len(claim.evidence_ids) >= 2
+            and len({evidence_by_id[eid].text.strip() for eid in claim.evidence_ids if eid in evidence_by_id}) >= 2
+        ]
 
         if unsupported:
             result = "BLOCK"
             human_required = False
             findings = tuple(f"UNSUPPORTED_CLAIM:{claim.claim_id}" for claim in unsupported)
             actions = ("REMEDIATE_EVIDENCE",)
+        elif contradictory:
+            result = "REVIEW"
+            human_required = True
+            findings = tuple(f"CONTRADICTORY_EVIDENCE:{claim.claim_id}" for claim in contradictory)
+            actions = ("HUMAN_REVIEW_REQUIRED", "RECONCILE_EVIDENCE")
         elif risk_level in {"critical", "high"}:
             result = "REVIEW"
             human_required = True
@@ -125,7 +135,7 @@ def transition(state: WorkflowRunState, target: str) -> WorkflowRunState:
         "CREATED": {"RUNNING", "ABORTED"},
         "RUNNING": {"WAITING", "REVIEW_REQUIRED", "RETRYING", "BLOCKED", "COMPLETED", "FAILED", "ABORTED"},
         "WAITING": {"RUNNING", "REVIEW_REQUIRED", "BLOCKED", "ABORTED"},
-        "REVIEW_REQUIRED": {"RUNNING", "BLOCKED", "ABORTED"},
+        "REVIEW_REQUIRED": {"RUNNING", "WAITING", "BLOCKED", "ABORTED"},
         "RETRYING": {"RUNNING", "FAILED", "BLOCKED", "ABORTED"},
         "BLOCKED": set(),
         "COMPLETED": set(),
