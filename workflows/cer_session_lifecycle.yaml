@@ -1,0 +1,67 @@
+workflow_id: cer_session_lifecycle
+version: 1.0.0
+purpose: Session-level CER lifecycle with explicit start, checkpoint, and closure triggers
+fail_closed: true
+
+trigger_policy:
+  session_start:
+    mandatory: true
+    trigger:
+      - new_agent_session
+      - context_resume_after_handoff
+    actions:
+      - collect_git_state
+      - resolve_source_of_truth
+      - load_cer_snapshot
+      - reconcile_open_p0_items
+      - emit_start_baseline
+
+  checkpoint:
+    mandatory: false
+    trigger:
+      - explicit_user_request
+      - architecture_contract_change
+      - schema_contract_change
+      - workflow_change
+      - governance_or_policy_change
+      - new_critical_finding
+      - failed_regression
+      - repeated_retry_or_loop_signal
+      - human_escalation
+    actions:
+      - capture_current_state
+      - run_targeted_cer
+      - record_findings
+      - classify_change_as_safe_or_controlled
+      - continue_or_block
+
+  session_close:
+    mandatory: true
+    trigger:
+      - user_end_session_request
+      - planned_session_completion
+      - handoff_to_next_session
+    actions:
+      - run_cer_session_closure
+      - capture_execution_evidence
+      - review_lessons
+      - apply_controlled_workflow_updates
+      - run_regression
+      - publish_closure_artifact
+
+command_convention:
+  start: "CER START"
+  checkpoint: "CER CHECK"
+  close: "CER CLOSE"
+
+checkpoint_rules:
+  - Do not require a checkpoint for every trivial edit.
+  - Trigger a checkpoint before declaring completion after architecture, schema, workflow, governance, or release-affecting changes.
+  - Trigger immediately when evidence quality, risk level, or execution state materially changes.
+  - A checkpoint does not imply human approval; it invokes CER evaluation.
+
+anti_drift:
+  - active_run_cer_snapshot_is_immutable: true
+  - historical_context_cannot_override_current_snapshot: true
+  - documentation_only_evidence_is_insufficient_for_closure: true
+  - unverified_execution_claims_cannot_pass_closure: true
