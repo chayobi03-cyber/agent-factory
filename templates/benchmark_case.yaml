@@ -1,0 +1,16 @@
+case_id: DOMAIN-001
+domain: RE
+intent: diagnosis
+difficulty: high
+risk_level: high
+question: ""
+required_evidence: []
+gold_claims: []
+forbidden_claims: []
+rubric:
+  retrieval_recall: 0.25
+  evidence_precision: 0.15
+  correctness: 0.25
+  completeness: 0.10
+  citation: 0.10
+  domain_consistency: 0.15
