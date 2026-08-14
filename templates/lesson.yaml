@@ -1,0 +1,15 @@
+lesson_id: LSN-XXXX
+source_run_id: RUN-XXXX
+failure_type: retrieval_miss
+pattern: ""
+root_cause: ""
+lesson_text: ""
+candidate_change:
+  component: retrieval
+  change_type: policy
+  details: {}
+validation_plan:
+  benchmark_cases: []
+  success_metric: ""
+  regression_guard: ""
+status: candidate
