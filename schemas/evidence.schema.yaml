@@ -1,0 +1,13 @@
+evidence_id: string
+document_id: string
+revision_id: string
+fragment_id: string
+locator: string
+page: integer|null
+source_hash: string
+authority: string
+extraction_method: string
+extraction_version: string
+validity: [active, superseded, rejected]
+text: string
+metadata: object
