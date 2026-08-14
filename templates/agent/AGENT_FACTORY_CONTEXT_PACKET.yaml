@@ -1,0 +1,40 @@
+# Agent Factory External LLM Context Packet
+# Populate versioned fields from the Source-of-Truth repository before each run.
+agent_factory_context:
+  project:
+    name: Agent Factory
+    mission: >-
+      Build a domain-agnostic Meta-Agent Engineering Platform for safe domain
+      knowledge ingestion, multi-method retrieval/reasoning, evidence-grounded
+      answers and reports, HOTL governance, and continuous workflow learning.
+  baseline:
+    architecture: AF-ARCH-<version>
+    schema: AF-SCHEMA-<version>
+    workflow: AF-WF-<version>
+    benchmark: AF-BENCH-<version>
+  cer:
+    policy_id: CER
+    policy_version: <version>
+    snapshot_id: CER-SNAP-<run-id>
+    mode: always_on
+  task:
+    task_id: <task-id>
+    domain: <domain-id>
+    objective: <objective>
+  domain_pack:
+    id: <domain-pack-id>
+    version: <version>
+  required_cer_checks:
+    - GAP
+    - METHOD
+    - RISK
+    - EVIDENCE
+    - REGRESSION
+    - LEARNING
+  source_of_truth:
+    repository: chayobi03-cyber/agent-factory
+    commit: <commit-sha>
+
+# Context precedence:
+# Run Context > CER Snapshot > Task > Project Baseline > Domain Pack > Repository History > Model Prior
+# Never override a higher-priority versioned artifact with historical/model memory.
