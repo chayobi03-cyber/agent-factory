@@ -1,0 +1,28 @@
+document_id: string
+source_uri: string
+source_type: [pdf, html, markdown, csv, measurement, report, specification, wiki, other]
+authority: string
+registered_at: datetime
+metadata: object
+
+revisions:
+  - revision_id: string
+    document_id: string
+    content_hash: string
+    parser_version: string
+    effective_at: datetime|null
+    supersedes_revision_id: string|null
+    validity: [active, superseded, rejected]
+    metadata: object
+
+fragments:
+  - fragment_id: string
+    revision_id: string
+    parent_fragment_id: string|null
+    fragment_type: [section, paragraph, table, figure, equation, page, other]
+    ordinal: integer
+    locator: string
+    page: integer|null
+    content_hash: string
+    text: string
+    metadata: object
