@@ -61,6 +61,7 @@ class CERDecision:
     gate_id: str
     run_id: str
     human_required: bool = False
+    snapshot_id: str = ""
     triggered_findings: tuple[str, ...] = ()
     evidence_ids: tuple[str, ...] = ()
     claim_ids: tuple[str, ...] = ()
