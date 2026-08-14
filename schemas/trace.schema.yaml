@@ -1,14 +1,31 @@
 run_id: string
 request_id: string
+task_id: string
+parent_run_id: string|null
 started_at: datetime
 completed_at: datetime|null
+cer_policy_id: string
+cer_policy_version: semver
+cer_snapshot_id: string
+repository_commit: string
+architecture_version: string
+schema_version: string
 domain_pack_version: string
 workflow_version: string
+benchmark_version: string
 model_provider: string
 model_name: string
+model_revision: string|null
+request_config_hash: string|null
+prompt_hash: string|null
+toolset_version: string|null
+parser_version: string|null
+retriever_version: string|null
+execution_manifest_hash: string
 steps:
   - step_id: string
     type: string
+    status: [CREATED, RUNNING, WAITING, REVIEW_REQUIRED, RETRYING, BLOCKED, COMPLETED, FAILED, ABORTED]
     started_at: datetime
     ended_at: datetime|null
     input_ref: string|null
@@ -16,7 +33,10 @@ steps:
     tools: list[string]
     retrieval_mode: string|null
     evidence_ids: list[string]
+    claim_ids: list[string]
+    cer_decision_id: string|null
     errors: list[string]
+    checkpoint_ref: string|null
 cost:
   input_tokens: integer
   output_tokens: integer
