@@ -25,6 +25,8 @@ jobs:
       - name: Deterministic Kernel Harness
         continue-on-error: true
         run: python3 scripts/run_harness.py --json | tee factory-harness.stdout.json
+      - name: OPRO Baseline E2E
+        run: python3 scripts/opro_baseline.py --json | tee opro-baseline.stdout.json
       - name: Unit and Kernel Regression
         run: pytest -q
       - name: Publish machine evidence
@@ -35,3 +37,4 @@ jobs:
           path: |
             factory-demo.stdout.json
             factory-harness.stdout.json
+            opro-baseline.stdout.json
