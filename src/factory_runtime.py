@@ -15,6 +15,8 @@ from typing import Any, Callable, Mapping, Sequence
 
 from cer_runtime import CERGateRuntime, HumanDecision, WorkflowRunState, transition
 from interfaces import CERDecision, CERSnapshot, Claim, DomainPack, EvidenceCandidate
+from optimization import (CandidateChange, Experiment, ObjectiveSpec, ObjectiveVector,
+                          OptimizationRegistry, DEFAULT_OBJECTIVE_SPECS, build_objective_vector)
 
 TERMINAL = {"BLOCKED", "COMPLETED", "FAILED", "ABORTED"}
 HUMAN_DECISIONS = {"APPROVE", "REJECT", "MODIFY", "REQUEST_RETRY", "ESCALATE"}
@@ -159,6 +161,7 @@ class FactoryRuntime:
         self.state_machine = WorkflowStateMachine(retry_limit=retry_limit, loop_limit=loop_limit)
         self.gate = CERGateRuntime()
         self.hotl = HOTLReviewQueue()
+        self.optimization = OptimizationRegistry()
         self._runs: dict[str, WorkflowRunState] = {}
         self._manifests: dict[str, RunManifest] = {}
         self._contexts: dict[str, Mapping[str, Any]] = {}
@@ -271,6 +274,79 @@ class FactoryRuntime:
                           asdict(human) | {"result": result.result})
         return result
 
+    def create_optimization_candidate(self, *, run_id: str, change_type: str,
+                                      payload_ref: str, generator_id: str,
+                                      generator_version: str, provenance_ref: str,
+                                      parent_candidate_id: str | None = None) -> CandidateChange:
+        self._require_run(run_id)
+        candidate = self.optimization.register_candidate(
+            change_type=change_type, payload_ref=payload_ref,
+            generator_id=generator_id, generator_version=generator_version,
+            provenance_ref=provenance_ref, parent_candidate_id=parent_candidate_id,
+        )
+        self.record_trace(run_id, "OPTIMIZATION_CANDIDATE_REGISTERED", asdict(candidate))
+        return candidate
+
+    def create_optimization_experiment(self, *, run_id: str, candidate_id: str,
+                                       benchmark_snapshot_id: str, optimizer_id: str,
+                                       optimizer_version: str,
+                                       run_config: Mapping[str, object]) -> Experiment:
+        self._require_run(run_id)
+        experiment = self.optimization.register_experiment(
+            candidate_id=candidate_id,
+            benchmark_snapshot_id=benchmark_snapshot_id,
+            optimizer_id=optimizer_id,
+            optimizer_version=optimizer_version,
+            run_config=run_config,
+            run_id=run_id,
+        )
+        self.record_trace(run_id, "OPTIMIZATION_EXPERIMENT_REGISTERED", asdict(experiment))
+        return experiment
+
+    def record_optimization_objective(self, *, run_id: str, experiment_id: str,
+                                      values: Mapping[str, float],
+                                      spec_version: str = "1.0.0",
+                                      specs: Sequence[ObjectiveSpec] = DEFAULT_OBJECTIVE_SPECS) -> ObjectiveVector:
+        self._require_run(run_id)
+        experiment = self.optimization.get_experiment(experiment_id)
+        if experiment.run_id != run_id:
+            raise ValueError("optimization experiment does not belong to run")
+        vector = build_objective_vector(
+            experiment_id=experiment_id, spec_version=spec_version,
+            values=values, specs=specs,
+        )
+        self.optimization.record_objective(experiment_id, vector)
+        self.record_trace(run_id, "OPTIMIZATION_OBJECTIVE_RECORDED", {
+            "experiment_id": experiment_id,
+            "objective_vector_id": vector.vector_id,
+            "objective_vector_hash": vector.vector_hash,
+            "values": vector.as_mapping(),
+        })
+        return vector
+
+    def complete_optimization_experiment(self, *, run_id: str, experiment_id: str,
+                                         regression_result: str,
+                                         promotion_status: str = "CANDIDATE") -> Experiment:
+        self._require_run(run_id)
+        experiment = self.optimization.get_experiment(experiment_id)
+        if experiment.run_id != run_id:
+            raise ValueError("optimization experiment does not belong to run")
+        manifest_ref = f"run-manifest:{run_id}:{self._manifests[run_id].execution_manifest_hash}"
+        updated = self.optimization.complete_experiment(
+            experiment_id,
+            regression_result=regression_result,
+            promotion_status=promotion_status,
+            execution_manifest_refs=(manifest_ref,),
+        )
+        self.record_trace(run_id, "OPTIMIZATION_EXPERIMENT_COMPLETED", asdict(updated))
+        return updated
+
+    def get_optimization_experiment(self, experiment_id: str) -> Experiment:
+        return self.optimization.get_experiment(experiment_id)
+
+    def get_optimization_candidate(self, candidate_id: str) -> CandidateChange:
+        return self.optimization.get_candidate(candidate_id)
+
     def record_trace(self, run_id: str, event_type: str,
                      payload: Mapping[str, Any]) -> TraceEvent:
         event = TraceEvent(f"EV-{uuid.uuid4().hex[:12]}", run_id, event_type,
@@ -322,6 +398,10 @@ class FactoryRuntime:
         state = self._runs[run_id]
         return Trace(run_id, state.task_id, state.cer_snapshot_id,
                      tuple(self._traces.get(run_id, [])))
+
+    def _require_run(self, run_id: str) -> None:
+        if run_id not in self._runs:
+            raise KeyError(run_id)
 
     def _set_state(self, state: WorkflowRunState, target: str) -> WorkflowRunState:
         updated = self.state_machine.transition(state, target)
