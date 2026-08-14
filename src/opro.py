@@ -1,9 +1,10 @@
 """OPRO baseline adapter for AgentFactory.
 
-The adapter follows the OPRO loop: previous solutions plus their evaluated
-scores are supplied to a proposal function, which returns new candidate
-solutions. The optimizer never mutates CER policy, benchmark truth, or the
-production kernel; it only emits CandidateChange objects.
+The adapter follows the OPRO loop described in *Large Language Models as
+Optimizers*: previously evaluated solutions and their values are supplied to
+a proposal function, which returns new candidate solutions for evaluation.
+The optimizer only proposes CandidateChange objects; CER, benchmark truth,
+and release state remain outside the optimizer boundary.
 
 The proposal function is injected so CI can use a deterministic offline
 provider while production can use an LLM-backed provider.
@@ -13,7 +14,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Mapping, Sequence
 
-from optimization import CandidateChange, Experiment, OptimizationRegistry
+from optimization import (
+    DEFAULT_OBJECTIVE_SPECS,
+    CandidateChange,
+    Experiment,
+    OptimizationRegistry,
+    build_objective_vector,
+)
 
 
 @dataclass(frozen=True)
@@ -32,6 +39,7 @@ class OPROCandidate:
 
 ProposalFn = Callable[[str, Sequence[OPROObservation], int], Sequence[OPROCandidate]]
 EvaluateFn = Callable[[str], float]
+TraceFn = Callable[[str, Mapping[str, object]], None]
 
 
 @dataclass(frozen=True)
@@ -71,6 +79,9 @@ class OPROOptimizer:
         benchmark_snapshot_id: str,
         run_config: Mapping[str, object],
         config: OPROConfig | None = None,
+        run_id: str | None = None,
+        execution_manifest_ref: str | None = None,
+        trace_fn: TraceFn | None = None,
     ) -> None:
         self.registry = registry
         self.proposal_fn = proposal_fn
@@ -78,8 +89,23 @@ class OPROOptimizer:
         self.benchmark_snapshot_id = benchmark_snapshot_id
         self.run_config = dict(run_config)
         self.config = config or OPROConfig()
+        self.run_id = run_id
+        self.execution_manifest_ref = execution_manifest_ref
+        self.trace_fn = trace_fn
+
+    def _trace(self, event_type: str, payload: Mapping[str, object]) -> None:
+        if self.trace_fn is not None:
+            self.trace_fn(event_type, payload)
 
     def run_baseline(self, initial_solution: str) -> OPRORunResult:
+        self._trace("OPRO_STARTED", {
+            "optimizer_id": self.config.optimizer_id,
+            "optimizer_version": self.config.optimizer_version,
+            "benchmark_snapshot_id": self.benchmark_snapshot_id,
+            "iterations": self.config.iterations,
+            "candidates_per_iteration": self.config.candidates_per_iteration,
+        })
+
         baseline_score = self.evaluate_fn(initial_solution)
         baseline_candidate = self._register_candidate(
             initial_solution, generator_id="opro-baseline", parent_candidate_id=None,
@@ -116,13 +142,20 @@ class OPROOptimizer:
                     experiment_id=experiment.experiment_id,
                     candidate_id=candidate.candidate_id,
                 ))
+                self._trace("OPRO_CANDIDATE_EVALUATED", {
+                    "iteration": iteration,
+                    "candidate_id": candidate.candidate_id,
+                    "experiment_id": experiment.experiment_id,
+                    "score": score,
+                    "rationale": proposal.rationale,
+                })
                 if score > best_score:
                     best_candidate = candidate
                     best_experiment = experiment
                     best_score = score
                     initial_solution = proposal.solution
 
-        return OPRORunResult(
+        result = OPRORunResult(
             baseline_candidate_id=baseline_candidate.candidate_id,
             baseline_experiment_id=baseline_experiment.experiment_id,
             best_candidate_id=best_candidate.candidate_id,
@@ -130,6 +163,14 @@ class OPROOptimizer:
             best_score=best_score,
             iterations_completed=self.config.iterations,
         )
+        self._trace("OPRO_COMPLETED", {
+            "baseline_candidate_id": result.baseline_candidate_id,
+            "baseline_experiment_id": result.baseline_experiment_id,
+            "best_candidate_id": result.best_candidate_id,
+            "best_experiment_id": result.best_experiment_id,
+            "best_score": result.best_score,
+        })
+        return result
 
     def _register_candidate(
         self,
@@ -155,13 +196,16 @@ class OPROOptimizer:
             optimizer_id=self.config.optimizer_id,
             optimizer_version=self.config.optimizer_version,
             run_config={**self.run_config, "seed": self.config.seed},
+            run_id=self.run_id,
         )
 
     def _complete(self, experiment: Experiment, score: float) -> None:
         if not 0.0 <= score <= 1.0:
             raise ValueError("OPRO baseline score must be within [0, 1]")
-        from optimization import build_objective_vector, DEFAULT_OBJECTIVE_SPECS
 
+        # Baseline uses the task score as the primary signal and projects it
+        # conservatively into the common objective space. This is explicitly
+        # a baseline adapter, not the final multi-objective evaluator.
         values = {
             spec.name: (score if spec.direction == "maximize" else 1.0 - score)
             for spec in DEFAULT_OBJECTIVE_SPECS
@@ -173,8 +217,10 @@ class OPROOptimizer:
             specs=DEFAULT_OBJECTIVE_SPECS,
         )
         self.registry.record_objective(experiment.experiment_id, vector)
+        manifest_refs = (self.execution_manifest_ref,) if self.execution_manifest_ref else ()
         self.registry.complete_experiment(
             experiment.experiment_id,
             regression_result="PASS",
             promotion_status="CANDIDATE",
+            execution_manifest_refs=manifest_refs,
         )
