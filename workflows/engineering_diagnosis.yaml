@@ -1,31 +1,88 @@
 workflow_id: engineering_diagnosis
-version: 1.0.0
-entry: classify
+version: 1.1.0
+entry: cer_pre_gate
 limits:
   max_steps: 20
   max_cost_usd: 2.0
   max_tokens: 30000
+state_model:
+  terminal: [COMPLETED, FAILED, ABORTED]
+  blocked: [BLOCKED]
+  human_wait: [REVIEW_REQUIRED]
+  retry: [RETRYING]
+  loop_detection: required
+  idempotency_key: required
+  checkpoint: required
+
+cer_gate_defaults:
+  decision_set: [PASS, REVIEW, CHANGE, BLOCK]
+  fail_closed: true
+  on_review: REVIEW_REQUIRED
+  on_change: WAITING
+  on_block: BLOCKED
+
 steps:
+  - id: cer_pre_gate
+    type: cer_gate
+    phase: pre
+    required_checks: [GAP, METHOD, RISK, EVIDENCE, REGRESSION, LEARNING]
+    on: decision
+    next_if_pass: classify
+    next_if_review: review_gate
+    next_if_change: change_gate
+    next_if_block: blocked
+
   - id: classify
     type: router
     next: plan
+
   - id: plan
     type: planner
     next: retrieve_primary
+
   - id: retrieve_primary
     type: retrieval
     modes: [hybrid]
     next: hypotheses
+
   - id: hypotheses
     type: reasoning
     next: retrieve_counter
+
   - id: retrieve_counter
     type: retrieval
     modes: [hybrid, graph]
     next: verify
+
   - id: verify
     type: verifier
-    next: report
+    next: cer_post_gate
+
+  - id: cer_post_gate
+    type: cer_gate
+    phase: post
+    required_checks: [EVIDENCE, RISK, REGRESSION]
+    on: decision
+    next_if_pass: report
+    next_if_review: review_gate
+    next_if_change: change_gate
+    next_if_block: blocked
+
   - id: report
     type: report
+    next: end
+
+  - id: review_gate
+    type: human_review
+    next_if_approved: report
+    next_if_rejected: blocked
+
+  - id: change_gate
+    type: controlled_change
+    next_if_accepted: end
+    next_if_rejected: blocked
+
+  - id: blocked
+    type: terminal
+    state: BLOCKED
     next: end
