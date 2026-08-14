@@ -7,6 +7,14 @@
 - P3: optimization and additional domains
 - P4: domain onboarding factory
 
+## Optimization Principles
+Optimization is **not allowed to bypass CER, Evidence/Claim verification, HOTL, Trace, or Regression**.
+
+- **OPRO (Optimization by PROmpting):** prompt-level iterative optimization using benchmark feedback. Candidate prompts are versioned, evaluated offline, and promoted only through the normal CER/release gates.
+- **GEPA (Genetic-Pareto / evolutionary prompt optimization):** multi-objective evolutionary optimization of prompts, workflow instructions, or agent policies. Candidate populations, mutations, evaluations, Pareto fronts, and selected releases must be traceable and reproducible.
+- Both optimizers are optimization engines, not governance engines. They may propose changes; they cannot directly release changes or override a CER BLOCK.
+- Optimizer evaluation must use deterministic benchmark ground truth where available. LLM-as-judge may be an auxiliary signal only and is never the sole release criterion.
+
 ## Milestones
 ### M0 Foundation
 Canonical Document Model, Claim/Evidence, Domain Pack, Trace, Benchmark schemas, CER Control Plane, HOTL, Factory Demo, and session-closure CER.
@@ -36,7 +44,7 @@ Reuse kernel; create Domain Packs and benchmark suites.
 Simulation/tool adapter, result parsing and evidence integration.
 
 ### M8 Optimization
-GEPA/MIPROv2/OPRO adapters, A/B and Pareto evaluation.
+OPRO prompt optimization → GEPA evolutionary/Pareto optimization → workflow optimization. M8 is gated by Factory Kernel GREEN, benchmark reproducibility, trace completeness, and regression protection.
 
 ### M9 Domain Factory
 Automated domain discovery → pack candidate → benchmark candidate → validation → release.
@@ -64,10 +72,77 @@ Automated domain discovery → pack candidate → benchmark candidate → valida
 | AF-018 | Agentic retrieval | P2 | AF-012,013 | complex-case lift |
 | AF-019 | Lesson engine | P2 | AF-003,008 | feedback capture |
 | AF-020 | Optimizer harness | P3 | AF-008,019 | offline improvement |
-| AF-021 | Workflow optimizer | P3 | AF-020 | Pareto improvement |
+| AF-020A | OPRO optimizer adapter | P3 | AF-005,019 | prompt candidates improve protected benchmark without regression |
+| AF-020B | GEPA optimizer adapter | P3 | AF-020A | evolutionary candidates + Pareto front are reproducible and traceable |
+| AF-020C | Optimizer experiment registry | P3 | AF-020A,020B | candidate/version/config/result lineage is complete |
+| AF-020D | Optimizer promotion gate | P3 | AF-020C,AF-007,AF-010 | optimizer cannot bypass CER/HOTL/BLOCK/regression |
+| AF-021 | Workflow optimizer | P3 | AF-020,020D | Pareto improvement |
 | AF-022 | EMI/RFI packs | P3 | AF-004,010 | kernel reuse |
 | AF-023 | CST adapter | P3 | AF-004,002 | tool smoke test |
 | AF-024 | Domain onboarding factory | P4 | AF-022 | new domain PoC |
+
+## OPRO / GEPA Execution Plan
+
+### Phase O0 — Optimization Contract
+Define the optimizer interface, candidate representation, objective schema, benchmark binding, budget, stopping criteria, and promotion policy.
+
+### Phase O1 — OPRO
+Use OPRO first for controlled prompt search because it provides a simpler baseline for measuring whether iterative prompt optimization produces reproducible benchmark gains.
+
+Required evidence per experiment:
+- baseline prompt/version
+- candidate prompt/version
+- benchmark version
+- objective values
+- execution command
+- model/configuration
+- commit SHA
+- timestamp
+- stdout/stderr
+- selected candidate and rejection reasons
+
+### Phase O2 — GEPA
+Introduce GEPA after OPRO has established the optimizer harness and protected benchmark protocol. GEPA can explore larger candidate spaces and optimize multiple objectives simultaneously.
+
+Required evidence per generation:
+- population identifier
+- parent candidate(s)
+- mutation/operator
+- candidate hash
+- benchmark results
+- objective vector
+- Pareto-front membership
+- selection decision
+- lineage
+
+### Phase O3 — Optimizer Comparison
+Run OPRO and GEPA against the same frozen benchmark and baseline. Compare:
+- quality gain
+- regression rate
+- token/cost budget
+- experiment count
+- stability across seeds/runs
+- Pareto efficiency
+- trace completeness
+- reproducibility
+
+### Phase O4 — Controlled Promotion
+An optimizer output becomes a **CandidateChange**, not an automatic release.
+
+```text
+Benchmark
+  → Baseline
+  → OPRO / GEPA
+  → CandidateChange
+  → Evaluation
+  → Regression
+  → CER Gate
+  → HOTL when required
+  → Approval
+  → Release
+```
+
+A CER `BLOCK` always remains terminal. Neither OPRO nor GEPA may override it.
 
 ## Release Gates
 1. No unsupported critical claim.
@@ -81,3 +156,5 @@ Automated domain discovery → pack candidate → benchmark candidate → valida
 9. Domain Pack can be changed independently of kernel for tested capabilities.
 10. Session closure CER passes with machine-generated execution evidence.
 11. Factory Kernel GREEN is required before RE Domain onboarding.
+12. Optimizer outputs cannot bypass CER, HOTL, BLOCK, or regression gates.
+13. OPRO/GEPA promotion requires reproducible benchmark evidence and complete candidate lineage.
