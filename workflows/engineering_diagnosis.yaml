@@ -1,0 +1,31 @@
+workflow_id: engineering_diagnosis
+version: 1.0.0
+entry: classify
+limits:
+  max_steps: 20
+  max_cost_usd: 2.0
+  max_tokens: 30000
+steps:
+  - id: classify
+    type: router
+    next: plan
+  - id: plan
+    type: planner
+    next: retrieve_primary
+  - id: retrieve_primary
+    type: retrieval
+    modes: [hybrid]
+    next: hypotheses
+  - id: hypotheses
+    type: reasoning
+    next: retrieve_counter
+  - id: retrieve_counter
+    type: retrieval
+    modes: [hybrid, graph]
+    next: verify
+  - id: verify
+    type: verifier
+    next: report
+  - id: report
+    type: report
+    next: end
