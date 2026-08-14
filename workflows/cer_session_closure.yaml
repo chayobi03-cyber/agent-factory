@@ -1,0 +1,83 @@
+workflow_id: cer_session_closure
+version: 1.0.0
+entry: collect_state
+purpose: End-of-session Continuous Engineering Review and learning-loop closure
+fail_closed: true
+
+steps:
+  - id: collect_state
+    type: repository_state
+    required: [git_status, head_commit, changed_files, source_of_truth_manifest]
+    next: contract_reconciliation
+
+  - id: contract_reconciliation
+    type: contract_audit
+    compare:
+      - architecture_contract
+      - schemas
+      - runtime
+      - workflows
+      - tests
+    next: executable_verification
+
+  - id: executable_verification
+    type: test_runner
+    required: [exit_code, stdout_capture, stderr_capture, commit_sha]
+    documentation_only_is_failure: true
+    next_if_pass: evidence_capture
+    next_if_fail: remediation
+
+  - id: evidence_capture
+    type: evidence_manifest
+    required:
+      - command
+      - commit_sha
+      - timestamp
+      - exit_code
+      - result_summary
+      - artifact_refs
+    next: lesson_review
+
+  - id: lesson_review
+    type: cer_review
+    dimensions: [GAP, METHOD, RISK, EVIDENCE, REGRESSION, LEARNING]
+    output:
+      - wins
+      - gaps
+      - automation_candidates
+      - important_lessons
+      - accepted_changes
+    next: workflow_update
+
+  - id: workflow_update
+    type: controlled_change
+    require:
+      - evidence
+      - acceptance_test
+      - dependency_check
+    next_if_accepted: regression
+    next_if_rejected: blocked
+
+  - id: regression
+    type: test_runner
+    required: [closure_regression_suite]
+    next_if_pass: publish_closure
+    next_if_fail: remediation
+
+  - id: publish_closure
+    type: artifact_publish
+    required: [session_closure_report]
+    next: end
+
+  - id: remediation
+    type: terminal_failure
+    state: BLOCKED
+    next: end
+
+  - id: blocked
+    type: terminal_failure
+    state: BLOCKED
+    next: end
+
+  - id: end
+    type: terminal
