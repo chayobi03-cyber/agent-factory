@@ -11,9 +11,16 @@ provenance:
   locator: string|null
   source_hash: string
 conditions: object
-status: [candidate, verified, rejected, superseded]
+status: [candidate, verified, rejected, superseded, abstained]
 verification:
   structural: boolean
   evidence_supported: boolean
   domain_rule_passed: boolean
   cross_method_passed: boolean
+  citation_locator_valid: boolean
+  revision_valid: boolean
+cer:
+  policy_id: string
+  policy_version: semver
+  snapshot_id: string
+  run_id: string
