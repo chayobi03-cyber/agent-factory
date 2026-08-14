@@ -1,0 +1,15 @@
+decision_id: string
+run_id: string
+gate_id: string
+snapshot_id: string
+previous_decision_id: string|null
+decision: [APPROVE, REJECT, MODIFY, REQUEST_RETRY, ESCALATE]
+actor:
+  type: human
+  id: string
+reason: string
+evidence_ids: list[string]
+claim_ids: list[string]
+created_at: datetime
+resulting_state: [RUNNING, WAITING, REVIEW_REQUIRED, BLOCKED, COMPLETED, FAILED, ABORTED]
+correction_ref: string|null
