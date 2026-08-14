@@ -1,0 +1,19 @@
+claim_id: string
+statement: string
+claim_type: [fact, inference, hypothesis, recommendation, calculation]
+evidence_ids: list[string]
+confidence: number
+provenance:
+  document_id: string
+  revision_id: string
+  fragment_id: string
+  page: integer|null
+  locator: string|null
+  source_hash: string
+conditions: object
+status: [candidate, verified, rejected, superseded]
+verification:
+  structural: boolean
+  evidence_supported: boolean
+  domain_rule_passed: boolean
+  cross_method_passed: boolean
