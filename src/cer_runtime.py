@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Iterable, Sequence
+from typing import Sequence
 
 from interfaces import CERDecision, CERSnapshot, Claim, EvidenceCandidate
 
@@ -16,8 +16,20 @@ class WorkflowRunState:
     parent_run_id: str | None = None
     history: tuple[str, ...] = field(default_factory=tuple)
 
+@dataclass(frozen=True)
+class HumanDecision:
+    decision_id: str
+    run_id: str
+    gate_id: str
+    snapshot_id: str
+    decision: str
+    actor_id: str
+    reason: str
+    resulting_state: str
+    correction_ref: str | None = None
+
 class CERGateRuntime:
-    """Minimal deterministic reference implementation of the CER gate contract."""
+    """Deterministic reference implementation of CER and HOTL gate semantics."""
 
     def evaluate(
         self,
@@ -50,6 +62,20 @@ class CERGateRuntime:
             run_id=run_id,
             human_required=human_required,
         )
+
+    @staticmethod
+    def apply_human_decision(decision: CERDecision, human: HumanDecision) -> CERDecision:
+        if decision.result != "REVIEW":
+            raise ValueError("Human decision is only applicable to REVIEW decisions")
+        if human.run_id != decision.run_id or human.gate_id != decision.gate_id:
+            raise ValueError("Human decision does not match CER decision context")
+        if human.decision == "APPROVE":
+            return CERDecision(decision.decision_id + "-H", "PASS", decision.gate_id, decision.run_id, False)
+        if human.decision in {"REJECT", "ESCALATE"}:
+            return CERDecision(decision.decision_id + "-H", "BLOCK", decision.gate_id, decision.run_id, False)
+        if human.decision in {"MODIFY", "REQUEST_RETRY"}:
+            return CERDecision(decision.decision_id + "-H", "CHANGE", decision.gate_id, decision.run_id, False)
+        raise ValueError(f"Unsupported human decision: {human.decision}")
 
     @staticmethod
     def assert_can_continue(decision: CERDecision) -> None:
