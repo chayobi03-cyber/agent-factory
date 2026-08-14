@@ -36,6 +36,38 @@ class Claim:
     evidence_ids: list[str]
     confidence: float = 0.0
 
+@dataclass
+class CERSnapshot:
+    policy_id: str
+    policy_version: str
+    snapshot_id: str
+    snapshot_hash: str
+    source_commit: str
+    required_checks: Sequence[str]
+
+@dataclass
+class CERDecision:
+    decision_id: str
+    result: str
+    gate_id: str
+    run_id: str
+    human_required: bool = False
+
+class CERGate(Protocol):
+    def evaluate(self, *, snapshot: CERSnapshot, run_id: str, gate_id: str, claims: Sequence[Claim], evidence: Sequence[EvidenceCandidate]) -> CERDecision: ...
+
+class DomainPack(Protocol):
+    domain_id: str
+    version: str
+
+    def ingest(self, source: Any) -> Any: ...
+    def parse(self, artifact: Any) -> Any: ...
+    def normalize(self, artifact: Any) -> Any: ...
+    def retrieve(self, query: str, **kwargs: Any) -> Sequence[EvidenceCandidate]: ...
+    def verify(self, claims: Sequence[Claim], evidence: Sequence[EvidenceCandidate], **kwargs: Any) -> dict[str, Any]: ...
+    def evaluate(self, case: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]: ...
+    def render_report(self, result: dict[str, Any], **kwargs: Any) -> Any: ...
+
 class LLMProvider(Protocol):
     def generate(self, *, prompt: str, model_profile: str, **kwargs: Any) -> str: ...
 
