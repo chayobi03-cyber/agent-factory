@@ -114,6 +114,32 @@ agent_factory_context:
 
 Agent-to-agent handoffs must preserve `task_id`, `parent_run_id`, CER policy version, snapshot ID, Domain Pack version, and required CER checks. Agents must not reinterpret CER from memory when a versioned snapshot is available.
 
-## 10. Governance Principle
+## 10. Session Closure CER
+
+A work session is itself a governed workflow execution. Before declaring a session complete, the closure workflow must evaluate:
+
+```text
+Git State
+ → Contract Reconciliation
+ → Executable Verification
+ → Evidence Capture
+ → Lesson Review
+ → Controlled Workflow Update
+ → Regression
+ → Closure Artifact
+```
+
+The closure gate is fail-closed.
+
+Rules:
+
+1. Source code inspection alone cannot satisfy executable verification.
+2. A claimed execution result must have machine-generated evidence containing command, commit SHA, timestamp, exit code, and result summary.
+3. Lessons must distinguish implemented/verified, implemented-but-unverified, conceptual gaps, and automation candidates.
+4. Accepted lessons that change workflow behavior require an explicit controlled change and regression test.
+5. Documentation-only execution evidence is insufficient for a release/closure gate.
+6. If closure regression fails, the session cannot be considered closed.
+
+## 11. Governance Principle
 
 CER is not merely a checklist. It is a versioned Context/Governance Control Plane for Agent Factory.
