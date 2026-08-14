@@ -1,0 +1,30 @@
+domain_id: string
+version: semver
+ontology:
+  entities: list[string]
+  relations: list[string]
+terminology:
+  canonical_terms: list[string]
+  synonyms: map[string,list[string]]
+  abbreviations: map[string,string]
+source_policy:
+  authorities: list[string]
+  revision_rules: object
+retrieval_policy:
+  allowed_modes: [bm25, vector, hybrid, graph, agentic]
+  default_mode: string
+  reranker: string|null
+  max_k: integer
+reasoning_policy:
+  diagnosis: string
+  comparison: string
+verification_policy:
+  require_evidence_for_claims: boolean
+  domain_rules: list[string]
+  cross_method_for_high_risk: boolean
+report_policy:
+  template_id: string
+tools: list[string]
+benchmark_catalog: list[string]
+risk_policy:
+  thresholds: object
