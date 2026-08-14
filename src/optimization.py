@@ -37,6 +37,8 @@ class ObjectiveSpec:
     maximum: float = 1.0
 
     def normalize(self, value: float) -> float:
+        if self.direction not in {"maximize", "minimize"}:
+            raise ValueError(f"unsupported objective direction: {self.direction}")
         if self.maximum <= self.minimum:
             raise ValueError(f"invalid objective range for {self.name}")
         if not self.minimum <= value <= self.maximum:
@@ -118,6 +120,7 @@ class Experiment:
     objective_vector_id: str | None = None
     regression_result: str = "NOT_RUN"
     promotion_status: str = "CANDIDATE"
+    run_id: str | None = None
 
 
 class OptimizationRegistry:
@@ -147,12 +150,12 @@ class OptimizationRegistry:
 
     def register_experiment(self, *, candidate_id: str, benchmark_snapshot_id: str,
                             optimizer_id: str, optimizer_version: str,
-                            run_config: Mapping[str, object]) -> Experiment:
+                            run_config: Mapping[str, object], run_id: str | None = None) -> Experiment:
         if candidate_id not in self._candidates:
             raise KeyError(candidate_id)
         experiment = Experiment(
             f"EXP-{uuid.uuid4().hex[:12]}", candidate_id, benchmark_snapshot_id,
-            optimizer_id, optimizer_version, stable_hash(run_config), utc_now()
+            optimizer_id, optimizer_version, stable_hash(run_config), utc_now(), run_id=run_id
         )
         self._experiments[experiment.experiment_id] = experiment
         return experiment
@@ -189,6 +192,12 @@ class OptimizationRegistry:
 
     def get_objective(self, vector_id: str) -> ObjectiveVector:
         return self._objectives[vector_id]
+
+    def all_candidates(self) -> tuple[CandidateChange, ...]:
+        return tuple(self._candidates.values())
+
+    def all_experiments(self) -> tuple[Experiment, ...]:
+        return tuple(self._experiments.values())
 
 
 DEFAULT_OBJECTIVE_SPECS = tuple(ObjectiveSpec(name, direction) for name, direction in DEFAULT_OBJECTIVES)
