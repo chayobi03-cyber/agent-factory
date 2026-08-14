@@ -25,6 +25,5 @@ def test_harness_ground_truth_is_not_llm():
 def test_harness_reports_current_kernel_gaps_explicitly():
     report = FactoryKernelHarness().report()
     failures = {item["case_id"] for item in report["results"] if not item["passed"]}
-    # These are intentional red cases until the corresponding kernel controls exist.
-    assert "contradictory_evidence" in failures
-    assert "review_modify" in failures
+    # Only retry-loop remains intentionally RED until the retry/loop control semantics are refined.
+    assert failures == {"retry_loop"}
