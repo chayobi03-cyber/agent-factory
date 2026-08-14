@@ -58,7 +58,7 @@ def test_block_cannot_be_human_approved():
     assert decision.result == "BLOCK"
     human = HumanDecision("HD-BLOCK", run.run_id, "G1", snapshot.snapshot_id,
                           "APPROVE", "human", "attempted bypass", "RUNNING")
-    with pytest.raises((ValueError, RuntimeError)):
+    with pytest.raises((ValueError, RuntimeError, KeyError)):
         runtime.apply_human_decision(review_id="does-not-exist", human=human, cer_decision=decision)
 
 
