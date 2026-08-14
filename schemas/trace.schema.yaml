@@ -1,0 +1,32 @@
+run_id: string
+request_id: string
+started_at: datetime
+completed_at: datetime|null
+domain_pack_version: string
+workflow_version: string
+model_provider: string
+model_name: string
+steps:
+  - step_id: string
+    type: string
+    started_at: datetime
+    ended_at: datetime|null
+    input_ref: string|null
+    output_ref: string|null
+    tools: list[string]
+    retrieval_mode: string|null
+    evidence_ids: list[string]
+    errors: list[string]
+cost:
+  input_tokens: integer
+  output_tokens: integer
+  estimated_usd: number
+risk:
+  level: [low, medium, high, critical]
+  requires_human: boolean
+human_feedback:
+  action: [none, approve, edit, reject]
+  correction_ref: string|null
+outcome:
+  status: [success, partial, failed, abstained]
+  score: number|null
