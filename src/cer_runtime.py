@@ -49,10 +49,7 @@ class CERGateRuntime:
         evidence_ids = {item.evidence_id for item in evidence}
         claim_ids = tuple(claim.claim_id for claim in claims)
         evidence_refs = tuple(sorted(evidence_ids))
-        unsupported = [
-            claim for claim in claims
-            if not any(eid in evidence_ids for eid in claim.evidence_ids)
-        ]
+        unsupported = [claim for claim in claims if not any(eid in evidence_ids for eid in claim.evidence_ids)]
 
         if unsupported:
             result = "BLOCK"
@@ -76,6 +73,7 @@ class CERGateRuntime:
             gate_id=gate_id,
             run_id=run_id,
             human_required=human_required,
+            snapshot_id=snapshot.snapshot_id,
             triggered_findings=findings,
             evidence_ids=evidence_refs,
             claim_ids=claim_ids,
@@ -89,8 +87,8 @@ class CERGateRuntime:
             raise ValueError("Human decision is only applicable to REVIEW decisions")
         if human.run_id != decision.run_id or human.gate_id != decision.gate_id:
             raise ValueError("Human decision does not match CER decision context")
-        if human.snapshot_id != decision.run_id and not human.snapshot_id:
-            raise ValueError("Human decision snapshot context is missing")
+        if human.snapshot_id != decision.snapshot_id:
+            raise ValueError("Human decision snapshot does not match CER decision snapshot")
         if human.decision == "APPROVE":
             result, actions = "PASS", ()
         elif human.decision in {"REJECT", "ESCALATE"}:
@@ -105,6 +103,7 @@ class CERGateRuntime:
             gate_id=decision.gate_id,
             run_id=decision.run_id,
             human_required=False,
+            snapshot_id=decision.snapshot_id,
             triggered_findings=decision.triggered_findings,
             evidence_ids=decision.evidence_ids,
             claim_ids=decision.claim_ids,
