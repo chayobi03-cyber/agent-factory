@@ -1,0 +1,43 @@
+benchmark_id: string
+version: semver
+repository_commit: string
+cer_policy_version: semver
+cer_snapshot_id: string|null
+evaluator_version: string
+objective_spec_version: string
+
+case:
+  case_id: string
+  input_ref: string
+  preconditions: list[string]
+  expected_behavior: string
+  expected_state: string|null
+  forbidden_outcomes: list[string]
+  evidence_requirements: list[string]
+  trace_requirements: list[string]
+  evaluator_ref: string
+  protected: boolean
+
+candidate:
+  candidate_id: string
+  parent_candidate_id: string|null
+  change_type: string
+  payload_ref: string
+  generator_id: string
+  generator_version: string
+  provenance_ref: string
+  created_at: datetime
+
+experiment:
+  experiment_id: string
+  candidate_id: string
+  benchmark_snapshot_id: string
+  optimizer_id: string
+  optimizer_version: string
+  run_config_hash: string
+  started_at: datetime
+  completed_at: datetime|null
+  execution_manifest_refs: list[string]
+  objective_vector_ref: string|null
+  regression_result: [PASS, FAIL, BLOCKED, NOT_RUN]
+  promotion_status: [CANDIDATE, REJECTED, REVIEW_REQUIRED, APPROVED, RELEASED]
