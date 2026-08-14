@@ -1,0 +1,24 @@
+name: Factory Kernel Regression
+
+on:
+  push:
+    branches: [main, p0/**]
+  pull_request:
+    branches: [main]
+
+jobs:
+  kernel-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test runner
+        run: python -m pip install --upgrade pytest
+      - name: Factory Demo E2E
+        run: python3 scripts/factory_demo.py --scenario all --json
+      - name: Unit and Kernel Regression
+        run: pytest -q
