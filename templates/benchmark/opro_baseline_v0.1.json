@@ -1,0 +1,31 @@
+{
+  "benchmark_id": "opro-baseline-v0.1",
+  "version": "0.1.0",
+  "judge": "deterministic",
+  "llm_judge_is_ground_truth": false,
+  "protected": true,
+  "objective_spec_version": "1.0.0",
+  "cases": [
+    {
+      "case_id": "claim_supported",
+      "input": "Evaluate a claim only when supporting evidence is explicitly identified.",
+      "expected_keywords": ["evidence", "support", "claim"],
+      "forbidden_keywords": ["ignore evidence"],
+      "weight": 1.0
+    },
+    {
+      "case_id": "claim_unsupported",
+      "input": "Do not infer support when no evidence is provided.",
+      "expected_keywords": ["do not", "evidence", "support"],
+      "forbidden_keywords": ["assume", "guess"],
+      "weight": 1.0
+    },
+    {
+      "case_id": "high_risk_review",
+      "input": "Escalate high-risk claims for human review rather than silently approving them.",
+      "expected_keywords": ["high-risk", "human", "review"],
+      "forbidden_keywords": ["auto-approve"],
+      "weight": 1.0
+    }
+  ]
+}
