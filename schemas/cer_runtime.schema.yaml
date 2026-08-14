@@ -1,0 +1,56 @@
+policy_id: string
+policy_version: semver
+snapshot_id: string
+snapshot_hash: string
+resolved_at: datetime
+source_commit: string
+
+required_checks:
+  - [GAP, METHOD, RISK, EVIDENCE, REGRESSION, LEARNING]
+
+decision:
+  decision_id: string
+  result: [PASS, REVIEW, CHANGE, BLOCK]
+  gate_id: string
+  run_id: string
+  triggered_findings: list[string]
+  evidence_ids: list[string]
+  claim_ids: list[string]
+  required_actions: list[string]
+  human_required: boolean
+  decided_at: datetime
+
+workflow_run:
+  run_id: string
+  task_id: string
+  parent_run_id: string|null
+  status: [CREATED, RUNNING, WAITING, REVIEW_REQUIRED, RETRYING, BLOCKED, COMPLETED, FAILED, ABORTED]
+  idempotency_key: string
+  checkpoint_ref: string|null
+  cer_snapshot_id: string
+  architecture_version: string
+  schema_version: string
+  workflow_version: string
+  benchmark_version: string
+  domain_pack_id: string
+  domain_pack_version: string
+  repository_commit: string
+  execution_manifest_hash: string
+  created_at: datetime
+  started_at: datetime|null
+  completed_at: datetime|null
+
+agent_step:
+  step_id: string
+  run_id: string
+  type: string
+  status: [CREATED, RUNNING, WAITING, REVIEW_REQUIRED, RETRYING, BLOCKED, COMPLETED, FAILED, ABORTED]
+  input_ref: string|null
+  output_ref: string|null
+  tools: list[string]
+  retrieval_mode: string|null
+  evidence_ids: list[string]
+  cer_decision_id: string|null
+  started_at: datetime
+  ended_at: datetime|null
+  error_refs: list[string]
