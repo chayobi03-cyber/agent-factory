@@ -1,55 +1,82 @@
-# Agent Factory v0.1 — Source of Truth Manifest
+# Agent Factory — Source of Truth Manifest
 
-This manifest records the exact design package structure committed or packaged for the Agent Factory v0.1 baseline.
+This manifest defines the current canonical Source of Truth for the Agent Factory repository and separates the live Git baseline from historical design-package archives.
 
-## Design package
+## 1. Canonical Source of Truth
+
+- Repository: `chayobi03-cyber/agent-factory`
+- Branch: `main`
+- Canonical implementation structure is the live Git repository tree.
+- Current repository content overrides historical archive/package paths unless an explicit versioned migration decision states otherwise.
+
+## 2. Historical Design Package
+
+The following archive is retained as a historical snapshot / handover artifact:
 
 - Archive: `Agent-Factory-v0.1-MDD-Design.zip`
 - SHA-256: `56a1d0592e2e48a70b4544610d003798fd0dc90effb0ac7280d85599cdab5a78`
 
-## Canonical package structure
+The numbered package paths below describe the historical package layout only. They are not current repository paths and must not be treated as a second live Source of Truth.
 
-- `00_MDD/02_Task_Specification.md`
-- `00_MDD/03_Design_Review_Checklist.md`
-- `00_MDD/Agent_Factory_v0.1_MDD.md`
-- `01_Architecture/01_System_Architecture.md`
-- `01_Architecture/02_Component_Interfaces.md`
-- `01_Architecture/03_Folder_Structure.md`
-- `01_Architecture/04_Deployment_Architecture.md`
-- `02_Schemas/claim_evidence.schema.yaml`
-- `02_Schemas/domain_pack.schema.yaml`
-- `02_Schemas/schema.sql`
-- `02_Schemas/trace.schema.yaml`
-- `03_Workflows/01_Ingestion_Workflow.md`
-- `03_Workflows/02_Query_Workflow.md`
-- `03_Workflows/03_Report_Workflow.md`
-- `03_Workflows/04_Method_Ensemble.md`
-- `03_Workflows/05_Optimization_Workflow.md`
-- `03_Workflows/06_HOTL_Workflow.md`
-- `03_Workflows/07_Agent_CICD.md`
-- `04_Benchmark/01_Benchmark_Architecture.md`
-- `04_Benchmark/02_RE_Benchmark_Catalog.md`
-- `04_Benchmark/03_Evaluation_Protocol.md`
-- `05_Milestone_WBS/01_Roadmap.md`
-- `05_Milestone_WBS/02_WBS.md`
-- `05_Milestone_WBS/03_Risk_Register.md`
-- `05_Milestone_WBS/04_Action_Items.md`
-- `06_RE_PoC/01_RE_PoC_Scope.md`
-- `06_RE_PoC/02_RE_PoC_Architecture.md`
-- `06_RE_PoC/03_RE_PoC_Test_Plan.md`
-- `07_Tech_Survey/01_Survey_Summary.md`
-- `07_Tech_Survey/02_Competitive_Design_Matrix.md`
-- `08_ADR/ADR-001_Domain_Pack.md`
-- `08_ADR/ADR-002_Evidence_First.md`
-- `08_ADR/ADR-003_Adaptive_Methods.md`
-- `08_ADR/ADR-004_HOTL.md`
-- `08_ADR/ADR-005_Provider_Neutrality.md`
-- `08_ADR/ADR-006_Graph_Optional.md`
-- `09_Templates/benchmark_case.yaml`
-- `09_Templates/domain_pack.yaml`
-- `09_Templates/lesson.yaml`
-- `10_Implementation_Skeleton/README.md`
-- `10_Implementation_Skeleton/interfaces.py`
-- `10_Implementation_Skeleton/workflow.yaml`
-- `11_Audit/EXTERNAL_LLM_AUDIT_PROMPT.md`
-- `README.md`
+## 3. Current Canonical Repository Structure
+
+- `docs/` — vision, MDD, roadmap, RE PoC, technology survey, governance
+- `schemas/` — canonical data contracts
+- `workflows/` — workflow definitions
+- `templates/` — benchmark, Domain Pack, lesson, and agent context templates
+- `src/` — implementation interfaces/skeleton
+- `11_Audit/` — audit prompts and results
+- `README.md` — repository orientation
+- `SOURCE_OF_TRUTH_MANIFEST.md` — canonical mapping and migration authority
+
+## 4. Governance / CER Canonical Artifacts
+
+- `docs/governance/CER_CONTEXT_CONTRACT.md` — CER definition, policy/context model, snapshot and handoff principles
+- `docs/governance/CER_ARCHITECTURE_CONTRACT_V1.md` — canonical CER architecture contract v1.0
+- `templates/agent/AGENT_FACTORY_CONTEXT_PACKET.yaml` — external-agent context packet template
+- `11_Audit/EXTERNAL_LLM_AUDIT_PROMPT.md` — independent audit prompt
+- `11_Audit/AUDIT_RESULT_2026-08-14.md` — recorded external audit result
+
+## 5. Current-to-Historical Mapping
+
+Historical package structure is mapped conceptually to the current repository as follows:
+
+| Historical package | Current canonical location |
+|---|---|
+| `00_MDD/` | `docs/` |
+| `01_Architecture/` | `docs/` + `src/` + governance docs |
+| `02_Schemas/` | `schemas/` |
+| `03_Workflows/` | `workflows/` |
+| `04_Benchmark/` | `templates/` + future benchmark implementation artifacts |
+| `05_Milestone_WBS/` | `docs/ROADMAP_WBS.md` |
+| `06_RE_PoC/` | `docs/RE_POC.md` |
+| `07_Tech_Survey/` | `docs/TECH_SURVEY.md` |
+| `08_ADR/` | repository governance/design records as migrated |
+| `09_Templates/` | `templates/` |
+| `10_Implementation_Skeleton/` | `src/` + `workflows/` |
+| `11_Audit/` | `11_Audit/` |
+
+## 6. Source-of-Truth Resolution Rule
+
+When two artifacts disagree:
+
+1. current run context and frozen CER snapshot have highest runtime priority;
+2. current Git repository is the canonical implementation baseline;
+3. historical archives are evidence of prior design state only;
+4. model memory or unpinned historical text must not override versioned repository artifacts.
+
+Any migration from a historical package into the current repository must be recorded as an explicit versioned change.
+
+## 7. Manifest Status
+
+`MATERIAL_DRIFT` identified during the 2026-08-14 internal/external audit cycle has been resolved by explicitly declaring the live Git repository as canonical and the numbered ZIP package as historical.
+
+## 8. Next Contract Authority
+
+CER implementation must follow:
+
+`docs/governance/CER_ARCHITECTURE_CONTRACT_V1.md`
+
+and the existing CER context rules in:
+
+`docs/governance/CER_CONTEXT_CONTRACT.md`
