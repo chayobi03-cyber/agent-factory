@@ -1,0 +1,34 @@
+domain_id: RE
+version: 0.1.0
+ontology:
+  entities: []
+  relations: []
+terminology:
+  canonical_terms: []
+  synonyms: {}
+  abbreviations: {}
+source_policy:
+  authorities: []
+  revision_rules: {}
+retrieval_policy:
+  allowed_modes: [bm25, vector, hybrid, graph, agentic]
+  default_mode: hybrid
+  reranker: cross_encoder
+  max_k: 20
+reasoning_policy:
+  diagnosis: hypothesis_competition
+  comparison: evidence_matrix
+verification_policy:
+  require_evidence_for_claims: true
+  domain_rules: []
+  cross_method_for_high_risk: true
+report_policy:
+  template_id: engineering_report_v1
+tools: []
+benchmark_catalog: []
+risk_policy:
+  thresholds:
+    low: 0.30
+    medium: 0.55
+    high: 0.75
+    critical: 0.90
