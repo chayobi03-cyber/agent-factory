@@ -266,9 +266,11 @@ class FactoryRuntime:
         elif result.result == "BLOCK":
             self._set_state(self._runs[human.run_id], "BLOCKED")
         elif result.result == "CHANGE":
+            self._set_state(self._runs[human.run_id], "WAITING")
             self.record_trace(human.run_id, "CORRECTION_LINEAGE",
                               {"decision_id": human.decision_id,
-                               "correction_ref": human.correction_ref})
+                               "correction_ref": human.correction_ref,
+                               "resulting_state": "WAITING"})
         self.hotl.close(review_id)
         self.record_trace(human.run_id, "HUMAN_DECISION",
                           asdict(human) | {"result": result.result})
