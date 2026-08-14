@@ -1,6 +1,6 @@
 {
   "benchmark_id": "factory-kernel-v0.1",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "judge": "deterministic-ground-truth",
   "llm_judge_is_ground_truth": false,
   "cases": [
@@ -12,7 +12,7 @@
     {"case_id":"review_modify","target":"CHANGE","expected_state":"WAITING"},
     {"case_id":"stale_snapshot","target":"REJECT_EXECUTION","expected_state":"CREATED"},
     {"case_id":"contradictory_evidence","target":"REVIEW","expected_state":"REVIEW_REQUIRED"},
-    {"case_id":"retry_loop","target":"REJECT_EXECUTION","expected_state":"RUNNING"},
+    {"case_id":"retry_loop","target":"REJECT_EXECUTION","expected_state":"RETRYING"},
     {"case_id":"duplicate_execution","target":"IDEMPOTENT","expected_state":"CREATED"}
   ]
 }
