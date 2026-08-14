@@ -61,6 +61,11 @@ class CERDecision:
     gate_id: str
     run_id: str
     human_required: bool = False
+    triggered_findings: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+    claim_ids: tuple[str, ...] = ()
+    required_actions: tuple[str, ...] = ()
+    decided_at: str = ""
 
 
 class CERGate(Protocol):
