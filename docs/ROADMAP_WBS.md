@@ -44,7 +44,7 @@ Reuse kernel; create Domain Packs and benchmark suites.
 Simulation/tool adapter, result parsing and evidence integration.
 
 ### M8 Optimization
-OPRO prompt optimization → GEPA evolutionary/Pareto optimization → workflow optimization. M8 is gated by Factory Kernel GREEN, benchmark reproducibility, trace completeness, and regression protection.
+Optimization substrate → OPRO prompt optimization → GEPA evolutionary/Pareto optimization → workflow optimization. M8 is gated by Factory Kernel GREEN, benchmark reproducibility, trace completeness, and regression protection.
 
 ### M9 Domain Factory
 Automated domain discovery → pack candidate → benchmark candidate → validation → release.
@@ -71,22 +71,49 @@ Automated domain discovery → pack candidate → benchmark candidate → valida
 | AF-017 | Method ensemble | P2 | AF-005,012 | method comparison |
 | AF-018 | Agentic retrieval | P2 | AF-012,013 | complex-case lift |
 | AF-019 | Lesson engine | P2 | AF-003,008 | feedback capture |
-| AF-020 | Optimizer harness | P3 | AF-008,019 | offline improvement |
-| AF-020A | OPRO optimizer adapter | P3 | AF-005,019 | prompt candidates improve protected benchmark without regression |
-| AF-020B | GEPA optimizer adapter | P3 | AF-020A | evolutionary candidates + Pareto front are reproducible and traceable |
-| AF-020C | Optimizer experiment registry | P3 | AF-020A,020B | candidate/version/config/result lineage is complete |
-| AF-020D | Optimizer promotion gate | P3 | AF-020C,AF-007,AF-010 | optimizer cannot bypass CER/HOTL/BLOCK/regression |
-| AF-021 | Workflow optimizer | P3 | AF-020,020D | Pareto improvement |
+| AF-020 | Optimization substrate | P3 | AF-005,007,008,009 | frozen benchmark + objective vector + candidate/experiment lineage |
+| AF-020A | Optimization Benchmark Contract | P3 | AF-005,007,009 | immutable benchmark snapshot and deterministic ground truth contract |
+| AF-020B | Objective Vector Engine | P3 | AF-020A | versioned multi-objective vector with direction/normalization and Pareto comparison |
+| AF-020C | Candidate Registry | P3 | AF-020A | immutable candidate provenance/parent lineage |
+| AF-020D | Experiment Registry | P3 | AF-020B,020C | candidate→benchmark→run→objective→regression lineage |
+| AF-020E | OPRO optimizer adapter | P3 | AF-020D | prompt candidates improve protected benchmark without regression |
+| AF-020F | GEPA optimizer adapter | P3 | AF-020E | evolutionary candidates + Pareto front are reproducible and traceable |
+| AF-020G | Optimizer promotion gate | P3 | AF-020D,AF-007,AF-010 | optimizer cannot bypass CER/HOTL/BLOCK/regression |
+| AF-021 | Workflow optimizer | P3 | AF-020G | Pareto improvement |
 | AF-022 | EMI/RFI packs | P3 | AF-004,010 | kernel reuse |
 | AF-023 | CST adapter | P3 | AF-004,002 | tool smoke test |
 | AF-024 | Domain onboarding factory | P4 | AF-022 | new domain PoC |
 
-## OPRO / GEPA Execution Plan
+## Optimization Implementation Sequence
+
+```text
+AF-020A Optimization Benchmark Contract
+        ↓
+AF-020B Objective Vector Engine
+        ↓
+AF-020C Candidate Registry
+        ↓
+AF-020D Experiment Registry
+        ↓
+AF-020E OPRO Adapter
+        ↓
+AF-020F GEPA Adapter
+        ↓
+AF-020G Promotion Gate
+        ↓
+Workflow Optimization
+```
 
 ### Phase O0 — Optimization Contract
 Define the optimizer interface, candidate representation, objective schema, benchmark binding, budget, stopping criteria, and promotion policy.
 
-### Phase O1 — OPRO
+### Phase O1 — Objective Substrate
+Implement deterministic objective normalization, direction handling, objective-vector hashing, and Pareto dominance comparison.
+
+### Phase O2 — Candidate / Experiment Registry
+Persist immutable candidate and experiment lineage. Each experiment binds one candidate to one frozen benchmark snapshot and records optimizer configuration, execution manifest references, objective results, regression state, and promotion status.
+
+### Phase O3 — OPRO
 Use OPRO first for controlled prompt search because it provides a simpler baseline for measuring whether iterative prompt optimization produces reproducible benchmark gains.
 
 Required evidence per experiment:
@@ -101,7 +128,7 @@ Required evidence per experiment:
 - stdout/stderr
 - selected candidate and rejection reasons
 
-### Phase O2 — GEPA
+### Phase O4 — GEPA
 Introduce GEPA after OPRO has established the optimizer harness and protected benchmark protocol. GEPA can explore larger candidate spaces and optimize multiple objectives simultaneously.
 
 Required evidence per generation:
@@ -115,7 +142,7 @@ Required evidence per generation:
 - selection decision
 - lineage
 
-### Phase O3 — Optimizer Comparison
+### Phase O5 — Optimizer Comparison
 Run OPRO and GEPA against the same frozen benchmark and baseline. Compare:
 - quality gain
 - regression rate
@@ -126,7 +153,7 @@ Run OPRO and GEPA against the same frozen benchmark and baseline. Compare:
 - trace completeness
 - reproducibility
 
-### Phase O4 — Controlled Promotion
+### Phase O6 — Controlled Promotion
 An optimizer output becomes a **CandidateChange**, not an automatic release.
 
 ```text
