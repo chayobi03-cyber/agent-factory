@@ -20,8 +20,8 @@ Read first, in order:
 - repository: `chayobi03-cyber/agent-factory`
 - branch: `p0/opro-baseline`
 - audited OPRO baseline SHA: `20a54b92aad0857f75c6200d984b13098c6f4927`
-- latest durable checkpoint anchor: `16972e2fa29496731319f088907170d93961ae48`
-- current branch HEAD after remediation commits: `9852d6fc6ac016995a9a2102e9ea299aaa4b89fc`
+- durable checkpoint anchor: `16972e2fa29496731319f088907170d93961ae48`
+- current branch HEAD after this session's governance/evidence remediation: `3cb02f92dfb9ef7e750c66530192c3807c65d203`
 
 ## Resume Contract
 
@@ -35,7 +35,9 @@ Any identity contradiction is `RESUME_BLOCKED`. Missing runtime evidence or envi
 
 ## Current evidence attempt and lesson
 
-An evidence-only branch `evidence/resume-0e0c6616` was created exactly at target SHA `0e0c66160f0ea005d0c3c61d88911834af0660bd` and PR #2 was opened only to trigger the existing pull-request workflow without changing that commit. The resulting workflow run was:
+An evidence-only branch `evidence/resume-0e0c6616` was created exactly at target SHA `0e0c66160f0ea005d0c3c61d88911834af0660bd` and PR #2 was opened only to trigger the existing pull-request workflow without changing that commit. The PR was closed without merge after evidence capture.
+
+The resulting workflow run was:
 
 ```text
 run_id: 32124843431
@@ -61,7 +63,7 @@ Consequences:
 - Audit Evidence Chain = NOT_GREEN
 - RESUME_ALLOWED = NO
 
-The failure is now repaired on `p0/opro-baseline`, and the CI workflow was strengthened to capture execution identity and raw resume/pytest evidence and to fail closed on regression failures.
+The failure was classified as an executable governance defect and repaired on `p0/opro-baseline`. The CI workflow was strengthened to capture execution identity and raw evidence and to fail closed on gating regression failures.
 
 ## Immediate next-session workflow
 
@@ -70,7 +72,7 @@ The failure is now repaired on `p0/opro-baseline`, and the CI workflow was stren
 1. Read canonical state, handoff, continuity contract, and audit evidence contract.
 2. Confirm branch is `p0/opro-baseline` and current HEAD is a descendant of checkpoint `16972e2f...`.
 3. Confirm audited baseline remains exactly `20a54b92...`.
-4. Identify the newest `Factory Kernel Regression` run whose head SHA exactly equals the current `p0/opro-baseline` HEAD.
+4. Identify the newest `Factory Kernel Regression` run whose intended head SHA exactly equals the current `p0/opro-baseline` HEAD.
 5. Capture run ID, event, ref, head SHA, run attempt, job IDs, step conclusions, and raw logs.
 6. Verify RC-01..RC-08 are all PASS and `RESUME_STATUS=RESUME_ALLOWED`.
 7. Verify Factory Demo, Deterministic Harness, OPRO Baseline E2E, and pytest results.
