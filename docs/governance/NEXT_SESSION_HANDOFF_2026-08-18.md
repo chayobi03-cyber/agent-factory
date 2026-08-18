@@ -20,7 +20,7 @@ Read first, in order:
 - repository: `chayobi03-cyber/agent-factory`
 - branch: `p0/opro-baseline`
 - audited OPRO baseline SHA: `20a54b92aad0857f75c6200d984b13098c6f4927`
-- current durable state checkpoint after this closure: `84c3933fd1057639a95db28ee048025087d2bc1e`
+- latest durable checkpoint anchor: `16972e2fa29496731319f088907170d93961ae48`
 
 ## Resume Contract
 
@@ -48,7 +48,7 @@ Any identity contradiction is `RESUME_BLOCKED`. Missing runtime evidence or envi
 ### Phase A — Continuity remediation
 
 1. Read canonical state and handoff.
-2. Resolve the stale handoff checkpoint discrepancy.
+2. Confirm state/handoff checkpoint identity and ancestry.
 3. Confirm actual branch/ref and HEAD through primary Git evidence.
 4. Locate the current push-triggered GitHub Actions run for the current branch.
 5. Capture:
@@ -70,16 +70,7 @@ Any identity contradiction is `RESUME_BLOCKED`. Missing runtime evidence or envi
 Only after `RESUME_ALLOWED`:
 
 1. Discover a bounded candidate set of financial data sources.
-2. Score candidates on:
-   - authority;
-   - historical depth;
-   - corporate actions;
-   - PIT capability;
-   - API stability;
-   - licensing;
-   - reproducibility;
-   - cost;
-   - operational burden.
+2. Score candidates on authority, historical depth, corporate actions, PIT capability, API stability, licensing, reproducibility, cost, and operational burden.
 3. Apply hard gates first; optimize only among hard-gate-valid candidates.
 4. Select the minimum sufficient source stack; avoid unnecessary provider proliferation.
 5. Record rationale and rejected alternatives.
@@ -92,7 +83,7 @@ Only after `RESUME_ALLOWED`:
 4. Compute content hashes.
 5. Re-ingest/replay where practical to test reproducibility.
 6. Cross-source reconcile with explicit tolerances and discrepancy classification.
-7. Establish PIT evidence and identify any survivorship/look-ahead risks.
+7. Establish PIT evidence and identify survivorship/look-ahead risks.
 8. Emit machine-verifiable evidence.
 9. Run M1-B gate and classify `GREEN` / `NOT_GREEN` / `INCONCLUSIVE`.
 
@@ -100,8 +91,8 @@ Only after `RESUME_ALLOWED`:
 
 Do NOT implement GEPA or promote OPRO in this phase. Use their methodological lessons only:
 
-- OPRO principle: optimize verified useful progress subject to hard governance constraints.
-- GEPA principle: diagnose failure, preserve the case as a regression seed, propose a targeted improvement, and promote only after evidence.
+- OPRO: optimize verified useful progress subject to hard governance constraints.
+- GEPA: diagnose failure, preserve the case as a regression seed, propose a targeted improvement, and promote only after evidence.
 - Never optimize an aggregate score across a hard-gate failure.
 - Keep workflow alternatives explicit when multiple designs are viable.
 - Prefer small, reversible governance changes with deterministic witnesses.
