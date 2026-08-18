@@ -66,15 +66,16 @@ def read_required(path: Path) -> str:
 
 
 def parse_handoff(text: str) -> dict[str, str]:
-    """Parse identity fields from the handoff with whitespace/markdown tolerance."""
+    """Parse identity fields from the handoff with markdown/format tolerance."""
     values: dict[str, str] = {}
+    normalized = text.replace("—", "-").replace("–", "-")
     patterns = {
-        "repository": r"\brepository:\s*`([^`]+)`",
-        "branch": r"\bbranch:\s*`([^`]+)`",
-        "baseline": r"\baudited\s+(?:OPRO\s+)?baseline\s+SHA\s*:\s*`([0-9a-f]{40})`",
+        "repository": r"\brepository\s*:\s*`([^`]+)`",
+        "branch": r"\bbranch\s*:\s*`([^`]+)`",
+        "baseline": r"\baudited\s+(?:OPRO\s+)?baseline\s+SHA\b[^\n]*?([0-9a-f]{40})",
     }
     for key, pattern in patterns.items():
-        match = re.search(pattern, text, flags=re.IGNORECASE)
+        match = re.search(pattern, normalized, flags=re.IGNORECASE)
         if match:
             values[key] = match.group(1)
     return values
