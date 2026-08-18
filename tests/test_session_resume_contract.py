@@ -41,7 +41,7 @@ def make_fixture(tmp_path: Path, *, gate: str = "NOT_GREEN", baseline: str = BAS
                 "GEPA implementation forbidden.",
                 "RE Domain implementation forbidden.",
                 "OPRO promotion forbidden.",
-                "Audited baseline SHA must not change.",
+                "Audited OPRO baseline SHA must not change.",
                 "PASS without primary execution evidence forbidden.",
             ]
         ),
@@ -83,6 +83,8 @@ def install_git(monkeypatch: pytest.MonkeyPatch, *, branch="p0/opro-baseline", h
         raise AssertionError(args)
 
     monkeypatch.setattr(resume, "run_git", fake_git)
+    monkeypatch.setenv("CER_EXECUTION_IDENTITY_REQUIRED", "1")
+    monkeypatch.setenv("CER_TARGET_SHA", head)
     real_run = resume.subprocess.run
 
     def fake_run(args, *a, **kw):
@@ -156,7 +158,7 @@ def test_rc05_handoff_git_remote_mismatch_is_blocked(monkeypatch, tmp_path):
 def test_rc06_handoff_baseline_mismatch_is_blocked(monkeypatch, tmp_path):
     state, root = make_fixture(tmp_path)
     Path(state["handoff"]).write_text(
-        "- repository: `chayobi03-cyber/agent-factory`\n- branch: `p0/opro-baseline`\n- audited OPRO baseline SHA: `1111111111111111111111111111111111111111`\nGEPA implementation forbidden.\nRE Domain implementation forbidden.\nOPRO promotion forbidden.\nAudited baseline SHA must not change.\nPASS without primary execution evidence forbidden.\n",
+        "- repository: `chayobi03-cyber/agent-factory`\n- branch: `p0/opro-baseline`\n- audited OPRO baseline SHA: `1111111111111111111111111111111111111111`\nGEPA implementation forbidden.\nRE Domain implementation forbidden.\nOPRO promotion forbidden.\nAudited OPRO baseline SHA must not change.\nPASS without primary execution evidence forbidden.\n",
         encoding="utf-8",
     )
     install_git(monkeypatch)
