@@ -38,8 +38,11 @@ def make_fixture(tmp_path: Path, *, gate: str = "NOT_GREEN", baseline: str = BAS
                 "- repository: `chayobi03-cyber/agent-factory`",
                 "- branch: `p0/opro-baseline`",
                 f"- audited OPRO baseline SHA: `{baseline}`",
-                "OPRO promotion remains forbidden",
-                "Do not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.",
+                "GEPA implementation forbidden.",
+                "RE Domain implementation forbidden.",
+                "OPRO promotion forbidden.",
+                "Audited baseline SHA must not change.",
+                "PASS without primary execution evidence forbidden.",
             ]
         ),
         encoding="utf-8",
@@ -153,7 +156,7 @@ def test_rc05_handoff_git_remote_mismatch_is_blocked(monkeypatch, tmp_path):
 def test_rc06_handoff_baseline_mismatch_is_blocked(monkeypatch, tmp_path):
     state, root = make_fixture(tmp_path)
     Path(state["handoff"]).write_text(
-        "- repository: `chayobi03-cyber/agent-factory`\n- branch: `p0/opro-baseline`\n- audited OPRO baseline SHA: `1111111111111111111111111111111111111111`\nOPRO promotion remains forbidden\nDo not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.\n",
+        "- repository: `chayobi03-cyber/agent-factory`\n- branch: `p0/opro-baseline`\n- audited OPRO baseline SHA: `1111111111111111111111111111111111111111`\nGEPA implementation forbidden.\nRE Domain implementation forbidden.\nOPRO promotion forbidden.\nAudited baseline SHA must not change.\nPASS without primary execution evidence forbidden.\n",
         encoding="utf-8",
     )
     install_git(monkeypatch)
@@ -167,6 +170,13 @@ def test_rc07_gate_constraint_mismatch_is_blocked(monkeypatch, tmp_path):
     install_git(monkeypatch)
     checks = resume.validate(state, root)
     assert results(checks)["RC-07"].result == "BLOCKED"
+
+
+def test_rc07_active_gate_with_protected_constraints_passes(monkeypatch, tmp_path):
+    state, root = make_fixture(tmp_path)
+    install_git(monkeypatch)
+    checks = resume.validate(state, root)
+    assert results(checks)["RC-07"].result == "PASS"
 
 
 def test_rc08_missing_required_context_requires_review(monkeypatch, tmp_path):
