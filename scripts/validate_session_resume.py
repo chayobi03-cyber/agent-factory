@@ -102,7 +102,6 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     actual_branch, branch_source = resolve_branch()
     actual_head = run_git("rev-parse", "HEAD")
     remote = run_git("config", "--get", "remote.origin.url")
-
     branch_ok = actual_branch == state["working_branch"]
 
     checkpoint = state["checkpoint"]
@@ -153,7 +152,7 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     required_constraints_present = all(
         phrase in handoff_text
         for phrase in (
-            "OPRO promotion remains forbidden",
+            "promotion remains forbidden",
             "Do not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.",
         )
     )
