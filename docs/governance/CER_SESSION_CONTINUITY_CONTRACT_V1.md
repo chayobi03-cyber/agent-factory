@@ -1,4 +1,4 @@
-# CER Session Continuity Contract v1.0
+# CER Session Continuity Contract v1.1
 
 **Status:** Active governance contract
 **Repository:** `chayobi03-cyber/agent-factory`
@@ -55,7 +55,7 @@ handoff: <path>
 updated_at_utc: <timestamp>
 ```
 
-The current Git HEAD MUST NOT be stored as a self-referential field in the same commit. Resume logic resolves the actual branch/HEAD directly from Git and compares it with any recorded audited baseline or referenced evidence identity.
+The current Git HEAD MUST NOT be stored as a self-referential field in the same commit. Resume logic resolves the actual branch/HEAD directly from Git and compares it with the checkpoint identity and referenced baseline/handoff.
 
 ## 4. State Semantics
 
@@ -70,31 +70,108 @@ Therefore:
 
 Expected, observed, verified, and decided values remain separate objects under the Evidence Chain contract.
 
-## 5. Resume Contract
+## 5. Resume Contract — Three-Way Consistency Check
 
 A new session MUST perform a resume consistency check before executing `next_action`.
 
-Minimum checks:
+The minimum invariant is a three-way consistency relationship:
+
+```text
+        CURRENT_SESSION_STATE
+             ↕       ↕
+      Git branch / HEAD
+             ↕       ↕
+    Audited baseline / Handoff
+```
+
+The three anchors are not interchangeable. The resume decision MUST validate all of them.
+
+### RC-01 — State ↔ Git branch
+
+`CURRENT_SESSION_STATE.working_branch` MUST equal the actual checked-out Git branch.
+
+Mismatch => `RESUME_BLOCKED`.
+
+### RC-02 — State ↔ Git checkpoint/HEAD
+
+Resume logic MUST resolve the actual Git HEAD. The state MAY record a prior checkpoint SHA or checkpoint relation, but MUST NOT rely on a self-referential HEAD value.
+
+Supported checkpoint relations:
+
+- `exact`: actual HEAD equals the recorded checkpoint SHA.
+- `descendant`: actual HEAD descends from the recorded checkpoint SHA and every intervening commit is explicitly acceptable under the active handoff.
+
+Unexpected divergence, unknown ancestry, or an unapproved intervening change => `RESUME_BLOCKED` or `RESUME_REVIEW_REQUIRED`.
+
+### RC-03 — State ↔ audited baseline
+
+`CURRENT_SESSION_STATE.audited_baseline_sha` MUST equal the audited baseline declared by the active governance/handoff authority.
+
+Mismatch => `RESUME_BLOCKED`.
+
+### RC-04 — State ↔ handoff
+
+The handoff referenced by `CURRENT_SESSION_STATE.handoff` MUST exist and agree with repository, branch, audited baseline, current phase, and applicable constraints.
+
+Mismatch => `RESUME_BLOCKED`.
+
+### RC-05 — Handoff ↔ Git
+
+The active handoff MUST identify the same repository and branch as Git. Where the handoff records a checkpoint or expected commit relation, Git MUST satisfy that relation.
+
+Mismatch => `RESUME_BLOCKED`.
+
+### RC-06 — Handoff ↔ audited baseline
+
+The handoff MUST preserve the audited baseline identity and MUST NOT infer a new baseline from the current HEAD.
+
+Mismatch => `RESUME_BLOCKED`.
+
+### RC-07 — Gate ↔ forbidden actions
+
+State and handoff constraints MUST agree. A downstream action is prohibited when a mandatory gate is `HOLD`, `INCONCLUSIVE`, `BLOCKED`, or otherwise not GREEN.
+
+Mismatch => `RESUME_BLOCKED`.
+
+### RC-08 — Evidence context
+
+Referenced CER, schema, audit, and evidence artifacts MUST exist and be version-compatible with the state/handoff before execution crosses a governed boundary.
+
+Missing, stale, or conflicting required context => `RESUME_REVIEW_REQUIRED` or `RESUME_BLOCKED`.
+
+## 6. Resume Decision Algorithm
 
 ```text
 Load CURRENT_SESSION_STATE
-        ↓
-Resolve actual Git branch and HEAD
-        ↓
-Validate audited baseline identity
-        ↓
-Resolve handoff path
-        ↓
-Validate referenced CER/evidence artifacts
-        ↓
-Check blocked_until / forbidden
-        ↓
-Execute next_action only when resume checks PASS
+  ↓
+Resolve actual Git branch + HEAD
+  ↓
+Resolve active handoff
+  ↓
+Resolve audited baseline authority
+  ↓
+Run RC-01..RC-08
+  ↓
+ALL PASS
+  ├─ yes → RESUME_ALLOWED
+  └─ no
+       ├─ recoverable ambiguity → RESUME_REVIEW_REQUIRED
+       └─ identity / baseline / branch contradiction → RESUME_BLOCKED
 ```
 
-Any mismatch that can affect task identity, baseline identity, gate status, or evidence provenance MUST produce `REVIEW_REQUIRED` or `BLOCKED` rather than automatic continuation.
+`RESUME_ALLOWED` is required before executing the governed `next_action`.
 
-## 6. Context Loading Policy
+## 7. State Precedence
+
+When values disagree:
+
+1. immutable audited baseline identity and verified evidence win over mutable session notes;
+2. Git is authoritative for actual repository branch/HEAD;
+3. the active handoff is authoritative for declared next action and explicit constraints;
+4. `CURRENT_SESSION_STATE` is authoritative for the continuation pointer only after RC-01..RC-08 PASS;
+5. conversational memory is lowest priority.
+
+## 8. Context Loading Policy
 
 Session restart MUST use progressive disclosure:
 
@@ -102,7 +179,7 @@ Session restart MUST use progressive disclosure:
 
 - `CURRENT_SESSION_STATE.yaml`
 - repository/project rules
-- active CER contract and snapshot references
+- active CER continuity contract and snapshot references
 
 ### Load when required
 
@@ -119,7 +196,7 @@ Session restart MUST use progressive disclosure:
 
 The repository and versioned runtime artifacts take precedence over model memory or unpinned narrative.
 
-## 7. Checkpoint Contract
+## 9. Checkpoint Contract
 
 A checkpoint is a durable intermediate state transition.
 
@@ -136,7 +213,7 @@ Checkpoint requested
 
 A checkpoint MAY occur before task completion. A checkpoint MUST NOT claim PASS, GREEN, or completion without the evidence required by the corresponding gate.
 
-## 8. Closure Contract
+## 10. Closure Contract
 
 Session closure is a governed workflow and follows:
 
@@ -155,7 +232,7 @@ Execute
 
 The closure gate remains fail-closed. Session closure cannot convert missing, stale, or inconclusive execution evidence into PASS.
 
-## 9. WorkflowRun Relationship
+## 11. WorkflowRun Relationship
 
 Session Continuity and WorkflowRun are distinct:
 
@@ -164,17 +241,15 @@ Session Continuity and WorkflowRun are distinct:
 - `workflow_run.checkpoint_ref` MAY reference the corresponding session checkpoint or related state artifact.
 - A Session State update does not itself constitute a new WorkflowRun.
 
-## 10. Standard Session Triggers
-
-The following operational triggers are defined:
+## 12. Standard Session Triggers
 
 ### CER START
 
-1. Resolve Git branch and HEAD.
+1. Resolve actual Git branch and HEAD.
 2. Load `CURRENT_SESSION_STATE.yaml`.
-3. Validate resume consistency.
-4. Load only the required handoff/evidence context.
-5. Evaluate current CER gate and constraints.
+3. Resolve active handoff and audited baseline.
+4. Run RC-01..RC-08.
+5. If `RESUME_ALLOWED`, load only the context required by `next_action`.
 6. Execute `next_action`.
 
 ### CHECKPOINT
@@ -185,35 +260,37 @@ Persist the current continuation state and commit it without overstating verific
 
 Perform the governed closure workflow, update state/handoff, and create the final session checkpoint commit.
 
-## 11. Failure Semantics
+## 13. Failure Semantics
 
 Automatic resume MUST stop when any of the following is detected:
 
 - working branch mismatch
+- unexpected Git ancestry or checkpoint divergence
 - audited baseline mismatch
-- missing handoff referenced by state
-- missing required evidence
+- missing or conflicting handoff
+- missing required evidence/context
 - unresolved mandatory HOLD/INCONCLUSIVE gate
 - stale or conflicting versioned context
 - forbidden action requested by the state
 
-The correct disposition is `REVIEW_REQUIRED` or `BLOCKED`, depending on the CER policy.
+The correct disposition is `RESUME_REVIEW_REQUIRED` or `RESUME_BLOCKED`, depending on the CER policy.
 
-## 12. Security and Integrity Principle
+## 14. Security and Integrity Principle
 
 Git commit identity is the continuation anchor, but Git commit existence alone is not execution evidence. Execution claims require machine-generated evidence with the required command, commit SHA, timestamp, exit code, and result metadata.
 
 Session Continuity MUST never be used to bypass CER gates, audit evidence requirements, or the OPRO/RE implementation constraints defined by the active governance baseline.
 
-## 13. Acceptance Criteria
+## 15. Acceptance Criteria
 
-Session Continuity v1.0 is accepted when:
+Session Continuity v1.1 is accepted when:
 
 - state schema is versioned;
 - a canonical state file exists;
 - a human-readable handoff convention exists;
-- resume consistency rules are explicit;
+- the three-way resume invariant is explicit;
+- RC-01..RC-08 are machine-checkable;
 - checkpoint/close triggers are defined;
 - WorkflowRun relationship is explicit;
 - fail-closed resume behavior is defined;
-- regression validates state structure and forbidden/mismatch handling.
+- regression validates state structure and mismatch/forbidden handling.
