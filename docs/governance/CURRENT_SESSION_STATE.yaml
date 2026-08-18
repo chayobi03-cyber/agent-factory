@@ -51,5 +51,5 @@ resume_checks:
   - RC-08_required_context
 checkpoint:
   mode: descendant
-  checkpoint_sha: 3a1ef8abc9998ef6d0bf41e3ff4be4ea2cccea37
-updated_at_utc: 2026-08-18T18:15:00+09:00
+  checkpoint_sha: 99aca6618c515ba350c4cbd8b5457609b663ae41
+updated_at_utc: 2026-08-18T18:20:00+09:00
