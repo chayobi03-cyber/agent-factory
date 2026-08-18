@@ -24,6 +24,12 @@ def make_fixture(tmp_path: Path, *, gate: str = "NOT_GREEN", baseline: str = BAS
         "schema_id: session_state\nschema_version: 1.1.0\n",
         encoding="utf-8",
     )
+    target_contract = tmp_path / "docs" / "governance"
+    target_contract.mkdir(parents=True)
+    (target_contract / "CER_TARGET_SHA_EXECUTION_CONTRACT_V1.md").write_text(
+        "execution_sha == target_sha\n",
+        encoding="utf-8",
+    )
     handoff = tmp_path / "handoff.md"
     handoff.write_text(
         "\n".join(
@@ -100,6 +106,22 @@ def test_rc02_checkpoint_divergence_is_blocked(monkeypatch, tmp_path):
     install_git(monkeypatch, ancestor=False)
     checks = resume.validate(state, root)
     assert results(checks)["RC-02"].result == "BLOCKED"
+
+
+def test_rc02_target_sha_mismatch_is_blocked(monkeypatch, tmp_path):
+    state, root = make_fixture(tmp_path)
+    install_git(monkeypatch)
+    monkeypatch.setenv("CER_TARGET_SHA", "cccccccccccccccccccccccccccccccccccccccc")
+    checks = resume.validate(state, root)
+    assert results(checks)["RC-02"].result == "BLOCKED"
+
+
+def test_rc02_target_sha_match_passes(monkeypatch, tmp_path):
+    state, root = make_fixture(tmp_path)
+    install_git(monkeypatch)
+    monkeypatch.setenv("CER_TARGET_SHA", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+    checks = resume.validate(state, root)
+    assert results(checks)["RC-02"].result == "PASS"
 
 
 def test_rc03_state_baseline_mismatch_is_blocked(monkeypatch, tmp_path):
