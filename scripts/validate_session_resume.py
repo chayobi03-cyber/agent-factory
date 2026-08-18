@@ -87,6 +87,19 @@ def check(check_id: str, observed: str, expected: str, source: str, ok: bool, re
     return ResumeCheck(check_id, observed, expected, result, source)
 
 
+def resolve_target_sha(actual_head: str) -> tuple[str | None, bool, str]:
+    """Return (target_sha, binding_ok, source) without changing local/offline semantics."""
+    target_sha = os.environ.get("CER_TARGET_SHA")
+    required = os.environ.get("CER_EXECUTION_IDENTITY_REQUIRED") == "1"
+    if not target_sha:
+        if required:
+            raise ResumeError("CER_TARGET_SHA is required when CER_EXECUTION_IDENTITY_REQUIRED=1")
+        return None, True, "execution.identity.optional"
+    if not re.fullmatch(r"[0-9a-f]{40}", target_sha):
+        raise ResumeError("CER_TARGET_SHA must be a 40-character commit SHA")
+    return target_sha, actual_head == target_sha, "CER_TARGET_SHA + git.HEAD"
+
+
 def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[ResumeCheck]:
     root = repo_root or Path.cwd()
     required = [
@@ -103,6 +116,8 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     actual_head = run_git("rev-parse", "HEAD")
     remote = run_git("config", "--get", "remote.origin.url")
     branch_ok = actual_branch == state["working_branch"]
+
+    target_sha, target_binding_ok, target_source = resolve_target_sha(actual_head)
 
     checkpoint = state["checkpoint"]
     checkpoint_sha = str(checkpoint.get("checkpoint_sha", ""))
@@ -133,8 +148,10 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     if not contract_path.is_absolute():
         contract_path = root / contract_path
     schema_path = root / "schemas/session_state.schema.yaml"
+    target_contract_path = root / "docs/governance/CER_TARGET_SHA_EXECUTION_CONTRACT_V1.md"
     contract_text = read_required(contract_path)
     schema_text = read_required(schema_path)
+    target_contract_text = read_required(target_contract_path)
 
     baseline_ok = state["audited_baseline_sha"] == handoff.get("baseline")
     handoff_state_ok = (
@@ -165,20 +182,26 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     context_ok = (
         contract_path.exists()
         and schema_path.exists()
+        and target_contract_path.exists()
         and "schema_version: 1.1.0" in schema_text
         and "CER Resume Contract" in contract_text
         and "RC-08" in contract_text
+        and "execution_sha == target_sha" in target_contract_text
     )
+
+    rc02_ok = head_ok and target_binding_ok
+    target_observed = actual_head if target_sha is None else f"target={target_sha};checkout={actual_head}"
+    target_expected = "checkpoint relation + target_sha binding" if target_sha is not None else "checkpoint relation"
 
     return [
         check("RC-01", actual_branch, str(state["working_branch"]), f"state.working_branch + {branch_source}", branch_ok),
-        check("RC-02", actual_head, f"{checkpoint_mode}:{checkpoint_sha}", "state.checkpoint + git.HEAD", head_ok),
+        check("RC-02", target_observed, target_expected, f"state.checkpoint + git.HEAD + {target_source}", rc02_ok),
         check("RC-03", str(state["audited_baseline_sha"]), str(handoff.get("baseline")), "state.audited_baseline_sha + handoff", baseline_ok),
         check("RC-04", str(handoff_path), f"{state['repository']}@{state['working_branch']}", "state.handoff + handoff identity", handoff_state_ok),
         check("RC-05", remote, f"{REPO}@{actual_branch}", "git.remote + handoff", handoff_git_ok),
         check("RC-06", str(handoff.get("baseline")), str(state["audited_baseline_sha"]), "handoff.baseline + state", handoff_baseline_ok),
         check("RC-07", str(state["gate"]), "gate/forbidden/handoff constraints consistent", "state.gate + forbidden + handoff", forbidden_ok),
-        check("RC-08", f"{contract_path};{schema_path}", "required context exists and is compatible", "resume contract + schema", context_ok, review=True),
+        check("RC-08", f"{contract_path};{schema_path};{target_contract_path}", "required context exists and is compatible", "resume contract + schema + target-SHA contract", context_ok, review=True),
     ]
 
 
