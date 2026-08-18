@@ -65,6 +65,13 @@ def read_required(path: Path) -> str:
         raise ResumeError(f"required context file not found: {path}") from exc
 
 
+def read_optional(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return ""
+
+
 def parse_handoff(text: str) -> dict[str, str]:
     """Parse identity fields from the handoff with markdown/format tolerance."""
     values: dict[str, str] = {}
@@ -151,9 +158,9 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
         contract_path = root / contract_path
     schema_path = root / "schemas/session_state.schema.yaml"
     target_contract_path = root / "docs/governance/CER_TARGET_SHA_EXECUTION_CONTRACT_V1.md"
-    contract_text = read_required(contract_path)
-    schema_text = read_required(schema_path)
-    target_contract_text = read_required(target_contract_path)
+    contract_text = read_optional(contract_path)
+    schema_text = read_optional(schema_path)
+    target_contract_text = read_optional(target_contract_path)
 
     baseline_ok = state["audited_baseline_sha"] == handoff.get("baseline")
     handoff_state_ok = (
@@ -187,9 +194,9 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     forbidden_ok = gate_constraints_ok and handoff_constraints_ok
 
     context_ok = (
-        contract_path.exists()
-        and schema_path.exists()
-        and target_contract_path.exists()
+        bool(contract_text)
+        and bool(schema_text)
+        and bool(target_contract_text)
         and "schema_version: 1.1.0" in schema_text
         and ("CER Session Continuity Contract" in contract_text or "CER Resume Contract" in contract_text)
         and "RC-08" in contract_text
