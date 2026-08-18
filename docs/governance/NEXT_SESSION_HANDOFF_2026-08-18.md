@@ -21,7 +21,7 @@ Read first, in order:
 - branch: `p0/opro-baseline`
 - audited OPRO baseline SHA: `20a54b92aad0857f75c6200d984b13098c6f4927`
 - durable checkpoint anchor: `16972e2fa29496731319f088907170d93961ae48`
-- current branch HEAD after this session's governance/evidence remediation: `3cb02f92dfb9ef7e750c66530192c3807c65d203`
+- current branch HEAD after this session's governance/evidence remediation: `8e771ebb02c5bfa9d5eff559ce6d64d88c63dd02`
 
 ## Resume Contract
 
