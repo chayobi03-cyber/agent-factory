@@ -10,23 +10,33 @@ current_task: session_continuity_control
 last_completed:
   - design_review
   - session_continuity_contract
-  - session_state_schema
+  - session_state_schema_v1.1
   - three_way_resume_contract
+  - rc01_rc08_validator
+  - rc01_rc08_regression
+  - ci_resume_gate_integration
+  - session_lessons_and_rule_promotion
 current_focus:
-  - checkpoint_resume_workflow
-  - resume_consistency_validation
-  - validation_automation
+  - ci_execution_verification
+  - financial_source_selection
+  - m1b_historical_ingest
 next_action:
-  - implement_checkpoint_resume_validation
-  - add_regression_for_session_state_and_resume_fail_closed
+  - verify_rc01_rc08_ci_result
+  - finalize_minimum_financial_source_stack
+  - ingest_five_real_historical_series
 blocked_until:
   - audit_evidence_chain_GREEN
+  - resume_checks_VERIFIED
 forbidden:
   - GEPA_implementation
   - RE_domain_implementation
   - OPRO_promotion
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
+  - backtest_before_M1B_GREEN
+  - OOS_before_M1B_GREEN
+  - optimization_before_M1B_GREEN
+  - monte_carlo_before_M1B_GREEN
 handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 resume_status: UNVERIFIED
@@ -41,5 +51,5 @@ resume_checks:
   - RC-08_required_context
 checkpoint:
   mode: descendant
-  checkpoint_sha: e7d4b38ecb96625b0323b7fb15d2b73b2fd2e693
-updated_at_utc: 2026-08-18T03:15:00Z
+  checkpoint_sha: 3a1ef8abc9998ef6d0bf41e3ff4be4ea2cccea37
+updated_at_utc: 2026-08-18T18:15:00+09:00
