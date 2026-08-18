@@ -1,0 +1,42 @@
+schema_version: string
+record_id: string
+series_id: string
+source:
+  provider: string
+  dataset: string
+  endpoint_or_locator: string
+  authority: string
+  retrieval_method: string
+  retrieval_version: string
+snapshot:
+  retrieved_at_utc: string
+  source_as_of: string|null
+  request_parameters: object
+  raw_payload_sha256: string
+observation:
+  observation_time: string
+  value: number
+  unit: string
+  currency: string|null
+pit:
+  available_as_of: string
+  effective_from: string|null
+  effective_to: string|null
+transform:
+  normalization: string
+  transformation_version: string
+  input_record_ids: [string]
+provenance:
+  upstream_record_ids: [string]
+  source_hash: string
+  derived_hash: string
+replay:
+  replay_key: string
+  deterministic: boolean
+  expected_output_sha256: string
+reconciliation:
+  cross_source_group: string|null
+  status: [unverified, matched, discrepancy, accepted]
+  tolerance: number|null
+  discrepancy_notes: string|null
+validity: [active, superseded, rejected]
