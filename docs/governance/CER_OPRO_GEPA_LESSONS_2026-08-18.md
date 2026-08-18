@@ -146,3 +146,41 @@ This document does not authorize:
 `VERIFY → DIAGNOSE → REPAIR → REGRESS → EVIDENCE → PROMOTE`
 
 Only after the continuity gate is `RESUME_ALLOWED` may the workflow enter M1-B.
+
+## 9. Session 2026-08-18 current-SHA CI evidence lessons
+
+### OPRO-LSN-004 — Execution identity must be captured before interpreting results
+
+An evidence-only PR successfully triggered `Factory Kernel Regression` against target head SHA `0e0c66160f0ea005d0c3c61d88911834af0660bd`, proving that immutable-target execution can be obtained without changing the target commit. However, the pull-request workflow checked out a synthetic merge SHA. Therefore `github.sha` alone is insufficient for target identity; the workflow must capture the PR head SHA explicitly.
+
+### GEPA-LSN-005 — A validator crash is a first-class regression seed
+
+The target run `32124843431` failed before RC-01..RC-08 could produce verdicts because `check("RC-07", ...)` omitted the required `source` argument. This was not an evidence absence problem; it was an executable governance defect. The failure is preserved as a regression seed and the validator invocation was repaired.
+
+### Permanent Rule — Evidence publication must survive gate failure
+
+The CI workflow now captures:
+
+- CI execution identity;
+- raw resume validator output;
+- raw demo/harness/OPRO/pytest output;
+- machine evidence artifact.
+
+Artifact publication remains `if: always()` so a failed gate does not erase the evidence required to diagnose it.
+
+### Permanent Rule — GREEN regression steps cannot be non-blocking
+
+`continue-on-error` was removed from the deterministic harness because a regression contributing to a GREEN decision must fail the job when it fails. Non-blocking execution is acceptable only for explicitly diagnostic/non-gating work.
+
+### Permanent Rule — Artifact digest is an independent evidence check
+
+Workflow success is not equivalent to evidence integrity. The next session must download the current-SHA artifact, compare its GitHub-reported digest with an independently recomputed digest, and record the comparison as a separate evidence verdict.
+
+## 10. Automation candidates
+
+1. Add a reusable `audit-evidence-verify` script that consumes run metadata + artifact metadata and emits a machine-verifiable chain verdict.
+2. Add a regression fixture that asserts `validate_session_resume.main()` executes without `TypeError` and returns the expected exit code for a consistent fixture.
+3. Add workflow metadata/artifact checks that reject a merge SHA when a target head SHA is expected.
+4. Add an automated stale-evidence detector comparing evidence SHA to the current state checkpoint and target ref.
+
+These are candidates only until separately implemented, tested, and promoted through the same evidence gate.
