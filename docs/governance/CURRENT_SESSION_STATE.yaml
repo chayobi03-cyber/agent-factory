@@ -1,7 +1,7 @@
-state_version: 2
+state_version: 3
 session_id: 2026-08-19-m1b-entry
 phase: M1-B
-gate: GREEN
+gate: M1-B_ACTIVE
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
@@ -18,19 +18,21 @@ last_completed:
   - opro_execution_identity_regression
   - pytest_44_of_44
   - audit_evidence_chain_closeout
+  - m1b_source_contract_v1
+  - financial_provenance_schema_v1
 current_focus:
-  - financial_source_stack
+  - minimum_sufficient_financial_source_stack
   - five_historical_series_ingest
   - provenance
   - point_in_time_correctness
   - replayability
   - cross_source_reconciliation
 next_action:
-  - define_m1b_source_contract
-  - define_provenance_record_schema
   - select_minimum_sufficient_source_stack
-  - ingest_first_historical_series
-  - build_replay_and_reconciliation_checks
+  - select_five_real_historical_series
+  - implement_first_ingestion_path
+  - generate_raw_snapshot_and_provenance_records
+  - add_pit_replay_reconciliation_regression
 blocked_until: []
 forbidden:
   - GEPA_implementation
@@ -73,8 +75,9 @@ last_evidence:
   opro_promotion_status: CANDIDATE
   pytest: 44_of_44
 checkpoint:
-  mode: evidence_verified
-  evidence_manifest: docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml
-  evidence_target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
-  state_update_commit: 8145ad7e06da9fc0950444c673d2eb8c1f59b004
-updated_at_utc: 2026-08-19T01:04:00+09:00
+  mode: descendant
+  checkpoint_sha: 9367ad909ea981ab2a10e7d7ff80c8c75b1d8d49
+evidence_manifest: docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml
+m1b_source_contract: docs/governance/M1B_SOURCE_CONTRACT_V1.md
+financial_provenance_schema: schemas/financial_provenance.schema.yaml
+updated_at_utc: 2026-08-19T01:06:00+09:00
