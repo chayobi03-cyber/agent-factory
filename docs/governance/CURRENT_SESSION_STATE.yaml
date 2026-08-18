@@ -11,8 +11,10 @@ last_completed:
   - design_review
   - session_continuity_contract
   - session_state_schema
+  - three_way_resume_contract
 current_focus:
   - checkpoint_resume_workflow
+  - resume_consistency_validation
   - validation_automation
 next_action:
   - implement_checkpoint_resume_validation
@@ -26,4 +28,18 @@ forbidden:
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
 handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
+resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
+resume_status: UNVERIFIED
+resume_checks:
+  - RC-01_state_vs_git_branch
+  - RC-02_state_vs_git_head_checkpoint
+  - RC-03_state_vs_audited_baseline
+  - RC-04_state_vs_handoff
+  - RC-05_handoff_vs_git
+  - RC-06_handoff_vs_audited_baseline
+  - RC-07_gate_vs_forbidden
+  - RC-08_required_context
+checkpoint:
+  mode: descendant
+  checkpoint_sha: e7d4b38ecb96625b0323b7fb15d2b73b2fd2e693
 updated_at_utc: 2026-08-18T03:15:00Z
