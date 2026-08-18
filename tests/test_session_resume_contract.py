@@ -14,13 +14,13 @@ CHECKPOINT = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 def make_fixture(tmp_path: Path, *, gate: str = "NOT_GREEN", baseline: str = BASELINE):
     contract = tmp_path / "CER_SESSION_CONTINUITY_CONTRACT_V1.md"
     contract.write_text(
-        "# CER Session Continuity\n\n## RC-08\n",
+        "# CER Resume Contract\n\n## RC-08\n",
         encoding="utf-8",
     )
     schema_dir = tmp_path / "schemas"
     schema_dir.mkdir()
     (schema_dir / "session_state.schema.yaml").write_text(
-        "schema_id: session_state\nschema_version: 1.0.0\n",
+        "schema_id: session_state\nschema_version: 1.1.0\n",
         encoding="utf-8",
     )
     handoff = tmp_path / "handoff.md"
