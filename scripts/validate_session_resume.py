@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""Fail-closed RC-01..RC-08 validator for CER session resume."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+REPO = "chayobi03-cyber/agent-factory"
+FORWARD_BLOCK_GATES = {"NOT_GREEN", "BLOCKED", "HOLD", "INCONCLUSIVE"}
+
+
+@dataclass(frozen=True)
+class ResumeCheck:
+    check_id: str
+    observed_value: str
+    expected_value: str
+    result: str
+    source_reference: str
+
+
+class ResumeError(RuntimeError):
+    pass
+
+
+def run_git(*args: str) -> str:
+    result = subprocess.run(["git", *args], capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise ResumeError(result.stderr.strip() or f"git {' '.join(args)} failed")
+    return result.stdout.strip()
+
+
+def resolve_branch() -> tuple[str, str]:
+    """Return branch plus source; CI refs are required for detached checkouts."""
+    branch = run_git("branch", "--show-current")
+    if branch:
+        return branch, "git.branch"
+    ci_branch = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME")
+    if ci_branch:
+        return ci_branch, "github.ref"
+    raise ResumeError("unable to resolve current branch from Git or GitHub Actions environment")
+
+
+def load_state(path: Path) -> dict[str, Any]:
+    try:
+        state = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ResumeError(f"state file not found: {path}") from exc
+    if not isinstance(state, dict):
+        raise ResumeError("session state must be a YAML mapping")
+    return state
+
+
+def read_required(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise ResumeError(f"required context file not found: {path}") from exc
+
+
+def parse_handoff(text: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    patterns = {
+        "repository": r"- repository:\s*`([^`]+)`",
+        "branch": r"- branch:\s*`([^`]+)`",
+        "baseline": r"- audited OPRO baseline SHA:\s*`([0-9a-f]{40})`",
+    }
+    for key, pattern in patterns.items():
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            values[key] = match.group(1)
+    return values
+
+
+def check(check_id: str, observed: str, expected: str, source: str, ok: bool, review: bool = False) -> ResumeCheck:
+    if ok:
+        result = "PASS"
+    else:
+        result = "REVIEW_REQUIRED" if review else "BLOCKED"
+    return ResumeCheck(check_id, observed, expected, result, source)
+
+
+def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[ResumeCheck]:
+    root = repo_root or Path.cwd()
+    required = [
+        "state_version", "session_id", "phase", "gate", "repository", "working_branch",
+        "audited_baseline_sha", "task_id", "current_task", "last_completed", "current_focus",
+        "next_action", "blocked_until", "forbidden", "handoff", "resume_contract", "resume_status",
+        "resume_checks", "checkpoint", "updated_at_utc",
+    ]
+    missing = [key for key in required if key not in state]
+    if missing:
+        raise ResumeError(f"missing required fields: {', '.join(missing)}")
+
+    actual_branch, branch_source = resolve_branch()
+    actual_head = run_git("rev-parse", "HEAD")
+    remote = run_git("config", "--get", "remote.origin.url")
+    branch_ok = actual_branch == state["working_branch"]
+
+    checkpoint = state["checkpoint"]
+    checkpoint_sha = str(checkpoint.get("checkpoint_sha", ""))
+    checkpoint_mode = str(checkpoint.get("mode", ""))
+    if not re.fullmatch(r"[0-9a-f]{40}", checkpoint_sha):
+        raise ResumeError("checkpoint.checkpoint_sha must be a 40-character commit SHA")
+    if checkpoint_mode not in {"exact", "descendant"}:
+        raise ResumeError("checkpoint.mode must be exact or descendant")
+
+    if checkpoint_mode == "exact":
+        head_ok = actual_head == checkpoint_sha
+    else:
+        probe = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", checkpoint_sha, actual_head],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        head_ok = probe.returncode == 0
+
+    handoff_path = Path(state["handoff"])
+    if not handoff_path.is_absolute():
+        handoff_path = root / handoff_path
+    handoff_text = read_required(handoff_path)
+    handoff = parse_handoff(handoff_text)
+
+    contract_path = Path(state["resume_contract"])
+    if not contract_path.is_absolute():
+        contract_path = root / contract_path
+    schema_path = root / "schemas/session_state.schema.yaml"
+    contract_text = read_required(contract_path)
+    schema_text = read_required(schema_path)
+
+    baseline_ok = state["audited_baseline_sha"] == handoff.get("baseline")
+    handoff_state_ok = (
+        handoff.get("repository") == state["repository"]
+        and handoff.get("branch") == state["working_branch"]
+        and handoff_path.exists()
+    )
+    handoff_git_ok = (
+        REPO in remote
+        and handoff.get("repository") == REPO
+        and handoff.get("branch") == actual_branch
+    )
+    handoff_baseline_ok = handoff.get("baseline") == state["audited_baseline_sha"]
+
+    required_constraints_present = all(
+        phrase in handoff_text
+        for phrase in (
+            "promotion remains forbidden",
+            "Do not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.",
+        )
+    )
+    forbidden = {str(item) for item in state.get("forbidden", [])}
+    forbidden_ok = (
+        state["gate"] not in FORWARD_BLOCK_GATES
+        or ("OPRO_promotion" in forbidden and "RE_domain_implementation" in forbidden)
+    ) and required_constraints_present
+
+    context_ok = (
+        contract_path.exists()
+        and schema_path.exists()
+        and "schema_version: 1.1.0" in schema_text
+        and "CER Resume Contract" in contract_text
+        and "RC-08" in contract_text
+    )
+
+    return [
+        check("RC-01", actual_branch, str(state["working_branch"]), f"state.working_branch + {branch_source}", branch_ok),
+        check("RC-02", actual_head, f"{checkpoint_mode}:{checkpoint_sha}", "state.checkpoint + git.HEAD", head_ok),
+        check("RC-03", str(state["audited_baseline_sha"]), str(handoff.get("baseline")), "state.audited_baseline_sha + handoff", baseline_ok),
+        check("RC-04", str(handoff_path), f"{state['repository']}@{state['working_branch']}", "state.handoff + handoff identity", handoff_state_ok),
+        check("RC-05", remote, f"{REPO}@{actual_branch}", "git.remote + handoff", handoff_git_ok),
+        check("RC-06", str(handoff.get("baseline")), str(state["audited_baseline_sha"]), "handoff.baseline + state", handoff_baseline_ok),
+        check("RC-07", str(state["gate"]), "gate/forbidden/handoff constraints consistent", "state.gate + forbidden + handoff", forbidden_ok),
+        check("RC-08", f"{contract_path};{schema_path}", "required context exists and is compatible", "resume contract + schema", context_ok, review=True),
+    ]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--state", default="docs/governance/CURRENT_SESSION_STATE.yaml")
+    args = parser.parse_args()
+
+    try:
+        checks = validate(load_state(Path(args.state)))
+    except ResumeError as exc:
+        print(f"RESUME_CHECK=BLOCKED: {exc}")
+        return 2
+
+    overall = "RESUME_ALLOWED"
+    for item in checks:
+        print(f"{item.check_id}={item.result} observed={item.observed_value!r} expected={item.expected_value!r} source={item.source_reference}")
+        if item.result == "BLOCKED":
+            overall = "RESUME_BLOCKED"
+        elif item.result == "REVIEW_REQUIRED" and overall == "RESUME_ALLOWED":
+            overall = "RESUME_REVIEW_REQUIRED"
+
+    print(f"RESUME_STATUS={overall}")
+    return 0 if overall == "RESUME_ALLOWED" else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

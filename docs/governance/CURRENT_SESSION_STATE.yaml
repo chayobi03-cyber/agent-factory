@@ -1,0 +1,79 @@
+state_version: 1
+session_id: 2026-08-18-cer-session-continuity
+phase: CONTINUITY-P0
+gate: NOT_GREEN
+repository: chayobi03-cyber/agent-factory
+working_branch: p0/opro-baseline
+audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
+task_id: CER-SESSION-CONTINUITY-P0
+current_task: audit_evidence_chain_remediation
+last_completed:
+  - design_review
+  - session_continuity_contract
+  - session_state_schema_v1.1
+  - three_way_resume_contract
+  - rc01_rc08_validator
+  - rc01_rc08_regression
+  - ci_resume_gate_integration
+  - session_lessons_and_rule_promotion
+  - opro_gepa_lesson_promotion
+  - next_session_workflow_hardening
+  - target_sha_ci_execution_attempt
+  - audit_evidence_chain_failure_classification
+  - audit_evidence_chain_ci_contract
+  - resume_validator_rc07_repair
+  - ci_machine_evidence_capture_hardening
+  - current_sha_evidence_lessons_promoted
+current_focus:
+  - continuity_evidence_remediation
+  - financial_source_selection
+  - m1b_historical_ingest
+next_action:
+  - run_ci_on_current_p0_head_and_verify_rc01_rc08
+  - verify_current_sha_artifact_and_digest
+  - reconcile_state_handoff_after_evidence
+  - finalize_minimum_financial_source_stack
+  - ingest_five_real_historical_series
+blocked_until:
+  - audit_evidence_chain_GREEN
+  - resume_checks_VERIFIED
+forbidden:
+  - GEPA_implementation
+  - RE_domain_implementation
+  - OPRO_promotion
+  - audited_baseline_redefinition
+  - PASS_without_primary_execution_evidence
+  - backtest_before_M1B_GREEN
+  - OOS_before_M1B_GREEN
+  - optimization_before_M1B_GREEN
+  - monte_carlo_before_M1B_GREEN
+handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
+resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
+audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
+lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
+resume_status: RESUME_BLOCKED
+resume_checks:
+  - RC-01_state_vs_git_branch
+  - RC-02_state_vs_git_head_checkpoint
+  - RC-03_state_vs_audited_baseline
+  - RC-04_state_vs_handoff
+  - RC-05_handoff_vs_git
+  - RC-06_handoff_vs_audited_baseline
+  - RC-07_gate_vs_forbidden
+  - RC-08_required_context
+last_evidence:
+  target_sha: 0e0c66160f0ea005d0c3c61d88911834af0660bd
+  workflow_run_id: 32124843431
+  workflow: Factory Kernel Regression
+  event: pull_request
+  evidence_pr: 2
+  evidence_branch: evidence/resume-0e0c6616
+  result: FAILED_RC_VALIDATOR
+  failure_class: validator_runtime_error
+  failure_signature: "TypeError: check() missing 1 required positional argument: 'ok'"
+  artifact: NOT_PUBLISHED_NO_FILES
+  digest: NOT_AVAILABLE
+checkpoint:
+  mode: descendant
+  checkpoint_sha: 16972e2fa29496731319f088907170d93961ae48
+updated_at_utc: 2026-08-18T19:25:00+09:00

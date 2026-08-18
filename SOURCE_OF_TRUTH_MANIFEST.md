@@ -26,6 +26,7 @@ The numbered package paths below describe the historical package layout only. Th
 - `templates/` — benchmark, Domain Pack, lesson, and agent context templates
 - `src/` — implementation interfaces/skeleton
 - `11_Audit/` — audit prompts and results
+- `scripts/` — executable validation and workflow support
 - `README.md` — repository orientation
 - `SOURCE_OF_TRUTH_MANIFEST.md` — canonical mapping and migration authority
 
@@ -33,6 +34,14 @@ The numbered package paths below describe the historical package layout only. Th
 
 - `docs/governance/CER_CONTEXT_CONTRACT.md` — CER definition, policy/context model, snapshot and handoff principles
 - `docs/governance/CER_ARCHITECTURE_CONTRACT_V1.md` — canonical CER architecture contract v1.0
+- `docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md` — session continuity, checkpoint, resume, handoff, and closure control
+- `docs/governance/CURRENT_SESSION_STATE.yaml` — machine-readable session continuation pointer
+- `docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md` — current human-readable session handoff
+- `docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md` — OPRO/GEPA methodological lessons and promoted workflow rules
+- `docs/governance/OPTIMIZATION_METHOD_CONTROL_V1.md` — method-independent optimization governance and adapter boundary
+- `docs/governance/CER_SESSION_CLOSURE_2026-08-18_OPTIMIZATION_LESSONS.md` — session closure, lessons, and next-session optimization workflow
+- `schemas/session_state.schema.yaml` — session state schema and resume invariants
+- `scripts/validate_session_state.py` — executable resume consistency validator
 - `templates/agent/AGENT_FACTORY_CONTEXT_PACKET.yaml` — external-agent context packet template
 - `11_Audit/EXTERNAL_LLM_AUDIT_PROMPT.md` — independent audit prompt
 - `11_Audit/AUDIT_RESULT_2026-08-14.md` — recorded external audit result
@@ -54,7 +63,7 @@ Historical package structure is mapped conceptually to the current repository as
 | `08_ADR/` | repository governance/design records as migrated |
 | `09_Templates/` | `templates/` |
 | `10_Implementation_Skeleton/` | `src/` + `workflows/` |
-| `11_Audit/` | `11_Audit/` |
+| `11_Audit/` | `11_Audit/`
 
 ## 6. Source-of-Truth Resolution Rule
 
@@ -67,6 +76,10 @@ When two artifacts disagree:
 
 Any migration from a historical package into the current repository must be recorded as an explicit versioned change.
 
+For Session Continuity, `CURRENT_SESSION_STATE.yaml` is a continuation pointer and does not supersede the live Git state, CER snapshot, WorkflowRun evidence, or audit decisions. The actual Git branch/HEAD must be resolved from Git at resume time.
+
+For optimization methods, the current governance contract is method-independent: optimizer-specific adapters may vary, but evaluator, evidence, regression, approval, and promotion controls remain canonical.
+
 ## 7. Manifest Status
 
 `MATERIAL_DRIFT` identified during the 2026-08-14 internal/external audit cycle has been resolved by explicitly declaring the live Git repository as canonical and the numbered ZIP package as historical.
@@ -77,6 +90,14 @@ CER implementation must follow:
 
 `docs/governance/CER_ARCHITECTURE_CONTRACT_V1.md`
 
-and the existing CER context rules in:
-
 `docs/governance/CER_CONTEXT_CONTRACT.md`
+
+Session Continuity implementation must additionally follow:
+
+`docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md`
+
+`schemas/session_state.schema.yaml`
+
+Optimization method work must follow:
+
+`docs/governance/OPTIMIZATION_METHOD_CONTROL_V1.md`
