@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from subprocess import CompletedProcess
 
@@ -160,3 +161,12 @@ def test_all_rc_checks_pass_for_consistent_resume(monkeypatch, tmp_path):
     checks = resume.validate(state, root)
     assert {item.check_id for item in checks} == {f"RC-{i:02d}" for i in range(1, 9)}
     assert all(item.result == "PASS" for item in checks)
+
+
+def test_validator_main_executes_without_runtime_typeerror(monkeypatch, tmp_path):
+    """Regression witness for the prior RC-07 check() argument crash."""
+    state, root = make_fixture(tmp_path)
+    install_git(monkeypatch)
+    monkeypatch.setattr(resume, "load_state", lambda path: state)
+    monkeypatch.setattr(sys, "argv", ["validate_session_resume.py", "--state", str(root / "state.yaml")])
+    assert resume.main() == 0
