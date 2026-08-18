@@ -17,6 +17,7 @@ last_completed:
   - ci_resume_gate_integration
   - session_lessons_and_rule_promotion
   - opro_gepa_lesson_promotion
+  - next_session_workflow_hardening
 current_focus:
   - continuity_evidence_remediation
   - financial_source_selection
@@ -54,5 +55,5 @@ resume_checks:
   - RC-08_required_context
 checkpoint:
   mode: descendant
-  checkpoint_sha: 84c3933fd1057639a95db28ee048025087d2bc1e
-updated_at_utc: 2026-08-18T19:00:00+09:00
+  checkpoint_sha: 16972e2fa29496731319f088907170d93961ae48
+updated_at_utc: 2026-08-18T19:10:00+09:00
