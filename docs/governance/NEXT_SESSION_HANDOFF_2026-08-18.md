@@ -17,10 +17,36 @@ Read first:
 - repository: `chayobi03-cyber/agent-factory`
 - branch: `p0/opro-baseline`
 - audited OPRO baseline SHA: `20a54b92aad0857f75c6200d984b13098c6f4927`
+- latest durable checkpoint anchor: `b6614241aff7bbcd38de3acbd5d555abe768f766`
+
+## Resume Contract
+
+A new session MUST NOT execute `next_action` until the three-way consistency check passes:
+
+```text
+CURRENT_SESSION_STATE
+        ↕
+Git branch / HEAD / checkpoint ancestry
+        ↕
+Audited baseline / active handoff
+```
+
+Minimum checks:
+
+1. state `working_branch` == actual Git branch;
+2. actual HEAD satisfies the checkpoint relation recorded by state;
+3. state `audited_baseline_sha` == active audited baseline;
+4. referenced handoff exists and agrees with state;
+5. handoff repository/branch agree with Git;
+6. handoff audited baseline agrees with the audited baseline;
+7. state gate and forbidden actions agree with handoff;
+8. required CER/evidence/schema artifacts exist and are version-compatible.
+
+Any contradiction yields `RESUME_REVIEW_REQUIRED` or `RESUME_BLOCKED`. Never infer a new audited baseline from HEAD.
 
 ## Current disposition
 
-Session Continuity governance contract and machine-readable state schema are now committed. The active work is still provisional because the Audit Evidence Chain is not GREEN.
+Session Continuity governance contract and machine-readable state schema are committed. The active work is still provisional because the Audit Evidence Chain is not GREEN.
 
 ## Next actions
 
@@ -29,19 +55,28 @@ Session Continuity governance contract and machine-readable state schema are now
 3. Add regression coverage for:
    - valid resume;
    - branch mismatch;
+   - HEAD/checkpoint divergence;
    - audited baseline mismatch;
-   - missing handoff;
+   - handoff mismatch or missing handoff;
    - forbidden action;
-   - missing mandatory evidence;
+   - missing mandatory evidence/context;
    - stale/conflicting context.
-4. Keep resume fail-closed: mismatches resolve to `REVIEW_REQUIRED` or `BLOCKED`.
-5. Do not introduce GEPA, RE Domain implementation, OPRO promotion, or redefine the audited baseline.
+4. Emit machine-readable RC-01..RC-08 results.
+5. Keep resume fail-closed: mismatches resolve to `REVIEW_REQUIRED` or `BLOCKED`.
+6. After continuity controls are GREEN enough to pass their own gate, return to the financial-information M1-B workflow:
+   - finalize minimum source stack;
+   - ingest five real historical series;
+   - cross-source reconciliation;
+   - PIT evidence;
+   - machine-verifiable evidence;
+   - M1-B GREEN decision.
+7. Do not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.
 
 ## Operating triggers
 
 ### CER START
 
-Resolve actual Git branch/HEAD, load state, validate resume consistency, load only required context, then execute `next_action`.
+Resolve actual Git branch/HEAD, load state, validate the three-way resume consistency, load only required context, then execute `next_action`.
 
 ### CHECKPOINT
 
@@ -57,7 +92,11 @@ Session state is a continuation pointer, not execution evidence. PASS/GREEN clai
 
 ## Context minimization rule
 
-Do not reload the full prior conversation. Use state -> relevant handoff -> relevant evidence -> Git history only as required.
+Do not reload the full prior conversation. Use:
+
+`state → resume checks → relevant handoff → relevant evidence → Git history only as required`
+
+If resume checks fail, expand context only enough to resolve the inconsistency; do not fall back to replaying the whole prior session by default.
 
 ## Current governance constraint
 
