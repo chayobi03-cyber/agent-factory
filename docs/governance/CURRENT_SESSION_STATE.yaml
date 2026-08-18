@@ -1,0 +1,29 @@
+state_version: 1
+session_id: 2026-08-18-cer-session-continuity
+phase: CONTINUITY-P0
+gate: NOT_GREEN
+repository: chayobi03-cyber/agent-factory
+working_branch: p0/opro-baseline
+audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
+task_id: CER-SESSION-CONTINUITY-P0
+current_task: session_continuity_control
+last_completed:
+  - design_review
+  - session_continuity_contract
+  - session_state_schema
+current_focus:
+  - checkpoint_resume_workflow
+  - validation_automation
+next_action:
+  - implement_checkpoint_resume_validation
+  - add_regression_for_session_state_and_resume_fail_closed
+blocked_until:
+  - audit_evidence_chain_GREEN
+forbidden:
+  - GEPA_implementation
+  - RE_domain_implementation
+  - OPRO_promotion
+  - audited_baseline_redefinition
+  - PASS_without_primary_execution_evidence
+handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
+updated_at_utc: 2026-08-18T03:15:00Z
