@@ -184,3 +184,41 @@ Workflow success is not equivalent to evidence integrity. The next session must 
 4. Add an automated stale-evidence detector comparing evidence SHA to the current state checkpoint and target ref.
 
 These are candidates only until separately implemented, tested, and promoted through the same evidence gate.
+
+## 11. Session closure lessons — Phase A-C continuity review
+
+### Permanent Rule — Exact HEAD must be resolved dynamically at session start
+
+A handoff may record a known prior HEAD for orientation, but it must never be treated as the current execution identity. Every new session must resolve the actual branch ref and exact HEAD from primary Git evidence before interpreting state or CI results.
+
+### Permanent Rule — Descendant evidence is necessary but not sufficient
+
+`checkpoint → current HEAD` being a valid Git descendant does not by itself establish resume permission. The intervening commits must be classifiable, the audited baseline must remain immutable, and current-SHA CI execution evidence must be available.
+
+### Permanent Rule — Do not confuse stale-checkpoint remediation with current execution evidence
+
+If state/handoff have been updated to a newer checkpoint, that remediation is itself evidence of governance evolution, not evidence that the current runtime/CI gate has executed successfully. Documentation and state consistency cannot substitute for primary execution evidence.
+
+### Workflow Rule — Current-SHA CI evidence is the final continuity blocker
+
+After identity/ancestry is reconstructed, the next action is not M1-B. First locate the newest push-triggered `Factory Kernel Regression` run whose intended head SHA exactly equals the resolved current branch HEAD. Capture run, workflow, event, ref, SHA, attempt, jobs, step conclusions, logs, and artifact metadata.
+
+### Workflow Rule — Re-evaluate RC-01~RC-08 only from the same evidence package
+
+Do not mix state evidence from one checkpoint, Git identity from another ref, and CI results from a different SHA. The RC verdict package must be internally bound to one resolved current identity.
+
+### Regression Seed — Environment-limited CI lookup
+
+The 2026-08-18 session demonstrated that GitHub connector limitations can expose branch existence and commit ancestry while failing to expose the current push-triggered workflow run/artifact binding. This must remain `INCONCLUSIVE`, not PASS, and should become a regression case for future evidence-availability tooling.
+
+### Task Guidance — M1-B remains closed until continuity is GREEN
+
+No financial source selection, historical ingest, backtest, OOS, optimization, Monte Carlo, or OPRO promotion was executed in this session. The absence of downstream work is an intentional safety outcome, not incomplete execution.
+
+## 12. Session closure classification
+
+- **Permanent governance rules:** exact HEAD dynamic resolution; descendant ≠ resume permission; documentation ≠ execution evidence; current-SHA evidence binding; fail-closed INCONCLUSIVE.
+- **Workflow rules:** single evidence package for RC-01~RC-08; current-SHA CI lookup before M1-B; checkpoint after material gate/evidence changes.
+- **Task-level guidance:** once `RESUME_ALLOWED`, proceed to bounded financial source selection and minimum sufficient source stack.
+- **Regression seeds:** stale checkpoint, merge-SHA confusion, unavailable current run metadata, validator runtime error, PASS without primary evidence.
+- **Unresolved issue:** current push-triggered `Factory Kernel Regression` evidence for the exact current branch HEAD remains unverified in this environment.
