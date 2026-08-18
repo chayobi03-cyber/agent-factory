@@ -12,7 +12,7 @@ Read first, in order:
 2. `docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md`
 3. `schemas/session_state.schema.yaml`
 4. `docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md`
-5. `docs/governance/CER_SESSION_CLOSURE_2026-08-18_SESSION_CONTINUITY.md` only if needed
+5. `docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md`
 6. `docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md` when performing lesson-based workflow improvement
 
 ## Repository
@@ -21,49 +21,63 @@ Read first, in order:
 - branch: `p0/opro-baseline`
 - audited OPRO baseline SHA: `20a54b92aad0857f75c6200d984b13098c6f4927`
 - latest durable checkpoint anchor: `16972e2fa29496731319f088907170d93961ae48`
+- current branch HEAD after remediation commits: `9852d6fc6ac016995a9a2102e9ea299aaa4b89fc`
 
 ## Resume Contract
 
-A new session MUST NOT execute `next_action` until RC-01..RC-08 are verified.
+A new session MUST NOT execute `next_action` until RC-01..RC-08 are verified against the current branch/HEAD.
 
 ```text
 state → Git identity/ancestry → handoff → audited baseline → gate/constraints → required context/evidence
 ```
 
-### Mandatory resume checks
-
-1. state `working_branch` == actual Git branch/ref;
-2. actual HEAD satisfies state checkpoint ancestry/relation;
-3. state audited baseline == immutable audited baseline;
-4. state checkpoint and handoff checkpoint are consistent;
-5. handoff repository/branch agree with Git;
-6. handoff audited baseline agrees with immutable baseline;
-7. gate and forbidden actions are consistent;
-8. required CER/schema/evidence context exists and is version-compatible.
-
 Any identity contradiction is `RESUME_BLOCKED`. Missing runtime evidence or environment ambiguity is `INCONCLUSIVE`, not PASS.
+
+## Current evidence attempt and lesson
+
+An evidence-only branch `evidence/resume-0e0c6616` was created exactly at target SHA `0e0c66160f0ea005d0c3c61d88911834af0660bd` and PR #2 was opened only to trigger the existing pull-request workflow without changing that commit. The resulting workflow run was:
+
+```text
+run_id: 32124843431
+workflow: Factory Kernel Regression
+workflow_id: 334216760
+event: pull_request
+head branch: evidence/resume-0e0c6616
+head SHA: 0e0c66160f0ea005d0c3c61d88911834af0660bd
+job: kernel-regression / 95672989467
+```
+
+The execution proved the target-SHA workflow path works, but RC-01..RC-08 did not execute to a verdict because the validator crashed:
+
+```text
+TypeError: check() missing 1 required positional argument: 'ok'
+```
+
+Consequences:
+
+- RC-01..RC-08 = NOT VERIFIED
+- pytest/regression = skipped
+- artifact digest = unavailable
+- Audit Evidence Chain = NOT_GREEN
+- RESUME_ALLOWED = NO
+
+The failure is now repaired on `p0/opro-baseline`, and the CI workflow was strengthened to capture execution identity and raw resume/pytest evidence and to fail closed on regression failures.
 
 ## Immediate next-session workflow
 
-### Phase A — Continuity remediation
+### Phase A — Verify remediation on current HEAD
 
-1. Read canonical state and handoff.
-2. Confirm state/handoff checkpoint identity and ancestry.
-3. Confirm actual branch/ref and HEAD through primary Git evidence.
-4. Locate the current push-triggered GitHub Actions run for the current branch.
-5. Capture:
-   - run ID;
-   - workflow name;
-   - event;
-   - branch/ref;
-   - commit SHA;
-   - RC-01..RC-08 results;
-   - overall resume result;
-   - pytest result;
-   - machine evidence artifact ID/name;
-   - failure/inconclusive details.
-6. Verify the evidence belongs to the same commit/ref being resumed.
-7. Only if all RC-01..RC-08 are PASS and evidence is primary/executable: set `RESUME_ALLOWED`.
+1. Read canonical state, handoff, continuity contract, and audit evidence contract.
+2. Confirm branch is `p0/opro-baseline` and current HEAD is a descendant of checkpoint `16972e2f...`.
+3. Confirm audited baseline remains exactly `20a54b92...`.
+4. Identify the newest `Factory Kernel Regression` run whose head SHA exactly equals the current `p0/opro-baseline` HEAD.
+5. Capture run ID, event, ref, head SHA, run attempt, job IDs, step conclusions, and raw logs.
+6. Verify RC-01..RC-08 are all PASS and `RESUME_STATUS=RESUME_ALLOWED`.
+7. Verify Factory Demo, Deterministic Harness, OPRO Baseline E2E, and pytest results.
+8. Download `factory-kernel-machine-evidence` when present.
+9. Verify GitHub-reported artifact digest against an independently recomputed digest.
+10. Bind the evidence package to the exact current SHA and record the verdict.
+11. Only if all evidence gates are GREEN, set `RESUME_ALLOWED` and proceed to M1-B.
 
 ### Phase B — M1-B source decision
 
@@ -87,17 +101,26 @@ Only after `RESUME_ALLOWED`:
 8. Emit machine-verifiable evidence.
 9. Run M1-B gate and classify `GREEN` / `NOT_GREEN` / `INCONCLUSIVE`.
 
+## Workflow hardening rules promoted this session
+
+- A current-SHA execution run is mandatory; historical runs for other SHAs cannot satisfy the gate.
+- Evidence-only PRs may be used to execute an immutable target SHA, but MUST NOT be merged.
+- For pull-request workflows, `github.sha` may be a synthetic merge SHA; capture `github.event.pull_request.head.sha` separately and bind evidence to the intended target.
+- Validator runtime errors are regression failures, never PASS or INCONCLUSIVE evidence of success.
+- CI artifacts MUST include execution identity and raw resume output even when the resume gate fails.
+- Regression steps that contribute to GREEN MUST NOT use `continue-on-error`.
+- Artifact digest verification is a separate evidence check from workflow success.
+- `AUDIT_EVIDENCE_CHAIN=GREEN` and `RESUME_ALLOWED` remain separate gates.
+
 ## OPRO/GEPA methodological guardrails
 
 Do NOT implement GEPA or promote OPRO in this phase. Use their methodological lessons only:
 
-- OPRO: optimize verified useful progress subject to hard governance constraints.
+- OPRO: maximize verified useful progress subject to hard governance constraints.
 - GEPA: diagnose failure, preserve the case as a regression seed, propose a targeted improvement, and promote only after evidence.
 - Never optimize an aggregate score across a hard-gate failure.
 - Keep workflow alternatives explicit when multiple designs are viable.
 - Prefer small, reversible governance changes with deterministic witnesses.
-
-Reference: `docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md`.
 
 ## CHECKPOINT trigger
 
@@ -118,9 +141,7 @@ Checkpoint sequence:
 
 At session end:
 
-`Execute → Capture → Verify → Classify → CER CHECK → Update State/Handoff → Git Commit`
-
-The closure must record lessons, distinguish permanent rules from task-level guidance, and preserve unresolved issues as explicit next actions.
+`Lessons Learned → Permanent Rule → Task Guidance → Automation Candidate → Current State → Next Action → Evidence references → CER CHECK → Git Commit`
 
 ## Absolute constraints
 
@@ -134,19 +155,11 @@ The closure must record lessons, distinguish permanent rules from task-level gui
 - Optimization forbidden before M1-B GREEN.
 - Monte Carlo forbidden before M1-B GREEN.
 
-## Context minimization
-
-Use progressive disclosure:
-
-`state → resume checks → relevant handoff → relevant evidence → targeted Git history`
-
-Do not replay the entire prior conversation.
-
 ## Definition of success for next session
 
 The session succeeds only if it produces either:
 
-1. `RESUME_ALLOWED` backed by primary CI/Git evidence and then advances M1-B; or
+1. `RESUME_ALLOWED` backed by current-SHA primary CI/Git evidence and then advances M1-B; or
 2. a precise, machine-verifiable remediation package explaining why resume remains blocked.
 
-Never convert an unavailable or stale execution result into PASS merely to maintain workflow momentum.
+Never convert an unavailable, stale, merge-SHA-only, or runtime-error execution result into PASS merely to maintain workflow momentum.
