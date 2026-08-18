@@ -165,8 +165,8 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     context_ok = (
         contract_path.exists()
         and schema_path.exists()
-        and "schema_version: 1.0.0" in schema_text
-        and "CER Session Continuity" in contract_text
+        and "schema_version: 1.1.0" in schema_text
+        and "CER Resume Contract" in contract_text
         and "RC-08" in contract_text
     )
 
