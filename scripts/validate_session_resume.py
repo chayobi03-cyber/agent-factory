@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 from dataclasses import dataclass
@@ -14,10 +15,6 @@ import yaml
 
 REPO = "chayobi03-cyber/agent-factory"
 FORWARD_BLOCK_GATES = {"NOT_GREEN", "BLOCKED", "HOLD", "INCONCLUSIVE"}
-CONTEXT_FILES = (
-    "docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md",
-    "schemas/session_state.schema.yaml",
-)
 
 
 @dataclass(frozen=True)
@@ -38,6 +35,17 @@ def run_git(*args: str) -> str:
     if result.returncode != 0:
         raise ResumeError(result.stderr.strip() or f"git {' '.join(args)} failed")
     return result.stdout.strip()
+
+
+def resolve_branch() -> tuple[str, str]:
+    """Return branch plus source; CI refs are required for detached checkouts."""
+    branch = run_git("branch", "--show-current")
+    if branch:
+        return branch, "git.branch"
+    ci_branch = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME")
+    if ci_branch:
+        return ci_branch, "github.ref"
+    raise ResumeError("unable to resolve current branch from Git or GitHub Actions environment")
 
 
 def load_state(path: Path) -> dict[str, Any]:
@@ -91,13 +99,11 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     if missing:
         raise ResumeError(f"missing required fields: {', '.join(missing)}")
 
-    actual_branch = run_git("branch", "--show-current")
+    actual_branch, branch_source = resolve_branch()
     actual_head = run_git("rev-parse", "HEAD")
     remote = run_git("config", "--get", "remote.origin.url")
 
     branch_ok = actual_branch == state["working_branch"]
-    if not branch_ok:
-        return [check("RC-01", actual_branch, str(state["working_branch"]), "git.branch", False)]
 
     checkpoint = state["checkpoint"]
     checkpoint_sha = str(checkpoint.get("checkpoint_sha", ""))
@@ -166,7 +172,7 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     )
 
     return [
-        check("RC-01", actual_branch, str(state["working_branch"]), "state.working_branch + git.branch", branch_ok),
+        check("RC-01", actual_branch, str(state["working_branch"]), f"state.working_branch + {branch_source}", branch_ok),
         check("RC-02", actual_head, f"{checkpoint_mode}:{checkpoint_sha}", "state.checkpoint + git.HEAD", head_ok),
         check("RC-03", str(state["audited_baseline_sha"]), str(handoff.get("baseline")), "state.audited_baseline_sha + handoff", baseline_ok),
         check("RC-04", str(handoff_path), f"{state['repository']}@{state['working_branch']}", "state.handoff + handoff identity", handoff_state_ok),
