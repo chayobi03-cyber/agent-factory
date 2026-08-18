@@ -66,11 +66,12 @@ def read_required(path: Path) -> str:
 
 
 def parse_handoff(text: str) -> dict[str, str]:
+    """Parse identity fields from the handoff with whitespace/markdown tolerance."""
     values: dict[str, str] = {}
     patterns = {
-        "repository": r"- repository:\s*`([^`]+)`",
-        "branch": r"- branch:\s*`([^`]+)`",
-        "baseline": r"- audited OPRO baseline SHA:\s*`([0-9a-f]{40})`",
+        "repository": r"\brepository:\s*`([^`]+)`",
+        "branch": r"\bbranch:\s*`([^`]+)`",
+        "baseline": r"\baudited\s+(?:OPRO\s+)?baseline\s+SHA\s*:\s*`([0-9a-f]{40})`",
     }
     for key, pattern in patterns.items():
         match = re.search(pattern, text, flags=re.IGNORECASE)
@@ -167,28 +168,19 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     handoff_baseline_ok = handoff.get("baseline") == state["audited_baseline_sha"]
 
     forbidden = {str(item) for item in state.get("forbidden", [])}
-    protected_forbidden = {
-        "OPRO_promotion",
-        "RE_domain_implementation",
-        "GEPA_implementation",
-        "audited_baseline_redefinition",
-        "PASS_without_primary_execution_evidence",
-    }
     gate_constraints_ok = (
         state["gate"] not in FORWARD_BLOCK_GATES
-        or protected_forbidden.intersection(forbidden) >= {
-            "OPRO_promotion",
-            "RE_domain_implementation",
-        }
+        or {"OPRO_promotion", "RE_domain_implementation"}.issubset(forbidden)
     )
+    handoff_normalized = re.sub(r"\s+", " ", handoff_text.lower())
     handoff_constraints_ok = all(
-        phrase in handoff_text
+        phrase in handoff_normalized
         for phrase in (
-            "GEPA implementation forbidden.",
-            "RE Domain implementation forbidden.",
-            "OPRO promotion forbidden.",
-            "Audited baseline SHA must not change.",
-            "PASS without primary execution evidence forbidden.",
+            "gepa implementation forbidden",
+            "opro promotion forbidden",
+            "re domain implementation forbidden",
+            "audited opro baseline sha must not change",
+            "pass without primary execution evidence forbidden",
         )
     )
     forbidden_ok = gate_constraints_ok and handoff_constraints_ok
