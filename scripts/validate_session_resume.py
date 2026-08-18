@@ -166,25 +166,39 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     )
     handoff_baseline_ok = handoff.get("baseline") == state["audited_baseline_sha"]
 
-    required_constraints_present = all(
+    forbidden = {str(item) for item in state.get("forbidden", [])}
+    protected_forbidden = {
+        "OPRO_promotion",
+        "RE_domain_implementation",
+        "GEPA_implementation",
+        "audited_baseline_redefinition",
+        "PASS_without_primary_execution_evidence",
+    }
+    gate_constraints_ok = (
+        state["gate"] not in FORWARD_BLOCK_GATES
+        or protected_forbidden.intersection(forbidden) >= {
+            "OPRO_promotion",
+            "RE_domain_implementation",
+        }
+    )
+    handoff_constraints_ok = all(
         phrase in handoff_text
         for phrase in (
-            "promotion remains forbidden",
-            "Do not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.",
+            "GEPA implementation forbidden.",
+            "RE Domain implementation forbidden.",
+            "OPRO promotion forbidden.",
+            "Audited baseline SHA must not change.",
+            "PASS without primary execution evidence forbidden.",
         )
     )
-    forbidden = {str(item) for item in state.get("forbidden", [])}
-    forbidden_ok = (
-        state["gate"] not in FORWARD_BLOCK_GATES
-        or ("OPRO_promotion" in forbidden and "RE_domain_implementation" in forbidden)
-    ) and required_constraints_present
+    forbidden_ok = gate_constraints_ok and handoff_constraints_ok
 
     context_ok = (
         contract_path.exists()
         and schema_path.exists()
         and target_contract_path.exists()
         and "schema_version: 1.1.0" in schema_text
-        and "CER Resume Contract" in contract_text
+        and ("CER Session Continuity Contract" in contract_text or "CER Resume Contract" in contract_text)
         and "RC-08" in contract_text
         and "execution_sha == target_sha" in target_contract_text
     )
