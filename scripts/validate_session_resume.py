@@ -177,8 +177,8 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
         check("RC-04", str(handoff_path), f"{state['repository']}@{state['working_branch']}", "state.handoff + handoff identity", handoff_state_ok),
         check("RC-05", remote, f"{REPO}@{actual_branch}", "git.remote + handoff", handoff_git_ok),
         check("RC-06", str(handoff.get("baseline")), str(state["audited_baseline_sha"]), "handoff.baseline + state", handoff_baseline_ok),
-        check("RC-07", str(state["gate"]), "gate/forbidden/handoff constraints consistent", forbidden_ok),
-        check("RC-08", f"{contract_path};{schema_path}", "required context exists and is compatible", context_ok, review=True),
+        check("RC-07", str(state["gate"]), "gate/forbidden/handoff constraints consistent", "state.gate + forbidden + handoff", forbidden_ok),
+        check("RC-08", f"{contract_path};{schema_path}", "required context exists and is compatible", "resume contract + schema", context_ok, review=True),
     ]
 
 
