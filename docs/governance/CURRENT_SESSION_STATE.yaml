@@ -16,12 +16,14 @@ last_completed:
   - rc01_rc08_regression
   - ci_resume_gate_integration
   - session_lessons_and_rule_promotion
+  - opro_gepa_lesson_promotion
 current_focus:
-  - ci_execution_verification
+  - continuity_evidence_remediation
   - financial_source_selection
   - m1b_historical_ingest
 next_action:
-  - verify_rc01_rc08_ci_result
+  - reconcile_state_handoff_checkpoint
+  - verify_current_branch_ci_rc01_rc08
   - finalize_minimum_financial_source_stack
   - ingest_five_real_historical_series
 blocked_until:
@@ -39,7 +41,8 @@ forbidden:
   - monte_carlo_before_M1B_GREEN
 handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
-resume_status: UNVERIFIED
+lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
+resume_status: RESUME_BLOCKED
 resume_checks:
   - RC-01_state_vs_git_branch
   - RC-02_state_vs_git_head_checkpoint
@@ -51,5 +54,5 @@ resume_checks:
   - RC-08_required_context
 checkpoint:
   mode: descendant
-  checkpoint_sha: 99aca6618c515ba350c4cbd8b5457609b663ae41
-updated_at_utc: 2026-08-18T18:20:00+09:00
+  checkpoint_sha: 84c3933fd1057639a95db28ee048025087d2bc1e
+updated_at_utc: 2026-08-18T19:00:00+09:00
