@@ -1,4 +1,4 @@
-state_version: 3
+state_version: 4
 session_id: 2026-08-19-m1b-entry
 phase: M1-B
 gate: M1-B_ACTIVE
@@ -20,19 +20,20 @@ last_completed:
   - audit_evidence_chain_closeout
   - m1b_source_contract_v1
   - financial_provenance_schema_v1
+  - m1b_minimum_source_stack_v1
 current_focus:
-  - minimum_sufficient_financial_source_stack
   - five_historical_series_ingest
   - provenance
   - point_in_time_correctness
   - replayability
   - cross_source_reconciliation
 next_action:
-  - select_minimum_sufficient_source_stack
-  - select_five_real_historical_series
   - implement_first_ingestion_path
-  - generate_raw_snapshot_and_provenance_records
-  - add_pit_replay_reconciliation_regression
+  - capture_raw_snapshot_and_payload_hash
+  - generate_provenance_records
+  - validate_pit_cutoff
+  - add_replay_regression
+  - add_cross_source_reconciliation
 blocked_until: []
 forbidden:
   - GEPA_implementation
@@ -76,8 +77,9 @@ last_evidence:
   pytest: 44_of_44
 checkpoint:
   mode: descendant
-  checkpoint_sha: 9367ad909ea981ab2a10e7d7ff80c8c75b1d8d49
+  checkpoint_sha: fbab26e3b216601fbacbaf7d644d1e156cbe853d
 evidence_manifest: docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml
 m1b_source_contract: docs/governance/M1B_SOURCE_CONTRACT_V1.md
+m1b_minimum_source_stack: docs/governance/M1B_MINIMUM_SOURCE_STACK_V1.md
 financial_provenance_schema: schemas/financial_provenance.schema.yaml
-updated_at_utc: 2026-08-19T01:06:00+09:00
+updated_at_utc: 2026-08-19T01:08:00+09:00
