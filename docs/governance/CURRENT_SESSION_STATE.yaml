@@ -23,6 +23,7 @@ last_completed:
   - audit_evidence_chain_ci_contract
   - resume_validator_rc07_repair
   - ci_machine_evidence_capture_hardening
+  - current_sha_evidence_lessons_promoted
 current_focus:
   - continuity_evidence_remediation
   - financial_source_selection
@@ -75,4 +76,4 @@ last_evidence:
 checkpoint:
   mode: descendant
   checkpoint_sha: 16972e2fa29496731319f088907170d93961ae48
-updated_at_utc: 2026-08-18T19:20:00+09:00
+updated_at_utc: 2026-08-18T19:25:00+09:00
