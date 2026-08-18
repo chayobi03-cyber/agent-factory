@@ -2,109 +2,160 @@
 
 ## Objective
 
-Resume governed work without relying on prior chat history as canonical state, verify RC-01..RC-08 through CI, then continue the financial-information M1-B gate.
+Resume governed work without relying on prior chat history as canonical state. First repair and verify continuity identity/evidence, then continue the financial-information M1-B gate.
 
 ## Canonical state
 
-Read first:
+Read first, in order:
 
-- `docs/governance/CURRENT_SESSION_STATE.yaml`
-- `docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md`
-- `schemas/session_state.schema.yaml`
-- `docs/governance/CER_SESSION_CLOSURE_2026-08-18_SESSION_CONTINUITY.md`
+1. `docs/governance/CURRENT_SESSION_STATE.yaml`
+2. `docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md`
+3. `schemas/session_state.schema.yaml`
+4. `docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md`
+5. `docs/governance/CER_SESSION_CLOSURE_2026-08-18_SESSION_CONTINUITY.md` only if needed
+6. `docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md` when performing lesson-based workflow improvement
 
 ## Repository
 
 - repository: `chayobi03-cyber/agent-factory`
 - branch: `p0/opro-baseline`
 - audited OPRO baseline SHA: `20a54b92aad0857f75c6200d984b13098c6f4927`
-- latest durable checkpoint anchor: `157c71ac8eec5ed0bb2c034362823a55a1eadf58`
+- current durable state checkpoint after this closure: `84c3933fd1057639a95db28ee048025087d2bc1e`
 
 ## Resume Contract
 
-A new session MUST NOT execute `next_action` until the three-way consistency check passes:
+A new session MUST NOT execute `next_action` until RC-01..RC-08 are verified.
 
 ```text
-CURRENT_SESSION_STATE
-        ↕
-Git branch / HEAD / checkpoint ancestry
-        ↕
-Audited baseline / active handoff
+state → Git identity/ancestry → handoff → audited baseline → gate/constraints → required context/evidence
 ```
 
-Minimum checks:
+### Mandatory resume checks
 
-1. state `working_branch` == actual Git branch;
-2. actual HEAD satisfies the checkpoint relation recorded by state;
-3. state `audited_baseline_sha` == active audited baseline;
-4. referenced handoff exists and agrees with state;
+1. state `working_branch` == actual Git branch/ref;
+2. actual HEAD satisfies state checkpoint ancestry/relation;
+3. state audited baseline == immutable audited baseline;
+4. state checkpoint and handoff checkpoint are consistent;
 5. handoff repository/branch agree with Git;
-6. handoff audited baseline agrees with the audited baseline;
-7. state gate and forbidden actions agree with handoff;
-8. required CER/evidence/schema artifacts exist and are version-compatible.
+6. handoff audited baseline agrees with immutable baseline;
+7. gate and forbidden actions are consistent;
+8. required CER/schema/evidence context exists and is version-compatible.
 
-Any contradiction yields `RESUME_REVIEW_REQUIRED` or `RESUME_BLOCKED`. Never infer a new audited baseline from HEAD.
+Any identity contradiction is `RESUME_BLOCKED`. Missing runtime evidence or environment ambiguity is `INCONCLUSIVE`, not PASS.
 
-## Current disposition
+## Immediate next-session workflow
 
-Session Continuity contract, session-state schema v1.1, RC-01..RC-08 validator, regression fixtures, and CI integration are committed. Actual CI execution result for the current continuity changes remains to be verified. The Audit Evidence Chain is not GREEN.
+### Phase A — Continuity remediation
 
-## Next actions
+1. Read canonical state and handoff.
+2. Resolve the stale handoff checkpoint discrepancy.
+3. Confirm actual branch/ref and HEAD through primary Git evidence.
+4. Locate the current push-triggered GitHub Actions run for the current branch.
+5. Capture:
+   - run ID;
+   - workflow name;
+   - event;
+   - branch/ref;
+   - commit SHA;
+   - RC-01..RC-08 results;
+   - overall resume result;
+   - pytest result;
+   - machine evidence artifact ID/name;
+   - failure/inconclusive details.
+6. Verify the evidence belongs to the same commit/ref being resumed.
+7. Only if all RC-01..RC-08 are PASS and evidence is primary/executable: set `RESUME_ALLOWED`.
 
-1. Run/inspect GitHub Actions for the latest continuity checkpoint and capture raw machine evidence.
-2. Verify RC-01..RC-08 are all PASS in the CI environment.
-3. If continuity regression is GREEN, finalize the minimum financial source stack using the evaluation axes:
+### Phase B — M1-B source decision
+
+Only after `RESUME_ALLOWED`:
+
+1. Discover a bounded candidate set of financial data sources.
+2. Score candidates on:
    - authority;
    - historical depth;
-   - corporate action;
-   - PIT;
+   - corporate actions;
+   - PIT capability;
    - API stability;
    - licensing;
    - reproducibility;
    - cost;
    - operational burden.
-4. Select five real historical series.
-5. Ingest raw data with provenance and hashes.
-6. Perform cross-source reconciliation.
-7. Build PIT evidence and machine-verifiable evidence.
-8. Determine M1-B GREEN / NOT GREEN.
-9. Do not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.
+3. Apply hard gates first; optimize only among hard-gate-valid candidates.
+4. Select the minimum sufficient source stack; avoid unnecessary provider proliferation.
+5. Record rationale and rejected alternatives.
 
-## Promoted governance rules from this session
+### Phase C — M1-B evidence build
 
-- `RESUME_ALLOWED` is a prerequisite to executing governed `next_action`.
-- RC-01..RC-08 must remain machine-verifiable and regression-covered.
-- Contract/schema/validator/regression changes must remain version-aligned.
-- Missing, stale, conflicting, or unverifiable evidence cannot produce PASS/GREEN.
-- Tool/environment limitations are classified as INCONCLUSIVE, not PASS.
-- Context loading uses progressive disclosure rather than full prior-chat replay.
+1. Select five real historical series.
+2. Preserve raw responses/data.
+3. Record source, endpoint/query, retrieval time, parameters, version/identifier, and provenance.
+4. Compute content hashes.
+5. Re-ingest/replay where practical to test reproducibility.
+6. Cross-source reconcile with explicit tolerances and discrepancy classification.
+7. Establish PIT evidence and identify any survivorship/look-ahead risks.
+8. Emit machine-verifiable evidence.
+9. Run M1-B gate and classify `GREEN` / `NOT_GREEN` / `INCONCLUSIVE`.
 
-## Operating triggers
+## OPRO/GEPA methodological guardrails
 
-### CER START
+Do NOT implement GEPA or promote OPRO in this phase. Use their methodological lessons only:
 
-Resolve actual Git branch/HEAD, load state, validate RC-01..RC-08, load only required context, then execute `next_action` only when `RESUME_ALLOWED`.
+- OPRO principle: optimize verified useful progress subject to hard governance constraints.
+- GEPA principle: diagnose failure, preserve the case as a regression seed, propose a targeted improvement, and promote only after evidence.
+- Never optimize an aggregate score across a hard-gate failure.
+- Keep workflow alternatives explicit when multiple designs are viable.
+- Prefer small, reversible governance changes with deterministic witnesses.
 
-### CHECKPOINT
+Reference: `docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md`.
 
-Persist state and required evidence references, inspect the diff, and commit the durable checkpoint.
+## CHECKPOINT trigger
 
-### CLOSE
+Checkpoint immediately after any of these:
 
-Run the governed closure workflow, update state and handoff, and commit the final session checkpoint.
+- state/handoff identity is repaired;
+- CI evidence is captured;
+- a gate changes status;
+- source-stack decision is made;
+- an evidence schema/provenance contract changes;
+- a material regression case is added.
 
-## Evidence rule
+Checkpoint sequence:
 
-Session state is a continuation pointer, not execution evidence. PASS/GREEN claims still require machine-generated evidence and independent verification under the active Audit Evidence Chain policy.
+`Execute → Capture → Verify → Classify → CER CHECK → Update State/Handoff → Git Commit`
 
-## Context minimization rule
+## CLOSE trigger
 
-Do not reload the full prior conversation. Use:
+At session end:
 
-`state → resume checks → relevant handoff → relevant evidence → Git history only as required`
+`Execute → Capture → Verify → Classify → CER CHECK → Update State/Handoff → Git Commit`
 
-If resume checks fail, expand context only enough to resolve the inconsistency; do not fall back to replaying the whole prior session by default.
+The closure must record lessons, distinguish permanent rules from task-level guidance, and preserve unresolved issues as explicit next actions.
 
-## Current governance constraint
+## Absolute constraints
 
-Audit Evidence Chain remediation remains upstream of OPRO baseline freeze/promotion. Until the evidence gate is GREEN, promotion remains forbidden.
+- GEPA implementation forbidden.
+- RE Domain implementation forbidden.
+- OPRO promotion forbidden.
+- Audited baseline SHA must not change.
+- PASS without primary execution evidence forbidden.
+- Backtest forbidden before M1-B GREEN.
+- OOS forbidden before M1-B GREEN.
+- Optimization forbidden before M1-B GREEN.
+- Monte Carlo forbidden before M1-B GREEN.
+
+## Context minimization
+
+Use progressive disclosure:
+
+`state → resume checks → relevant handoff → relevant evidence → targeted Git history`
+
+Do not replay the entire prior conversation.
+
+## Definition of success for next session
+
+The session succeeds only if it produces either:
+
+1. `RESUME_ALLOWED` backed by primary CI/Git evidence and then advances M1-B; or
+2. a precise, machine-verifiable remediation package explaining why resume remains blocked.
+
+Never convert an unavailable or stale execution result into PASS merely to maintain workflow momentum.
