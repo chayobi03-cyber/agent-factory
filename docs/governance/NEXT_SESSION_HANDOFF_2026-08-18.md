@@ -2,7 +2,7 @@
 
 ## Objective
 
-Continue the CER Session Continuity P0 implementation without relying on prior chat history as canonical state.
+Resume governed work without relying on prior chat history as canonical state, verify RC-01..RC-08 through CI, then continue the financial-information M1-B gate.
 
 ## Canonical state
 
@@ -11,13 +11,14 @@ Read first:
 - `docs/governance/CURRENT_SESSION_STATE.yaml`
 - `docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md`
 - `schemas/session_state.schema.yaml`
+- `docs/governance/CER_SESSION_CLOSURE_2026-08-18_SESSION_CONTINUITY.md`
 
 ## Repository
 
 - repository: `chayobi03-cyber/agent-factory`
 - branch: `p0/opro-baseline`
 - audited OPRO baseline SHA: `20a54b92aad0857f75c6200d984b13098c6f4927`
-- latest durable checkpoint anchor: `b6614241aff7bbcd38de3acbd5d555abe768f766`
+- latest durable checkpoint anchor: `157c71ac8eec5ed0bb2c034362823a55a1eadf58`
 
 ## Resume Contract
 
@@ -46,37 +47,43 @@ Any contradiction yields `RESUME_REVIEW_REQUIRED` or `RESUME_BLOCKED`. Never inf
 
 ## Current disposition
 
-Session Continuity governance contract and machine-readable state schema are committed. The active work is still provisional because the Audit Evidence Chain is not GREEN.
+Session Continuity contract, session-state schema v1.1, RC-01..RC-08 validator, regression fixtures, and CI integration are committed. Actual CI execution result for the current continuity changes remains to be verified. The Audit Evidence Chain is not GREEN.
 
 ## Next actions
 
-1. Implement checkpoint/resume validation automation.
-2. Validate `CURRENT_SESSION_STATE.yaml` against `schemas/session_state.schema.yaml`.
-3. Add regression coverage for:
-   - valid resume;
-   - branch mismatch;
-   - HEAD/checkpoint divergence;
-   - audited baseline mismatch;
-   - handoff mismatch or missing handoff;
-   - forbidden action;
-   - missing mandatory evidence/context;
-   - stale/conflicting context.
-4. Emit machine-readable RC-01..RC-08 results.
-5. Keep resume fail-closed: mismatches resolve to `REVIEW_REQUIRED` or `BLOCKED`.
-6. After continuity controls are GREEN enough to pass their own gate, return to the financial-information M1-B workflow:
-   - finalize minimum source stack;
-   - ingest five real historical series;
-   - cross-source reconciliation;
-   - PIT evidence;
-   - machine-verifiable evidence;
-   - M1-B GREEN decision.
-7. Do not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.
+1. Run/inspect GitHub Actions for the latest continuity checkpoint and capture raw machine evidence.
+2. Verify RC-01..RC-08 are all PASS in the CI environment.
+3. If continuity regression is GREEN, finalize the minimum financial source stack using the evaluation axes:
+   - authority;
+   - historical depth;
+   - corporate action;
+   - PIT;
+   - API stability;
+   - licensing;
+   - reproducibility;
+   - cost;
+   - operational burden.
+4. Select five real historical series.
+5. Ingest raw data with provenance and hashes.
+6. Perform cross-source reconciliation.
+7. Build PIT evidence and machine-verifiable evidence.
+8. Determine M1-B GREEN / NOT GREEN.
+9. Do not enter backtest/OOS/optimization/Monte Carlo before M1-B GREEN.
+
+## Promoted governance rules from this session
+
+- `RESUME_ALLOWED` is a prerequisite to executing governed `next_action`.
+- RC-01..RC-08 must remain machine-verifiable and regression-covered.
+- Contract/schema/validator/regression changes must remain version-aligned.
+- Missing, stale, conflicting, or unverifiable evidence cannot produce PASS/GREEN.
+- Tool/environment limitations are classified as INCONCLUSIVE, not PASS.
+- Context loading uses progressive disclosure rather than full prior-chat replay.
 
 ## Operating triggers
 
 ### CER START
 
-Resolve actual Git branch/HEAD, load state, validate the three-way resume consistency, load only required context, then execute `next_action`.
+Resolve actual Git branch/HEAD, load state, validate RC-01..RC-08, load only required context, then execute `next_action` only when `RESUME_ALLOWED`.
 
 ### CHECKPOINT
 
@@ -84,7 +91,7 @@ Persist state and required evidence references, inspect the diff, and commit the
 
 ### CLOSE
 
-Run the governed closure path, update state and handoff, and commit the final session checkpoint.
+Run the governed closure workflow, update state and handoff, and commit the final session checkpoint.
 
 ## Evidence rule
 
