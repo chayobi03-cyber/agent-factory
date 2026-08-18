@@ -10,7 +10,7 @@ jobs:
   kernel-regression:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: ${{ github.workspace }}/src
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
       CER_TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       CER_EXECUTION_IDENTITY_REQUIRED: "1"
     defaults:
