@@ -16,8 +16,21 @@ def main() -> int:
     args = parser.parse_args()
 
     results = run_matrix(Path(args.fixtures))
-    passed = all(item["verification"]["supported"] and item["cer_decision"] in {"PASS", "REVIEW"} for item in results)
-    output = {"fixture_only": True, "domain_count": len(results), "passed": passed, "domains": results}
+    passed = all(
+        item["verification"]["supported"]
+        and item["evaluation"]["passed"]
+        and item["cer_decision"] == "PASS"
+        and item["workflow_executed"]
+        and item["report_rendered"]
+        for item in results
+    )
+    output = {
+        "fixture_only": True,
+        "domain_count": len(results),
+        "passed": passed,
+        "lifecycle": "ingest>parse>normalize>retrieve>verify>evaluate>cer_gate>execute>report>trace",
+        "domains": results,
+    }
     print(json.dumps(output, indent=2, sort_keys=True)) if args.json else print(output)
     return 0 if passed else 1
 
