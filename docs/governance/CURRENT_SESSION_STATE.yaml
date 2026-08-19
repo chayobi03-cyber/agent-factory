@@ -84,6 +84,9 @@ m1b_fixture: fixtures/m1b/historical_series_2020-01.json
 m1b_fixture_raw_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
 pit_availability: PARTIALLY_VERIFIED
 cross_source_reconciliation: PARTIALLY_VERIFIED
+checkpoint:
+  mode: descendant
+  checkpoint_sha: 48e5f393577bbc2599a1239aa0d16ac783b413e1
 open_validation:
   pr: 11
   branch: p1/domain-matrix-workflow-v0.1
