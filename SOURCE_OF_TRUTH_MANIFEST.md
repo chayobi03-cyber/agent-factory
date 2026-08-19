@@ -1,22 +1,20 @@
 # Agent Factory — Source of Truth Manifest
 
-This manifest defines the current canonical Source of Truth for the Agent Factory repository and separates the live Git baseline from historical design-package archives.
+This manifest defines the current canonical Source of Truth for the Agent Factory repository and separates the live Git baseline from historical design-package and experiment artifacts.
 
 ## 1. Canonical Source of Truth
 
 - Repository: `chayobi03-cyber/agent-factory`
-- Branch: `main`
-- Canonical implementation structure is the live Git repository tree.
-- Current repository content overrides historical archive/package paths unless an explicit versioned migration decision states otherwise.
+- Canonical implementation is the live Git repository tree.
+- The active engineering roadmap is governed by `docs/governance/AGENT_FACTORY_SCOPE_V1.md` and `docs/ROADMAP_WBS.md`.
+- Historical ZIP/design-package paths and isolated experiment branches do not override the live baseline.
 
-## 2. Historical Design Package
+## 2. Product Scope Authority
 
-The following archive is retained as a historical snapshot / handover artifact:
-
-- Archive: `Agent-Factory-v0.1-MDD-Design.zip`
-- SHA-256: `56a1d0592e2e48a70b4544610d003798fd0dc90effb0ac7280d85599cdab5a78`
-
-The numbered package paths below describe the historical package layout only. They are not current repository paths and must not be treated as a second live Source of Truth.
+- `docs/governance/AGENT_FACTORY_SCOPE_V1.md` — mission, Kernel/Domain Pack boundary, provenance boundary, non-goals
+- `docs/governance/ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md` — current architecture refocus
+- `README.md` — repository orientation
+- `docs/ROADMAP_WBS.md` — implementation roadmap and dependencies
 
 ## 3. Current Canonical Repository Structure
 
@@ -32,72 +30,50 @@ The numbered package paths below describe the historical package layout only. Th
 
 ## 4. Governance / CER Canonical Artifacts
 
-- `docs/governance/CER_CONTEXT_CONTRACT.md` — CER definition, policy/context model, snapshot and handoff principles
-- `docs/governance/CER_ARCHITECTURE_CONTRACT_V1.md` — canonical CER architecture contract v1.0
-- `docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md` — session continuity, checkpoint, resume, handoff, and closure control
-- `docs/governance/CURRENT_SESSION_STATE.yaml` — machine-readable session continuation pointer
-- `docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md` — current human-readable session handoff
-- `docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md` — OPRO/GEPA methodological lessons and promoted workflow rules
-- `docs/governance/OPTIMIZATION_METHOD_CONTROL_V1.md` — method-independent optimization governance and adapter boundary
-- `docs/governance/CER_SESSION_CLOSURE_2026-08-18_OPTIMIZATION_LESSONS.md` — session closure, lessons, and next-session optimization workflow
-- `schemas/session_state.schema.yaml` — session state schema and resume invariants
-- `scripts/validate_session_state.py` — executable resume consistency validator
-- `templates/agent/AGENT_FACTORY_CONTEXT_PACKET.yaml` — external-agent context packet template
-- `11_Audit/EXTERNAL_LLM_AUDIT_PROMPT.md` — independent audit prompt
-- `11_Audit/AUDIT_RESULT_2026-08-14.md` — recorded external audit result
+- `docs/governance/CER_CONTEXT_CONTRACT.md`
+- `docs/governance/CER_ARCHITECTURE_CONTRACT_V1.md`
+- `docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md`
+- `docs/governance/CURRENT_SESSION_STATE.yaml`
+- `docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md`
+- `docs/governance/OPTIMIZATION_METHOD_CONTROL_V1.md`
+- `schemas/session_state.schema.yaml`
+- `scripts/validate_session_state.py`
+- `templates/agent/AGENT_FACTORY_CONTEXT_PACKET.yaml`
+- `11_Audit/EXTERNAL_LLM_AUDIT_PROMPT.md`
+- `11_Audit/AUDIT_RESULT_2026-08-14.md`
 
-## 5. Current-to-Historical Mapping
+## 5. Evidence Baseline
 
-Historical package structure is mapped conceptually to the current repository as follows:
+The latest verified primary Factory Kernel execution remains:
 
-| Historical package | Current canonical location |
-|---|---|
-| `00_MDD/` | `docs/` |
-| `01_Architecture/` | `docs/` + `src/` + governance docs |
-| `02_Schemas/` | `schemas/` |
-| `03_Workflows/` | `workflows/` |
-| `04_Benchmark/` | `templates/` + future benchmark implementation artifacts |
-| `05_Milestone_WBS/` | `docs/ROADMAP_WBS.md` |
-| `06_RE_PoC/` | `docs/RE_POC.md` |
-| `07_Tech_Survey/` | `docs/TECH_SURVEY.md` |
-| `08_ADR/` | repository governance/design records as migrated |
-| `09_Templates/` | `templates/` |
-| `10_Implementation_Skeleton/` | `src/` + `workflows/` |
-| `11_Audit/` | `11_Audit/`
+- target SHA: `2adbf5304491cde04f02fb997f766b40460ccf60`
+- workflow run: `32126799804`
+- job: `95679046613`
+- artifact: `factory-kernel-machine-evidence`
+- independently verified artifact digest: `sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d`
+- Factory Kernel: `10/10`
+- RC-01..RC-08: PASS
+- OPRO regression: PASS
+- pytest: `44/44`
 
-## 6. Source-of-Truth Resolution Rule
+## 6. Historical Experiment Policy
 
-When two artifacts disagree:
+Domain-specific experiments remain historical unless explicitly promoted through a versioned architecture decision.
+
+The 2026-08-19 financial provenance experiment is intentionally outside the core product path. Its history is retained on a dedicated branch for traceability and must not be treated as a kernel requirement.
+
+## 7. Source-of-Truth Resolution Rule
+
+When artifacts disagree:
 
 1. current run context and frozen CER snapshot have highest runtime priority;
 2. current Git repository is the canonical implementation baseline;
-3. historical archives are evidence of prior design state only;
-4. model memory or unpinned historical text must not override versioned repository artifacts.
+3. current scope and architecture contracts govern roadmap interpretation;
+4. historical archives and experiment branches are evidence of prior state only;
+5. model memory or unpinned historical text must not override versioned repository artifacts.
 
-Any migration from a historical package into the current repository must be recorded as an explicit versioned change.
+Any promotion of an experiment into the core must be recorded as an explicit versioned architecture decision with impact analysis and regression requirements.
 
-For Session Continuity, `CURRENT_SESSION_STATE.yaml` is a continuation pointer and does not supersede the live Git state, CER snapshot, WorkflowRun evidence, or audit decisions. The actual Git branch/HEAD must be resolved from Git at resume time.
+## 8. Optimization Authority
 
-For optimization methods, the current governance contract is method-independent: optimizer-specific adapters may vary, but evaluator, evidence, regression, approval, and promotion controls remain canonical.
-
-## 7. Manifest Status
-
-`MATERIAL_DRIFT` identified during the 2026-08-14 internal/external audit cycle has been resolved by explicitly declaring the live Git repository as canonical and the numbered ZIP package as historical.
-
-## 8. Next Contract Authority
-
-CER implementation must follow:
-
-`docs/governance/CER_ARCHITECTURE_CONTRACT_V1.md`
-
-`docs/governance/CER_CONTEXT_CONTRACT.md`
-
-Session Continuity implementation must additionally follow:
-
-`docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md`
-
-`schemas/session_state.schema.yaml`
-
-Optimization method work must follow:
-
-`docs/governance/OPTIMIZATION_METHOD_CONTROL_V1.md`
+Optimization is method-independent. OPRO, GEPA, or another optimizer may vary internally, but evaluator, evidence, regression, approval, promotion, HOTL, and CER controls remain canonical.
