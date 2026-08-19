@@ -12,7 +12,7 @@ from pathlib import Path
 
 import yaml
 
-from engineering_evidence import bind_manifest, build_envelope, sha256_file, validate_envelope
+from engineering_evidence import bind_manifest, build_envelope, sha256_file, validate_manifest
 
 
 REPO = "chayobi03-cyber/agent-factory"
@@ -34,11 +34,7 @@ def main() -> int:
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    payload = {
-        "fixture_only": True,
-        "fixture_version": fixture["version"],
-        "domains": domains,
-    }
+    payload = {"fixture_only": True, "fixture_version": fixture["version"], "domains": domains}
     payload_path = out_dir / "engineering-domain-payloads.json"
     payload_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     payload_digest = sha256_file(payload_path)
@@ -99,9 +95,8 @@ def main() -> int:
         "digest_verified": sha256_file(payload_path) == payload_digest,
         "download_verified": False,
     }
-    envelopes = []
-    for domain in domains:
-        envelopes.append(build_envelope(
+    envelopes = [
+        build_envelope(
             domain=domain["domain_id"],
             domain_pack_version=domain["domain_pack_version"],
             scenario=domain["scenario"],
@@ -114,15 +109,18 @@ def main() -> int:
             artifact=artifact,
             observed_at=observed_at,
             created_at=observed_at,
-        ))
+        )
+        for domain in domains
+    ]
 
     manifest = bind_manifest(envelopes, execution_identity=execution_identity)
-    manifest["validation"] = {"status": "PASS", "validator_version": "engineering-evidence-v1"}
-    errors = []
-    for envelope in envelopes:
-        errors.extend(validate_envelope(envelope, governed_repository=repository))
+    errors = validate_manifest(manifest, governed_repository=repository)
     if errors:
-        manifest["validation"] = {"status": "FAIL", "validator_version": "engineering-evidence-v1", "errors": errors}
+        manifest["validation"] = {
+            "status": "FAIL",
+            "validator_version": "engineering-evidence-v1",
+            "errors": errors,
+        }
     else:
         manifest["validation"]["checks"] = [
             "target_sha==runtime_sha",

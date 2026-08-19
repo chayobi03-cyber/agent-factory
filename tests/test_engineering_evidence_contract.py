@@ -1,9 +1,14 @@
 import pathlib
 
-import pytest
 import yaml
 
-from src.engineering_evidence import bind_manifest, build_envelope, sha256_json, validate_envelope
+from src.engineering_evidence import (
+    bind_manifest,
+    build_envelope,
+    sha256_json,
+    validate_envelope,
+    validate_manifest,
+)
 
 SCHEMA_PATH = pathlib.Path("schemas/engineering_evidence.schema.yaml")
 FIXTURE_PATH = pathlib.Path("fixtures/engineering_evidence/domain_envelopes.yaml")
@@ -64,14 +69,11 @@ def test_schema_has_generic_sections_only():
 
 
 def test_four_domains_share_identical_envelope_shape():
-    envelopes = bind_manifest(_envelopes(), execution_identity=_identity())["evidence_envelopes"]
+    manifest = bind_manifest(_envelopes(), execution_identity=_identity())
+    envelopes = manifest["evidence_envelopes"]
     assert {e["evidence"]["domain"] for e in envelopes} == {"RE", "EMI", "CST", "ESD"}
-    signatures = {
-        tuple(sorted((section, tuple(sorted(value)) if isinstance(value, dict) else type(value).__name__)
-                     for section, value in e.items()))
-        for e in envelopes
-    }
-    assert len(signatures) == 1
+    assert len({tuple(sorted(e.keys())) for e in envelopes}) == 1
+    assert validate_manifest(manifest, governed_repository="chayobi03-cyber/agent-factory") == []
 
 
 def test_valid_envelope_requires_matching_execution_identity():

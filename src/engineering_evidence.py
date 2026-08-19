@@ -129,6 +129,7 @@ def bind_manifest(envelopes: list[dict[str, Any]], *, execution_identity: dict[s
         "target_sha": execution_identity["target_sha"],
         "runtime_sha": execution_identity["runtime_sha"],
         "manifest_hash": "",
+        "validation": {"status": "PASS", "validator_version": "engineering-evidence-v1"},
         "evidence_envelopes": envelopes,
     }
     manifest_hash = calculate_manifest_hash(manifest)
@@ -138,3 +139,19 @@ def bind_manifest(envelopes: list[dict[str, Any]], *, execution_identity: dict[s
         envelope["manifest"]["manifest_hash"] = manifest_hash
     manifest["manifest_hash"] = manifest_hash
     return manifest
+
+
+def validate_manifest(manifest: dict[str, Any], *, governed_repository: str) -> list[str]:
+    errors: list[str] = []
+    if manifest.get("repository") != governed_repository:
+        errors.append("manifest repository mismatch")
+    if manifest.get("target_sha") != manifest.get("runtime_sha"):
+        errors.append("manifest target_sha/runtime_sha mismatch")
+    expected_hash = calculate_manifest_hash(manifest)
+    if manifest.get("manifest_hash") != expected_hash:
+        errors.append("manifest hash mismatch")
+    for envelope in manifest.get("evidence_envelopes", []):
+        errors.extend(validate_envelope(envelope, governed_repository=governed_repository))
+        if envelope.get("manifest", {}).get("manifest_hash") != manifest.get("manifest_hash"):
+            errors.append(f"manifest binding mismatch: {envelope.get('evidence', {}).get('domain')}")
+    return errors
