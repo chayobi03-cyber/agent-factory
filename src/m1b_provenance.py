@@ -19,6 +19,7 @@ def sha256_json(value: Any) -> str:
 
 def raw_payload_hash(observations: Sequence[Mapping[str, Any]]) -> str:
     normalized = [dict(row) for row in observations]
+    normalized.sort(key=lambda row: (str(row.get("series_id", "")), str(row.get("observation_time", ""))))
     return sha256_json(normalized)
 
 
