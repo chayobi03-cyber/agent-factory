@@ -1,4 +1,4 @@
-state_version: 8
+state_version: 9
 session_id: 2026-08-20-m2-entry-review
 phase: M2
 gate: M2_ENTRY_REVIEW
@@ -6,7 +6,7 @@ repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
 task_id: M2-HISTORICAL-INTEGRATION-ENTRY-REVIEW
-current_task: define and machine-verify M2 historical integration readiness without executing historical performance analysis
+current_task: verify current-SHA M2 readiness execution evidence and maintain fail-closed HOTL control
 last_completed:
   - evidence_execution_architecture_remediation
   - exact_sha_checkout_and_identity_assertion
@@ -26,16 +26,22 @@ last_completed:
   - m2_12_case_readiness_matrix
   - m2_negative_regression_seeds
   - m2_ci_readiness_integration
+  - hotl_three_cycle_failure_analysis_rule
+  - m2_ci_evidence_three_cycle_rca
 current_focus:
+  - current-SHA M2 execution evidence
+  - push-triggered CI evidence observability
   - M2 historical dataset identity and lineage
   - PIT availability and vintage enforcement
   - deterministic 12-case experiment readiness
-  - OOS gate boundary
+current_risk:
+  - current-SHA workflow run/job/log/artifact/digest is not independently retrievable through the available workflow-run query
 next_action:
-  - execute_m2_historical_integration_validation_only_after_entry_evidence_is_available
+  - obtain independently queryable current-SHA execution evidence before M2 historical execution
 blocked_until:
   - primary historical execution evidence
   - verified historical evidence artifact and digest
+  - queryable current-SHA CI execution evidence
 forbidden:
   - GEPA_implementation
   - RE_domain_implementation
@@ -55,6 +61,8 @@ m2_entry_review: docs/governance/M2_ENTRY_REVIEW_2026-08-20.yaml
 m2_case_matrix: fixtures/m2/historical_experiment_12_case.yaml
 m2_schema: schemas/m2_historical_experiment.schema.yaml
 m2_lessons: docs/governance/CER_M2_LESSONS_2026-08-20.md
+hotl_rule: docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md
+hotl_rca: docs/governance/HOTL_RCA_2026-08-20_M2_CI_EVIDENCE.md
 rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
 lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
 m1b_lessons: docs/governance/CER_M1B_LESSONS_2026-08-19.md
@@ -68,7 +76,7 @@ resume_checks:
   RC-06: PASS
   RC-07: PASS
   RC-08: PASS
-last_evidence:
+last_verified_primary_evidence:
   target_sha: c1efb9933fc5b3589cd43e986d4b1549f4338923
   workflow_run_id: 32309992157
   job_id: 96250842729
@@ -83,6 +91,11 @@ last_evidence:
   opro_regression: PASS
   opro_promotion_status: CANDIDATE
   pytest: 56_of_56
+current_sha_execution:
+  target_sha: 33ba2e963ab42dd86f8f9722d5f1dda95a9dd0f7
+  workflow_run: NOT_RETRIEVABLE
+  combined_status: NOT_OBSERVED
+  classification: REVIEW_REQUIRED
 m1b_ingest_evidence: docs/governance/M1B_FIRST_INGEST_EVIDENCE_2026-08-19.yaml
 m1b_fixture: fixtures/m1b/historical_series_2020-01.json
 m1b_fixture_raw_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
@@ -95,10 +108,10 @@ m2_historical_execution: NOT_EXECUTED
 m2_oos_status: NOT_STARTED
 m2_stress_status: NOT_STARTED
 m2_monte_carlo_status: NOT_STARTED
-m2_entry_reason: contract and matrix defined; primary historical execution evidence not yet available
+m2_entry_reason: contract and matrix defined; current-SHA primary historical execution evidence is not available
 m2_evidence_manifest: NOT_AVAILABLE
 checkpoint:
   mode: descendant
-  checkpoint_sha: 41259e233e5273ad2fe1577e71935702956476b1
-  evidence_type: m2_entry_review_checkpoint
-updated_at_utc: 2026-08-20T08:02:00+09:00
+  checkpoint_sha: c956393732565115fb7e55ffe6c06801e5880101
+  evidence_type: m2_hotl_rca_checkpoint
+updated_at_utc: 2026-08-20T08:20:00+09:00
