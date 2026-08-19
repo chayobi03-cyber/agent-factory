@@ -29,3 +29,5 @@ Validate the shared Factory Kernel workflow across synthetic RE / EMI / CST / ES
 - lifecycle coverage is ingest → parse → normalize → retrieve → verify → evaluate → CER gate → execute → report → trace
 - Domain Matrix evidence artifact is produced
 - no Runtime-GREEN claim without primary execution evidence
+
+<!-- Final CI revalidation trigger; no runtime semantics change. -->
