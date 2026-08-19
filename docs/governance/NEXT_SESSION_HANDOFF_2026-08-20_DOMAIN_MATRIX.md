@@ -30,4 +30,4 @@ Validate the shared Factory Kernel workflow across synthetic RE / EMI / CST / ES
 - Domain Matrix evidence artifact is produced
 - no Runtime-GREEN claim without primary execution evidence
 
-<!-- Final CI revalidation trigger; no runtime semantics change. -->
+<!-- Final synchronize trigger; no runtime semantics change. -->
