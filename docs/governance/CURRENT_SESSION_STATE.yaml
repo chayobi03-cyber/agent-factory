@@ -1,85 +1,85 @@
-state_version: 1
-session_id: 2026-08-18-cer-session-continuity
-phase: EVIDENCE-EXECUTION-ARCHITECTURE-P0
-gate: NOT_GREEN
+state_version: 2
+session_id: 2026-08-19-agentfactory-refocus
+phase: CORE-ARCHITECTURE-REFOCUS
+gate: FACTORY_KERNEL_GREEN_BASELINE
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
-task_id: CER-EVIDENCE-EXECUTION-ARCHITECTURE-P0
-current_task: evidence_execution_architecture_remediation
+verified_kernel_target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
+task_id: AGENTFACTORY-CORE-REFOCUS
+current_task: restore engineering-agent roadmap and remove financial-domain drift from core state
 last_completed:
-  - design_review
-  - session_continuity_contract
-  - session_state_schema_v1.1
-  - three_way_resume_contract
-  - rc01_rc08_validator
-  - rc01_rc08_regression
-  - ci_resume_gate_integration
-  - session_lessons_and_rule_promotion
-  - opro_gepa_lesson_promotion
-  - next_session_workflow_hardening
-  - target_sha_ci_execution_attempt
-  - audit_evidence_chain_failure_classification
-  - audit_evidence_chain_ci_contract
-  - resume_validator_rc07_repair
-  - ci_machine_evidence_capture_hardening
-  - current_sha_evidence_lessons_promoted
-  - evidence_execution_architecture_rca
+  - evidence_execution_architecture_review
+  - verified_primary_factory_kernel_execution
+  - rc01_rc08_pass
+  - factory_kernel_10_of_10
+  - opro_regression_pass
+  - pytest_44_of_44
+  - evidence_artifact_digest_verified
+  - financial_domain_drift_identified
+  - pr8_closed_as_non_core_experiment
+  - architecture_scope_v1_defined
 current_focus:
-  - exact_sha_execution_path
-  - evidence_manifest
-  - run_job_log_artifact_digest_binding
-  - execution_identity_assertion
-  - evidence_retrieval_observability
+  - kernel_domain_pack_boundary
+  - RE_domain_pack
+  - engineering_document_ingestion
+  - evidence_provenance_generalization
+  - hybrid_retrieval
+  - claim_verification
 next_action:
-  - design_evidence_execution_controller
-  - define_machine_verifiable_evidence_manifest
-  - implement_exact_sha_checkout_and_identity_assertion
-  - implement_run_job_log_artifact_digest_capture
-  - add_cli_and_ci_regression_witnesses
-  - execute_target_sha_evidence_regression
-  - rejudge_rc01_rc08_from_one_evidence_package
-blocked_until:
-  - audit_evidence_chain_GREEN
-  - resume_checks_VERIFIED
+  - audit_RE_domain_pack_interface
+  - implement_engineering_document_ingestion_baseline
+  - define_layout_table_figure_evidence_model
+  - build_RE_retrieval_benchmark
+  - add_claim_level_verification_regression
+  - build_engineering_report_e2e
+blocked_until: []
 forbidden:
-  - GEPA_implementation
-  - RE_domain_implementation
+  - financial_data_as_core_requirement
+  - financial_backtest
+  - portfolio_optimization
+  - GEPA_implementation_before_governed_optimizer_gate
   - OPRO_promotion
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
-  - backtest_before_M1B_GREEN
-  - OOS_before_M1B_GREEN
-  - optimization_before_M1B_GREEN
-  - monte_carlo_before_M1B_GREEN
+  - autonomous_production_self_modification
+  - autonomous_equipment_control
 handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
 lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
-resume_status: RESUME_BLOCKED
+scope_contract: docs/governance/AGENT_FACTORY_SCOPE_V1.md
+refactor_plan: docs/governance/ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md
+resume_status: RESUME_ALLOWED
 resume_checks:
-  - RC-01_state_vs_git_branch
-  - RC-02_state_vs_git_head_checkpoint
-  - RC-03_state_vs_audited_baseline
-  - RC-04_state_vs_handoff
-  - RC-05_handoff_vs_git
-  - RC-06_handoff_vs_audited_baseline
-  - RC-07_gate_vs_forbidden
-  - RC-08_required_context
+  RC-01: PASS
+  RC-02: PASS
+  RC-03: PASS
+  RC-04: PASS
+  RC-05: PASS
+  RC-06: PASS
+  RC-07: PASS
+  RC-08: PASS
 last_evidence:
-  target_sha: e62f89d75ba0024a0702a1573d18b71a30608e07
-  workflow_run_id: null
+  target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
+  workflow_run_id: 32126799804
+  job_id: 95679046613
   workflow: Factory Kernel Regression
-  event: evidence_only_attempt
-  evidence_pr: 4
-  evidence_branch: evidence/resume-e62f89d7
-  result: INCONCLUSIVE_NO_PRIMARY_CURRENT_SHA_RUN
-  failure_class: execution_observability_gap
-  failure_signature: "No canonical push-triggered exact-SHA run/artifact/digest package was retrievable for the target SHA"
-  artifact: NOT_VERIFIED
-  digest: NOT_AVAILABLE
-checkpoint:
-  mode: descendant
-  checkpoint_sha: 16972e2fa29496731319f088907170d93961ae48
-updated_at_utc: 2026-08-18T19:35:00+09:00
+  event: pull_request
+  result: VERIFIED_PRIMARY_EXECUTION_EVIDENCE
+  artifact_id: 9320646477
+  artifact: factory-kernel-machine-evidence
+  github_digest: sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d
+  independently_verified_digest: sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d
+  factory_kernel: 10_of_10
+  opro_regression: PASS
+  opro_promotion_status: CANDIDATE
+  pytest: 44_of_44
+historical_experiment:
+  name: M1-B financial provenance
+  status: RETAINED_OUTSIDE_CORE
+  branch: p0/opro-baseline-m1b-history-20260819
+  pr: 8
+  reason: domain-specific financial workflow is not part of Agent Factory core mission
+updated_at_utc: 2026-08-19T12:15:00+09:00
