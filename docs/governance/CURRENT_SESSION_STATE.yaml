@@ -10,15 +10,7 @@ task_id: AGENTFACTORY-DOMAIN-MATRIX
 current_task: validate reusable Factory workflow across multiple synthetic Domain Packs before live domain ingestion
 last_completed:
   - evidence_execution_architecture_review
-  - verified_primary_factory_kernel_execution
-  - rc01_rc08_pass
-  - factory_kernel_10_of_10
-  - opro_regression_pass
-  - pytest_44_of_44
-  - evidence_artifact_digest_verified
-  - financial_domain_drift_identified
-  - financial_experiment_moved_to_historical_branch
-  - architecture_scope_v1_defined
+  - verified_primary_factory_execution
   - synthetic_domain_matrix_runner_added
   - ci_trigger_and_domain_matrix_evidence_remediation
 current_focus:
@@ -31,7 +23,6 @@ next_action:
   - audit_matrix_trace_and_cer_decisions
   - generalize_document_revision_fragment_evidence_contract
   - implement_engineering_document_ingestion_baseline
-  - only_then_select_first_live_domain_implementation
 blocked_until: []
 forbidden:
   - financial_data_as_core_requirement
@@ -62,28 +53,6 @@ resume_checks:
   RC-06: PASS
   RC-07: PASS
   RC-08: PASS
-last_evidence:
-  target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
-  workflow_run_id: 32126799804
-  job_id: 95679046613
-  workflow: Factory Kernel Regression
-  event: pull_request
-  result: VERIFIED_PRIMARY_EXECUTION_EVIDENCE
-  artifact_id: 9320646477
-  artifact: factory-kernel-machine-evidence
-  github_digest: sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d
-  independently_verified_digest: sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d
-  factory_kernel: 10_of_10
-  opro_regression: PASS
-  opro_promotion_status: CANDIDATE
-  pytest: 44/44
-m1b_status: ACTIVE_NOT_GREEN
-m1b_blocker: first-party PIT availability evidence for FEDFUNDS, DEXUSEU, T10YIE and complete reconciliation coverage for the selected five-series set
-m1b_evidence: docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-19.yaml
-m1b_fixture: fixtures/m1b/historical_series_2020-01.json
-m1b_fixture_raw_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
-pit_availability: PARTIALLY_VERIFIED
-cross_source_reconciliation: PARTIALLY_VERIFIED
 checkpoint:
   mode: descendant
   checkpoint_sha: 48e5f393577bbc2599a1239aa0d16ac783b413e1
