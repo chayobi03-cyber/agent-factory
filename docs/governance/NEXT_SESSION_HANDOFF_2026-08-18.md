@@ -23,7 +23,7 @@ Do not reload the entire prior chat. Repository governance artifacts are canonic
 - branch: `p0/opro-baseline`
 - current canonical checkpoint commit: `da9ac8ac267c3d7df81d4292de914a05b9a2e7ec`
 - audited OPRO baseline SHA — **DO NOT CHANGE**: `20a54b92aad0857f75c6200d984b13098c6f4927`
-- canonical handoff ancestry anchor: `ee6f5fd3e470895f9c242c8004b64b4c4f74b6d6`
+- canonical handoff ancestry anchor: `ee6f5fd3e470895f9c242c8004b64b4c4f74d6b4`
 - M1-B final regression target/execution/checkout SHA: `c1efb9933fc5b3589cd43e986d4b1549f4338923`
 - M1-B regression run/job: `32309992157 / 96250842729`
 - M1-B artifact: `9386078714`
@@ -45,9 +45,9 @@ M2 `REVIEW_REQUIRED` is intentional. The contract and readiness matrix are defin
 
 ## Current-SHA evidence boundary
 
-The canonical branch was advanced through current governance/HOTL changes. The current target checkpoint is represented by the latest canonical state commit.
+The canonical branch was advanced through current governance/HOTL changes. The latest verified checkpoint is recorded in `CURRENT_SESSION_STATE.yaml` without storing a self-referential HEAD.
 
-The available workflow-run query returned no retrievable run for the current target, and combined status returned no status checks. This does **not** prove that the push-triggered workflow did not execute because the available workflow-run query is limited to pull-request-triggered runs.
+The available workflow-run query returned no retrievable run for current target `33ba2e963ab42dd86f8f9722d5f1dda95a9dd0f7`, and combined status returned no status checks. This does **not** prove that the push-triggered workflow did not execute because the available workflow-run query is limited to pull-request-triggered runs.
 
 Therefore:
 
