@@ -1,27 +1,30 @@
 state_version: 4
-session_id: 2026-08-20-domain-matrix-ci-remediation
+session_id: 2026-08-20-generic-engineering-evidence
 phase: CORE-WORKFLOW-MATRIX
 gate: FACTORY_KERNEL_GREEN_BASELINE
 repository: chayobi03-cyber/agent-factory
 working_branch: p1/domain-matrix-workflow-v0.1
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
 verified_kernel_target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
-task_id: AGENTFACTORY-DOMAIN-MATRIX
-current_task: validate reusable Factory workflow across multiple synthetic Domain Packs before live domain ingestion
+task_id: AGENTFACTORY-GENERIC-ENGINEERING-EVIDENCE
+current_task: define and validate a domain-independent engineering evidence envelope without changing Kernel/domain responsibilities
 last_completed:
   - evidence_execution_architecture_review
   - verified_primary_factory_execution
   - synthetic_domain_matrix_runner_added
   - ci_trigger_and_domain_matrix_evidence_remediation
+  - generic_engineering_evidence_gap_analysis
+  - generic_engineering_evidence_contract_drafted
+  - generic_engineering_evidence_schema_and_contract_tests_added
+  - current_head_ci_verified_for_generic_evidence_contract
 current_focus:
-  - synthetic_multi_domain_workflow
+  - generic_engineering_evidence_contract
   - kernel_domain_pack_boundary
-  - generic_evidence_provenance
+  - evidence_manifest_binding
   - domain_matrix_regression
 next_action:
-  - execute_domain_matrix_ci
-  - audit_matrix_trace_and_cer_decisions
-  - generalize_document_revision_fragment_evidence_contract
+  - verify_final_session_checkpoint_ci
+  - integrate_generic_evidence_envelope_into_runtime_manifest
   - implement_engineering_document_ingestion_baseline
 blocked_until: []
 forbidden:
@@ -39,7 +42,7 @@ handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-20_DOMAIN_MATRIX.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
-lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
+lessons: docs/governance/CER_CI_PR_EXECUTION_LESSONS_2026-08-20.md
 scope_contract: docs/governance/AGENT_FACTORY_SCOPE_V1.md
 refactor_plan: docs/governance/ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md
 m1b_lessons: docs/governance/CER_M1B_LESSONS_2026-08-19.md
@@ -55,9 +58,19 @@ resume_checks:
   RC-08: PASS
 checkpoint:
   mode: descendant
-  checkpoint_sha: 48e5f393577bbc2599a1239aa0d16ac783b413e1
+  checkpoint_sha: 9b44a3685bbcfac0e4138cd2d7d09d14ce9d0e71
 open_validation:
   pr: 11
   branch: p1/domain-matrix-workflow-v0.1
-  ci_status: NOT_YET_OBSERVED
-updated_at_utc: 2026-08-20T00:00:00+00:00
+  observed_target_sha: 9b44a3685bbcfac0e4138cd2d7d09d14ce9d0e71
+  ci_run: 32311471608
+  job: 96255161739
+  ci_status: GREEN_VERIFIED
+  artifact: factory-kernel-machine-evidence
+  artifact_id: 9386585762
+  artifact_digest: sha256:bc56e4a4133ad66fc140fff80ac5b014b316fbac14372bd68f06e2806362c019
+  independent_digest_verification: PASS
+  domain_matrix_artifact_id: 9386586000
+  domain_matrix_artifact_digest: sha256:b6581c28d353f0dcfda836b9d91182f0428b4fc3debaed88553918d0ed50ca7a
+  final_checkpoint_execution_required: true
+updated_at_utc: 2026-08-20T00:06:00+00:00
