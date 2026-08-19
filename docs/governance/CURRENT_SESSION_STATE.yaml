@@ -1,7 +1,7 @@
 state_version: 7
 session_id: 2026-08-20-m1b-green
 phase: M1-B
- gate: M1-B_GREEN
+gate: M1-B_GREEN
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
