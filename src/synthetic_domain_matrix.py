@@ -1,0 +1,143 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Sequence
+
+import yaml
+
+from factory_runtime import FactoryRuntime
+from interfaces import Claim, EvidenceCandidate
+
+
+class FixtureDomainPack:
+    """Minimal domain implementation used only to validate kernel reuse."""
+
+    CAPABILITIES = ("ingest", "parse", "normalize", "retrieve", "verify", "evaluate", "render_report")
+
+    def __init__(self, spec: dict[str, Any]) -> None:
+        self.domain_id = spec["domain_id"]
+        self.version = spec["version"]
+        self.knowledge = spec["knowledge"]
+        self.workflow = spec["workflow"]
+        self.risk_level = spec["risk_level"]
+
+    def ingest(self, source: Any) -> dict[str, Any]:
+        return {"domain_id": self.domain_id, "source": source, "knowledge": self.knowledge}
+
+    def parse(self, artifact: Any) -> dict[str, Any]:
+        return {"domain_id": self.domain_id, "parsed": artifact}
+
+    def normalize(self, artifact: Any) -> dict[str, Any]:
+        return {"domain_id": self.domain_id, "normalized": artifact}
+
+    def retrieve(self, query: str, **kwargs: Any) -> Sequence[EvidenceCandidate]:
+        return (
+            EvidenceCandidate(
+                evidence_id=f"E-{self.domain_id}-001",
+                document_id=f"DOC-{self.domain_id}-001",
+                revision_id=f"REV-{self.domain_id}-001",
+                fragment_id=f"FRAG-{self.domain_id}-001",
+                score=1.0,
+                text=self.knowledge["fact"],
+                metadata={"domain_id": self.domain_id, "fixture_only": True},
+            ),
+        )
+
+    def verify(self, claims: Sequence[Claim], evidence: Sequence[EvidenceCandidate], **kwargs: Any) -> dict[str, Any]:
+        evidence_ids = {item.evidence_id for item in evidence}
+        supported = all(set(claim.evidence_ids) <= evidence_ids for claim in claims)
+        return {"supported": supported, "claim_count": len(claims), "evidence_count": len(evidence)}
+
+    def evaluate(self, case: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
+        return {"domain_id": self.domain_id, "passed": bool(result.get("supported")), "case": case}
+
+    def render_report(self, result: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+        return {"domain_id": self.domain_id, "report": result}
+
+
+def load_specs(path: Path) -> list[dict[str, Any]]:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if payload.get("fixture_only") is not True:
+        raise ValueError("domain matrix must be explicitly marked fixture_only")
+    return list(payload["domains"])
+
+
+def run_domain(runtime: FactoryRuntime, spec: dict[str, Any]) -> dict[str, Any]:
+    pack = FixtureDomainPack(spec)
+    snapshot = runtime.create_snapshot(
+        policy_id="CER",
+        policy_version="1.0.0",
+        source_commit=runtime.repository_commit,
+        required_checks=("evidence", "verification", "risk"),
+        snapshot_id=f"CER-{pack.domain_id}-FIXTURE",
+    )
+    run = runtime.create_run(
+        task_id=f"DOMAIN-MATRIX-{pack.domain_id}",
+        idempotency_key=f"fixture:{pack.domain_id}:v1",
+        snapshot=snapshot,
+        domain_pack_id=pack.domain_id,
+        domain_pack_version=pack.version,
+    )
+    runtime.load_domain_pack(run.run_id, pack)
+    runtime.set_context(
+        run.run_id,
+        {"domain_id": pack.domain_id, "workflow": pack.workflow, "fixture_only": True},
+    )
+
+    ingested = pack.ingest({"source_id": f"SYN-{pack.domain_id}-001"})
+    parsed = pack.parse(ingested)
+    normalized = pack.normalize(parsed)
+    evidence = pack.retrieve("synthetic evidence query", normalized=normalized)
+
+    claim = Claim(
+        claim_id=f"C-{pack.domain_id}-001",
+        statement=pack.knowledge["fact"],
+        claim_type="fixture_fact",
+        evidence_ids=[evidence[0].evidence_id],
+        confidence=1.0,
+    )
+    verification = pack.verify((claim,), evidence)
+    evaluation = pack.evaluate(
+        {"query": "synthetic evidence query", "domain_id": pack.domain_id},
+        verification,
+    )
+
+    decision = runtime.evaluate_gate(
+        run_id=run.run_id,
+        gate_id="PRE-001",
+        snapshot=snapshot,
+        claims=(claim,),
+        evidence=evidence,
+        risk_level="low",
+    )
+    if decision.result != "PASS":
+        raise RuntimeError(f"synthetic happy-path gate did not PASS: {pack.domain_id}: {decision.result}")
+
+    workflow_result = runtime.execute_workflow(
+        run.run_id,
+        lambda _ctx: {
+            "domain_id": pack.domain_id,
+            "normalized": normalized,
+            "verification": verification,
+            "evaluation": evaluation,
+        },
+    )
+    report = pack.render_report(workflow_result)
+
+    return {
+        "domain_id": pack.domain_id,
+        "workflow": pack.workflow,
+        "capabilities_exercised": list(pack.CAPABILITIES),
+        "verification": verification,
+        "evaluation": evaluation,
+        "cer_decision": decision.result,
+        "workflow_executed": True,
+        "report_rendered": bool(report.get("report")),
+        "risk_level": spec["risk_level"],
+        "trace_events": len(runtime.get_trace(run.run_id).events),
+    }
+
+
+def run_matrix(fixtures: Path, repository_commit: str = "FIXTURE-SYNTHETIC") -> list[dict[str, Any]]:
+    runtime = FactoryRuntime(repository_commit=repository_commit)
+    return [run_domain(runtime, spec) for spec in load_specs(fixtures)]

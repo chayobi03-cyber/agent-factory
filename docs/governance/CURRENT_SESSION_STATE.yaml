@@ -1,60 +1,56 @@
-state_version: 6
-session_id: 2026-08-19-m1b-entry
-phase: M1-B
-gate: M1-B_ACTIVE
+state_version: 4
+session_id: 2026-08-20-domain-matrix-ci-remediation
+phase: CORE-WORKFLOW-MATRIX
+gate: FACTORY_KERNEL_GREEN_BASELINE
 repository: chayobi03-cyber/agent-factory
-working_branch: p0/opro-baseline
+working_branch: p1/domain-matrix-workflow-v0.1
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
-task_id: M1-B-FINANCIAL-DATA-PROVENANCE
-current_task: establish minimum sufficient financial source stack and historical-series provenance
+verified_kernel_target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
+task_id: AGENTFACTORY-DOMAIN-MATRIX
+current_task: validate reusable Factory workflow across multiple synthetic Domain Packs before live domain ingestion
 last_completed:
-  - evidence_execution_architecture_remediation
-  - exact_sha_checkout_and_identity_assertion
-  - run_job_log_artifact_capture
-  - machine_evidence_artifact_capture
-  - independent_artifact_digest_verification
-  - rc01_rc08_rejudgement
-  - factory_kernel_regression
-  - opro_execution_identity_regression
+  - evidence_execution_architecture_review
+  - verified_primary_factory_kernel_execution
+  - rc01_rc08_pass
+  - factory_kernel_10_of_10
+  - opro_regression_pass
   - pytest_44_of_44
-  - audit_evidence_chain_closeout
-  - m1b_source_contract_v1
-  - financial_provenance_schema_v1
-  - m1b_minimum_source_stack_v1
-  - first_real_historical_series_fixture
-  - canonical_raw_payload_hash
-  - replay_order_invariance_seed
-  - pit_release_evidence_review
-  - supplemental_cross_source_reconciliation
-  - cer_m1b_lessons_and_permanent_rules
+  - evidence_artifact_digest_verified
+  - financial_domain_drift_identified
+  - financial_experiment_moved_to_historical_branch
+  - architecture_scope_v1_defined
+  - synthetic_domain_matrix_runner_added
+  - ci_trigger_and_domain_matrix_evidence_remediation
 current_focus:
-  - first_party_pit_timestamps_for_remaining_series
-  - reconciliation_coverage_for_selected_five_series
-  - network_ingestion_adapter
-  - machine_verifiable_m1b_qa
+  - synthetic_multi_domain_workflow
+  - kernel_domain_pack_boundary
+  - generic_evidence_provenance
+  - domain_matrix_regression
 next_action:
-  - capture_first_party_pit_evidence_for_fedfunds_dexuseu_t10yie
-  - add_fred_vintage_query_fixture
-  - add_full_five_series_reconciliation_fixture
-  - implement_network_ingestion_adapter
-  - run_m1b_pit_replay_reconciliation_regression
-  - rejudge_m1b_gate
+  - execute_domain_matrix_ci
+  - audit_matrix_trace_and_cer_decisions
+  - generalize_document_revision_fragment_evidence_contract
+  - implement_engineering_document_ingestion_baseline
+  - only_then_select_first_live_domain_implementation
 blocked_until: []
 forbidden:
-  - GEPA_implementation
-  - RE_domain_implementation
+  - financial_data_as_core_requirement
+  - financial_backtest
+  - portfolio_optimization
+  - GEPA_implementation_before_governed_optimizer_gate
   - OPRO_promotion
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
-  - backtest_before_M1B_GREEN
-  - OOS_before_M1B_GREEN
-  - optimization_before_M1B_GREEN
-  - monte_carlo_before_M1B_GREEN
+  - autonomous_production_self_modification
+  - autonomous_equipment_control
+  - treating_RE_as_the_only_supported_domain
 handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
 lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
+scope_contract: docs/governance/AGENT_FACTORY_SCOPE_V1.md
+refactor_plan: docs/governance/ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md
 m1b_lessons: docs/governance/CER_M1B_LESSONS_2026-08-19.md
 resume_status: RESUME_ALLOWED
 resume_checks:
@@ -81,20 +77,15 @@ last_evidence:
   opro_regression: PASS
   opro_promotion_status: CANDIDATE
   pytest: 44_of_44
-m1b_ingest_evidence: docs/governance/M1B_FIRST_INGEST_EVIDENCE_2026-08-19.yaml
+m1b_status: ACTIVE_NOT_GREEN
+m1b_blocker: first-party PIT availability evidence for FEDFUNDS, DEXUSEU, T10YIE and complete reconciliation coverage for the selected five-series set
+m1b_evidence: docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-19.yaml
 m1b_fixture: fixtures/m1b/historical_series_2020-01.json
 m1b_fixture_raw_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
 pit_availability: PARTIALLY_VERIFIED
 cross_source_reconciliation: PARTIALLY_VERIFIED
-m1b_status: ACTIVE_NOT_GREEN
-m1b_blocker: first-party PIT availability evidence for FEDFUNDS, DEXUSEU, T10YIE and complete reconciliation coverage for the selected five-series set
-m1b_evidence: docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-19.yaml
-checkpoint:
-  mode: descendant
-  checkpoint_sha: a6153891d8e943b436e9aaa481607b109294da7e
-  evidence_type: m1b_pit_reconciliation_review
-evidence_manifest: docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml
-m1b_source_contract: docs/governance/M1B_SOURCE_CONTRACT_V1.md
-m1b_minimum_source_stack: docs/governance/M1B_MINIMUM_SOURCE_STACK_V1.md
-financial_provenance_schema: schemas/financial_provenance.schema.yaml
-updated_at_utc: 2026-08-19T12:05:00+09:00
+open_validation:
+  pr: 11
+  branch: p1/domain-matrix-workflow-v0.1
+  ci_status: NOT_YET_OBSERVED
+updated_at_utc: 2026-08-20T00:00:00+00:00
