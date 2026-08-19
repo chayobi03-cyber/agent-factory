@@ -44,7 +44,7 @@ forbidden:
   - autonomous_production_self_modification
   - autonomous_equipment_control
   - treating_RE_as_the_only_supported_domain
-handoff: docs/governance/CER_SESSION_CLOSURE_2026-08-19_DOMAIN_MATRIX.md
+handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-20_DOMAIN_MATRIX.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
