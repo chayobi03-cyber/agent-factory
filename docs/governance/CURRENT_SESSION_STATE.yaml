@@ -76,7 +76,7 @@ last_evidence:
   factory_kernel: 10_of_10
   opro_regression: PASS
   opro_promotion_status: CANDIDATE
-  pytest: 44_of_44
+  pytest: 44/44
 m1b_status: ACTIVE_NOT_GREEN
 m1b_blocker: first-party PIT availability evidence for FEDFUNDS, DEXUSEU, T10YIE and complete reconciliation coverage for the selected five-series set
 m1b_evidence: docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-19.yaml
