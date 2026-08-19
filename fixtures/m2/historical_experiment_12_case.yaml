@@ -1,0 +1,146 @@
+schema_version: 1
+matrix_id: M2-HIST-12-V1
+status: READINESS_MATRIX_NOT_EXECUTED
+objective: Define deterministic historical experiment cases without claiming historical performance evidence.
+
+cases:
+  - case_id: M2-H01
+    historical_window: 2010-01-01/2014-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2014-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2010-01-01/2012-12-31, validation: 2013-01-01/2013-12-31, oos: 2014-01-01/2014-12-31}
+    risk_class: STANDARD
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H02
+    historical_window: 2011-01-01/2015-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2015-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2011-01-01/2013-12-31, validation: 2014-01-01/2014-12-31, oos: 2015-01-01/2015-12-31}
+    risk_class: REVISION_SENSITIVE
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H03
+    historical_window: 2012-01-01/2016-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2016-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2012-01-01/2014-12-31, validation: 2015-01-01/2015-12-31, oos: 2016-01-01/2016-12-31}
+    risk_class: STANDARD
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H04
+    historical_window: 2013-01-01/2017-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2017-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2013-01-01/2015-12-31, validation: 2016-01-01/2016-12-31, oos: 2017-01-01/2017-12-31}
+    risk_class: CROSS_SOURCE_SENSITIVE
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H05
+    historical_window: 2014-01-01/2018-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2018-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2014-01-01/2016-12-31, validation: 2017-01-01/2017-12-31, oos: 2018-01-01/2018-12-31}
+    risk_class: STANDARD
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H06
+    historical_window: 2015-01-01/2019-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2019-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2015-01-01/2017-12-31, validation: 2018-01-01/2018-12-31, oos: 2019-01-01/2019-12-31}
+    risk_class: REVISION_SENSITIVE
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H07
+    historical_window: 2016-01-01/2020-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2020-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2016-01-01/2018-12-31, validation: 2019-01-01/2019-12-31, oos: 2020-01-01/2020-12-31}
+    risk_class: REGIME_SHIFT
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H08
+    historical_window: 2017-01-01/2021-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2021-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2017-01-01/2019-12-31, validation: 2020-01-01/2020-12-31, oos: 2021-01-01/2021-12-31}
+    risk_class: STANDARD
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H09
+    historical_window: 2018-01-01/2022-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2022-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2018-01-01/2020-12-31, validation: 2021-01-01/2021-12-31, oos: 2022-01-01/2022-12-31}
+    risk_class: REVISION_SENSITIVE
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H10
+    historical_window: 2019-01-01/2023-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2023-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2019-01-01/2021-12-31, validation: 2022-01-01/2022-12-31, oos: 2023-01-01/2023-12-31}
+    risk_class: CROSS_SOURCE_SENSITIVE
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H11
+    historical_window: 2020-01-01/2024-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2024-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2020-01-01/2022-12-31, validation: 2023-01-01/2023-12-31, oos: 2024-01-01/2024-12-31}
+    risk_class: REGIME_SHIFT
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+  - case_id: M2-H12
+    historical_window: 2021-01-01/2025-12-31
+    dataset_version: ACTUAL_HISTORICAL_SNAPSHOT_REQUIRED
+    PIT_cutoff: 2025-12-31T23:59:59Z
+    input_sources: [M1B_VERIFIED_SOURCE_STACK]
+    transform_version: m2-transform-v1
+    expected_evidence: [raw_snapshot_hash, provenance_manifest, pit_check, replay_key, partition_manifest]
+    execution_identity: NOT_EXECUTED
+    partition: {train: 2021-01-01/2023-12-31, validation: 2024-01-01/2024-12-31, oos: 2025-01-01/2025-12-31}
+    risk_class: STANDARD
+    acceptance_gate: HISTORICAL_EXECUTION_EVIDENCE
+
+matrix_invariants:
+  case_order_invariant_provenance: true
+  vintage_change_changes_replay_identity: true
+  earlier_cutoff_rejects_late_availability: true
+  future_information_rejected: true
+  partitions_must_be_disjoint: true
+  historical_execution_evidence_required: true
