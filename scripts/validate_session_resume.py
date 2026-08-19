@@ -110,7 +110,12 @@ def resolve_target_sha(actual_head: str) -> tuple[str | None, bool, str]:
 
 
 def _contains_any(text: str, phrases: tuple[str, ...]) -> bool:
-    return any(phrase in text for phrase in phrases)
+    """Case-insensitive phrase matching with whitespace normalization."""
+    normalized_text = re.sub(r"\s+", " ", text).strip().lower()
+    return any(
+        re.sub(r"\s+", " ", phrase).strip().lower() in normalized_text
+        for phrase in phrases
+    )
 
 
 def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[ResumeCheck]:
