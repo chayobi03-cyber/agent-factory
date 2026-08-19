@@ -1,12 +1,12 @@
-state_version: 7
-session_id: 2026-08-20-m1b-green
-phase: M1-B
-gate: M1-B_GREEN
+state_version: 8
+session_id: 2026-08-20-m2-entry-review
+phase: M2
+ gate: M2_ENTRY_REVIEW
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
-task_id: M1-B-FINANCIAL-DATA-PROVENANCE
-current_task: M1-B financial-data provenance and reconciliation gate completed
+task_id: M2-HISTORICAL-INTEGRATION-ENTRY-REVIEW
+current_task: define and machine-verify M2 historical integration readiness without executing historical performance analysis
 last_completed:
   - evidence_execution_architecture_remediation
   - exact_sha_checkout_and_identity_assertion
@@ -16,38 +16,45 @@ last_completed:
   - rc01_rc08_rejudgement
   - factory_kernel_regression
   - opro_execution_identity_regression
-  - pytest_44_of_44
-  - audit_evidence_chain_closeout
+  - pytest_56_of_56
   - m1b_source_contract_v1
   - financial_provenance_schema_v1
-  - m1b_minimum_source_stack_v1
-  - first_real_historical_series_fixture
-  - canonical_raw_payload_hash
-  - replay_order_invariance_seed
-  - pit_release_evidence_review
-  - supplemental_cross_source_reconciliation
-  - cer_m1b_lessons_and_permanent_rules
-  - first_party_pit_evidence_for_remaining_three_series
-  - five_series_reconciliation_fixture
-  - m1b_pit_replay_reconciliation_regression
+  - five_series_pit_replay_reconciliation
   - m1b_green_rejudgement
-current_focus: []
+  - m2_historical_integration_contract_v1
+  - m2_entry_review_machine_artifact
+  - m2_12_case_readiness_matrix
+  - m2_negative_regression_seeds
+  - m2_ci_readiness_integration
+current_focus:
+  - M2 historical dataset identity and lineage
+  - PIT availability and vintage enforcement
+  - deterministic 12-case experiment readiness
+  - OOS gate boundary
 next_action:
-  - M2_historical_integration_entry_review
-blocked_until: []
+  - execute_m2_historical_integration_validation_only_after_entry_evidence_is_available
+blocked_until:
+  - primary historical execution evidence
+  - verified historical evidence artifact and digest
 forbidden:
   - GEPA_implementation
   - RE_domain_implementation
   - OPRO_promotion
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
-  - backtest_before_M1B_GREEN
-  - OOS_before_M1B_GREEN
-  - optimization_before_M1B_GREEN
-  - monte_carlo_before_M1B_GREEN
+  - backtest_before_M2_historical_execution_gate
+  - OOS_before_M2_OOS_GATE
+  - optimization_before_M2_PERFORMANCE_GATE
+  - stress_before_M2_STRESS_GATE
+  - monte_carlo_before_M2_MONTE_CARLO_GATE
 handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
+m2_contract: docs/governance/M2_HISTORICAL_INTEGRATION_CONTRACT_V1.md
+m2_entry_review: docs/governance/M2_ENTRY_REVIEW_2026-08-20.yaml
+m2_case_matrix: fixtures/m2/historical_experiment_12_case.yaml
+m2_schema: schemas/m2_historical_experiment.schema.yaml
+m2_lessons: docs/governance/CER_M2_LESSONS_2026-08-20.md
 rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
 lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
 m1b_lessons: docs/governance/CER_M1B_LESSONS_2026-08-19.md
@@ -83,13 +90,15 @@ pit_availability: VERIFIED
 cross_source_reconciliation: VERIFIED_WITH_CLASSIFIED_DISCREPANCY
 m1b_status: GREEN
 m1b_blocker: null
-m1b_evidence: docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-20.yaml
+m2_status: REVIEW_REQUIRED
+m2_historical_execution: NOT_EXECUTED
+m2_oos_status: NOT_STARTED
+m2_stress_status: NOT_STARTED
+m2_monte_carlo_status: NOT_STARTED
+m2_entry_reason: contract and matrix defined; primary historical execution evidence not yet available
+m2_evidence_manifest: NOT_AVAILABLE
 checkpoint:
   mode: descendant
-  checkpoint_sha: a6153891d8e943b436e9aaa481607b109294da7e
-  evidence_type: m1b_pit_reconciliation_review
-evidence_manifest: docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml
-m1b_source_contract: docs/governance/M1B_SOURCE_CONTRACT_V1.md
-m1b_minimum_source_stack: docs/governance/M1B_MINIMUM_SOURCE_STACK_V1.md
-financial_provenance_schema: schemas/financial_provenance.schema.yaml
-updated_at_utc: 2026-08-20T07:45:00+09:00
+  checkpoint_sha: 41259e233e5273ad2fe1577e71935702956476b1
+  evidence_type: m2_entry_review_checkpoint
+updated_at_utc: 2026-08-20T08:00:00+09:00
