@@ -39,6 +39,7 @@ def _manifest_hash_input(manifest: dict[str, Any]) -> dict[str, Any]:
     copy["manifest_hash"] = ""
     for envelope in copy.get("evidence_envelopes", []):
         envelope.setdefault("manifest", {})["manifest_hash"] = ""
+        envelope.setdefault("manifest", {})["manifest_id"] = ""
     return copy
 
 
