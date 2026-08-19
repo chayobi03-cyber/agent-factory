@@ -1,0 +1,1 @@
+Backup pointer for the pre-refactor branch state. The branch `p0/opro-baseline-m1b-history-20260819` is intended to preserve the 2026-08-19 M1-B financial provenance experiment history while the canonical working branch returns to the core engineering-agent roadmap.
