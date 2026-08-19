@@ -1,6 +1,6 @@
 schema_version: 1
 session: 2026-08-20-m1b-green
- evidence_type: m1b_pit_and_cross_source_reconciliation_final
+evidence_type: m1b_pit_and_cross_source_reconciliation_final
 fixture: fixtures/m1b/pit_reconciliation_2020-01.json
 fixture_commit: c309f9142094a04cc794a8095883d4cec6c22842
 raw_snapshot_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
@@ -23,8 +23,9 @@ pit_method:
       value: 1.1166
       available_as_of: 2020-01-02T16:00:00+01:00
       pit_status: VERIFIED_BOUNDARY
-      source: FRED DEXUSEU plus ECB reference-rate publication framework
+      source: FRED DEXUSEU plus ECB euro reference-rate publication framework
       source_url: https://fred.stlouisfed.org/series/DEXUSEU
+      comparator_source_url: https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html
       vintage_boundary: 2020-01-02
       precision: time-window
     - series_id: T10YIE
@@ -66,11 +67,12 @@ reconciliation:
     - group: DEXUSEU_ECB_EXR_2020-01-02
       series_id: DEXUSEU
       comparator: ECB EUR/USD reference-rate framework
+      comparator_source_url: https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html
       value_a: 1.1166
       value_b: 1.1193
       status: ACCEPTED_CLASSIFIED_DISCREPANCY
       tolerance: 0.0
-      discrepancy_notes: difference is preserved because FRED DEXUSEU and ECB reference rates are not asserted to be identical economic definitions/quotation regimes; no overwrite or numeric coercion
+      discrepancy_notes: difference is preserved because FRED DEXUSEU and ECB reference rates are not asserted to be identical economic definitions or quotation regimes; no overwrite or numeric coercion
     - group: T10YIE_TREASURY_INPUTS_2020-01-02
       series_id: T10YIE
       comparator: Treasury-derived DGS10 and DFII10 inputs
