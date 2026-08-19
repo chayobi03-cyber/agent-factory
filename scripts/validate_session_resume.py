@@ -109,6 +109,10 @@ def resolve_target_sha(actual_head: str) -> tuple[str | None, bool, str]:
     return target_sha, actual_head == target_sha, "CER_TARGET_SHA + git.HEAD"
 
 
+def _contains_any(text: str, phrases: tuple[str, ...]) -> bool:
+    return any(phrase in text for phrase in phrases)
+
+
 def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[ResumeCheck]:
     root = repo_root or Path.cwd()
     required = [
@@ -181,14 +185,24 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
         or {"OPRO_promotion", "RE_domain_implementation"}.issubset(forbidden)
     )
     handoff_normalized = re.sub(r"\s+", " ", handoff_text.lower())
-    handoff_constraints_ok = all(
-        phrase in handoff_normalized
-        for phrase in (
-            "gepa implementation forbidden",
-            "opro promotion forbidden",
-            "re domain implementation forbidden",
-            "audited opro baseline sha must not change",
-            "pass without primary execution evidence forbidden",
+    handoff_constraints_ok = (
+        _contains_any(handoff_normalized, ("gepa implementation forbidden", "gepa implementation 금지"))
+        and _contains_any(handoff_normalized, ("opro promotion forbidden", "opro promotion 금지"))
+        and _contains_any(handoff_normalized, ("re domain implementation forbidden", "re domain implementation 금지"))
+        and _contains_any(
+            handoff_normalized,
+            (
+                "audited opro baseline sha must not change",
+                "audited opro baseline sha immutable",
+                "audited opro baseline sha - do not change",
+            ),
+        )
+        and _contains_any(
+            handoff_normalized,
+            (
+                "pass without primary execution evidence forbidden",
+                "state/documentation never substitutes for primary evidence",
+            ),
         )
     )
     forbidden_ok = gate_constraints_ok and handoff_constraints_ok
