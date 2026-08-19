@@ -7,7 +7,7 @@ def test_rc07_accepts_semantically_equivalent_canonical_constraints():
         "state/documentation never substitutes for primary evidence; "
         "OPRO promotion forbidden; GEPA implementation forbidden; "
         "RE Domain implementation forbidden"
-    )
+    ).lower()
     assert _contains_any(
         handoff,
         (
