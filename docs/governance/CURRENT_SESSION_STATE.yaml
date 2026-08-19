@@ -1,4 +1,4 @@
-state_version: 4
+state_version: 5
 session_id: 2026-08-19-m1b-entry
 phase: M1-B
 gate: M1-B_ACTIVE
@@ -21,6 +21,9 @@ last_completed:
   - m1b_source_contract_v1
   - financial_provenance_schema_v1
   - m1b_minimum_source_stack_v1
+  - first_real_historical_series_fixture
+  - canonical_raw_payload_hash
+  - replay_order_invariance_seed
 current_focus:
   - five_historical_series_ingest
   - provenance
@@ -28,7 +31,7 @@ current_focus:
   - replayability
   - cross_source_reconciliation
 next_action:
-  - implement_first_ingestion_path
+  - implement_network_ingestion_adapter
   - capture_raw_snapshot_and_payload_hash
   - generate_provenance_records
   - validate_pit_cutoff
@@ -75,11 +78,16 @@ last_evidence:
   opro_regression: PASS
   opro_promotion_status: CANDIDATE
   pytest: 44_of_44
+m1b_ingest_evidence: docs/governance/M1B_FIRST_INGEST_EVIDENCE_2026-08-19.yaml
+m1b_fixture: fixtures/m1b/historical_series_2020-01.json
+m1b_fixture_raw_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
+pit_availability: UNVERIFIED
+cross_source_reconciliation: NOT_STARTED
 checkpoint:
   mode: descendant
-  checkpoint_sha: fbab26e3b216601fbacbaf7d644d1e156cbe853d
+  checkpoint_sha: b1af29e40c590d65ea5763a71bef162954e9a99a
 evidence_manifest: docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml
 m1b_source_contract: docs/governance/M1B_SOURCE_CONTRACT_V1.md
 m1b_minimum_source_stack: docs/governance/M1B_MINIMUM_SOURCE_STACK_V1.md
 financial_provenance_schema: schemas/financial_provenance.schema.yaml
-updated_at_utc: 2026-08-19T01:08:00+09:00
+updated_at_utc: 2026-08-19T12:00:00+09:00
