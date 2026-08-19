@@ -75,6 +75,13 @@ jobs:
           status=${PIPESTATUS[0]}
           printf 'domain_matrix_exit_code=%s\n' "$status" >> ci-exit-codes.env
           exit "$status"
+      - name: Generic Engineering Evidence Envelope
+        run: |
+          set -o pipefail
+          python3 scripts/engineering_evidence_demo.py --json 2>&1 | tee engineering-evidence.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 'engineering_evidence_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
       - name: Deterministic Kernel Harness
         run: |
           set -o pipefail
@@ -108,6 +115,9 @@ jobs:
             resume.stdout.txt
             factory-demo.stdout.json
             domain-matrix.stdout.json
+            engineering-evidence.stdout.json
+            engineering-evidence/engineering-evidence-manifest.json
+            engineering-evidence/engineering-domain-payloads.json
             factory-harness.stdout.json
             opro-baseline.stdout.json
             pytest.stdout.txt
@@ -120,3 +130,12 @@ jobs:
             domain-matrix.stdout.json
             execution-identity.txt
             ci-exit-codes.env
+      - name: Publish Engineering Evidence envelope
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engineering-evidence-envelope
+          path: |
+            engineering-evidence/engineering-evidence-manifest.json
+            engineering-evidence/engineering-domain-payloads.json
+            engineering-evidence.stdout.json
