@@ -1,12 +1,12 @@
-state_version: 6
-session_id: 2026-08-19-m1b-entry
+state_version: 7
+session_id: 2026-08-20-m1b-green
 phase: M1-B
-gate: M1-B_ACTIVE
+ gate: M1-B_GREEN
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
 task_id: M1-B-FINANCIAL-DATA-PROVENANCE
-current_task: establish minimum sufficient financial source stack and historical-series provenance
+current_task: M1-B financial-data provenance and reconciliation gate completed
 last_completed:
   - evidence_execution_architecture_remediation
   - exact_sha_checkout_and_identity_assertion
@@ -27,18 +27,13 @@ last_completed:
   - pit_release_evidence_review
   - supplemental_cross_source_reconciliation
   - cer_m1b_lessons_and_permanent_rules
-current_focus:
-  - first_party_pit_timestamps_for_remaining_series
-  - reconciliation_coverage_for_selected_five_series
-  - network_ingestion_adapter
-  - machine_verifiable_m1b_qa
+  - first_party_pit_evidence_for_remaining_three_series
+  - five_series_reconciliation_fixture
+  - m1b_pit_replay_reconciliation_regression
+  - m1b_green_rejudgement
+current_focus: []
 next_action:
-  - capture_first_party_pit_evidence_for_fedfunds_dexuseu_t10yie
-  - add_fred_vintage_query_fixture
-  - add_full_five_series_reconciliation_fixture
-  - implement_network_ingestion_adapter
-  - run_m1b_pit_replay_reconciliation_regression
-  - rejudge_m1b_gate
+  - M2_historical_integration_entry_review
 blocked_until: []
 forbidden:
   - GEPA_implementation
@@ -67,28 +62,28 @@ resume_checks:
   RC-07: PASS
   RC-08: PASS
 last_evidence:
-  target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
-  workflow_run_id: 32126799804
-  job_id: 95679046613
+  target_sha: c1efb9933fc5b3589cd43e986d4b1549f4338923
+  workflow_run_id: 32309992157
+  job_id: 96250842729
   workflow: Factory Kernel Regression
   event: pull_request
   result: VERIFIED_PRIMARY_EXECUTION_EVIDENCE
-  artifact_id: 9320646477
+  artifact_id: 9386078714
   artifact: factory-kernel-machine-evidence
-  github_digest: sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d
-  independently_verified_digest: sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d
+  github_digest: sha256:8d7864f6041352691d102d78375b76786d85b4916fdbfb313851be5358a2ec1a
+  independently_verified_digest: sha256:8d7864f6041352691d102d78375b76786d85b4916fdbfb313851be5358a2ec1a
   factory_kernel: 10_of_10
   opro_regression: PASS
   opro_promotion_status: CANDIDATE
-  pytest: 44_of_44
+  pytest: 56_of_56
 m1b_ingest_evidence: docs/governance/M1B_FIRST_INGEST_EVIDENCE_2026-08-19.yaml
 m1b_fixture: fixtures/m1b/historical_series_2020-01.json
 m1b_fixture_raw_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
-pit_availability: PARTIALLY_VERIFIED
-cross_source_reconciliation: PARTIALLY_VERIFIED
-m1b_status: ACTIVE_NOT_GREEN
-m1b_blocker: first-party PIT availability evidence for FEDFUNDS, DEXUSEU, T10YIE and complete reconciliation coverage for the selected five-series set
-m1b_evidence: docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-19.yaml
+pit_availability: VERIFIED
+cross_source_reconciliation: VERIFIED_WITH_CLASSIFIED_DISCREPANCY
+m1b_status: GREEN
+m1b_blocker: null
+m1b_evidence: docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-20.yaml
 checkpoint:
   mode: descendant
   checkpoint_sha: a6153891d8e943b436e9aaa481607b109294da7e
@@ -97,4 +92,4 @@ evidence_manifest: docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.
 m1b_source_contract: docs/governance/M1B_SOURCE_CONTRACT_V1.md
 m1b_minimum_source_stack: docs/governance/M1B_MINIMUM_SOURCE_STACK_V1.md
 financial_provenance_schema: schemas/financial_provenance.schema.yaml
-updated_at_utc: 2026-08-19T12:05:00+09:00
+updated_at_utc: 2026-08-20T07:45:00+09:00
