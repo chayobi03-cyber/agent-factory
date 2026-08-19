@@ -1,4 +1,4 @@
-# AgentFactory Next Session Handoff — 2026-08-19
+# AgentFactory Next Session Handoff — 2026-08-20
 
 ## Canonical state
 
@@ -7,7 +7,7 @@ Read first:
 1. `docs/governance/CURRENT_SESSION_STATE.yaml`
 2. `docs/governance/M1B_SOURCE_CONTRACT_V1.md`
 3. `schemas/financial_provenance.schema.yaml`
-4. `docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-19.yaml`
+4. `docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-20.yaml`
 5. `docs/governance/CER_M1B_LESSONS_2026-08-19.md`
 6. `docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml`
 
@@ -18,86 +18,64 @@ Do not reload the entire prior chat. Repository governance artifacts are canonic
 - repository: `chayobi03-cyber/agent-factory`
 - branch: `p0/opro-baseline`
 - audited OPRO baseline SHA — **DO NOT CHANGE**: `20a54b92aad0857f75c6200d984b13098c6f4927`
-- verified evidence target SHA: `2adbf5304491cde04f02fb997f766b40460ccf60`
-- evidence run/job: `32126799804 / 95679046613`
+- M1-B final regression target SHA: `c1efb9933fc5b3589cd43e986d4b1549f4338923`
+- regression run/job: `32309992157 / 96250842729`
+- final branch state is a descendant of the canonical handoff `ee6f5fd3e470895f9c242c8004b64b4c4f74d6b4`
 
 ## Current gate
 
 ```text
 Audit Evidence Chain = GREEN
-RESUME = ALLOWED
-M1-B = ACTIVE_NOT_GREEN
+CER Resume = ALLOWED
+M1-B = GREEN
 OPRO promotion = FORBIDDEN
 GEPA implementation = FORBIDDEN
 ```
 
-## Verified upstream gate
+## M1-B final evidence
 
-The execution evidence package is independently verified:
+Five-series PIT/provenance/reconciliation coverage is complete:
 
-```text
-TARGET_SHA = CHECKOUT_SHA = EXECUTION_SHA = 2adbf530...
-RC-01..RC-08 = PASS
-Factory Kernel = 10/10
-OPRO regression = PASS
-pytest = 44/44
-artifact = 9320646477
-GitHub digest = independently verified digest
-```
-
-## M1-B current evidence
-
-Five-series fixture:
-
-- DEXUSEU: 2020-01-02 = 1.1166
-- T10YIE: 2020-01-02 = 1.80
-- FEDFUNDS: 2020-01-01 = 1.55
-- UNRATE: 2020-01-01 = 3.6
-- CPIAUCSL: 2020-01-01 = 259.127
+- FEDFUNDS: 2020-01-01 = 1.55; first-party H.15/ALFRED release boundary verified.
+- DEXUSEU: 2020-01-02 = 1.1166; first-party FRED observation plus ECB publication boundary captured; cross-source difference preserved as a classified discrepancy.
+- T10YIE: 2020-01-02 = 1.80; date-level PIT boundary preserved; derived reconciliation uses Treasury-derived DGS10/DFII10 inputs rather than claiming standalone equality.
+- UNRATE: 2020-01-01 = 3.6; BLS release boundary verified.
+- CPIAUCSL: 2020-01-01 = 259.127; BLS release boundary verified.
 
 Raw snapshot canonical SHA-256:
 `12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935`
 
-Replay determinism and order-invariant hashing are implemented.
+Final evidence:
+`docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-20.yaml`
 
-PIT status:
-
-```text
-UNRATE   = VERIFIED_RELEASE
-CPIAUCSL = VERIFIED_RELEASE
-FEDFUNDS = REVIEW_REQUIRED
-DEXUSEU  = REVIEW_REQUIRED
-T10YIE   = REVIEW_REQUIRED
-```
-
-Supplemental cross-source check:
+## Verified regression
 
 ```text
-FRED DGS10 2020-01-02 = 1.88%
-U.S. Treasury 10Y 2020-01-02 = 1.88%
-status = MATCHED
+TARGET_SHA = EXECUTION_SHA = CHECKOUT_SHA = c1efb993...
+RC-01..RC-08 = PASS
+Factory Kernel = 10/10
+OPRO regression = PASS
+OPRO promotion = CANDIDATE
+pytest = 56/56
+artifact = 9386078714
+digest = sha256:8d7864f6041352691d102d78375b76786d85b4916fdbfb313851be5358a2ec1a
 ```
 
-This supplemental check does not replace reconciliation coverage for the selected five-series set.
+## M1-B acceptance decision
 
-## Next objective
+```text
+provenance = VERIFIED
+PIT/replay = VERIFIED
+reconciliation = VERIFIED_WITH_CLASSIFIED_DISCREPANCY
+unresolved_integrity_blocker = false
+M1-B = GREEN
+```
 
-Close the remaining M1-B evidence gaps without changing the audited baseline or touching OPRO promotion.
+The DEXUSEU cross-source difference remains explicitly visible and classified. Exact numerical equality is not required where the sources have different definitions/quotation regimes, provided the discrepancy is preserved and not silently overwritten.
 
-1. Capture first-party PIT/vintage evidence for `FEDFUNDS`, `DEXUSEU`, `T10YIE`.
-2. Add a FRED vintage/realtime query fixture with exact request parameters.
-3. Add reconciliation fixtures covering the selected five-series set where an authoritative second source exists.
-4. Implement the network ingestion adapter with raw-response hashing and request metadata.
-5. Run PIT → replay → reconciliation regression.
-6. Rejudge M1-B.
+## Next stage
 
-## Fail-closed rules
-
-- Current revised FRED table alone is not PIT evidence.
-- Missing `available_as_of` or vintage boundary = `REVIEW_REQUIRED`.
-- Exact value equality does not imply provenance equality.
-- Cross-source mismatch must remain visible.
-- M1-B GREEN requires all five selected series to have complete provenance, PIT/replay evidence, and reconciliation evidence.
+M1-B downstream work is now eligible to begin. The next gate is the M2 historical-integration entry review. Do not start backtest/OOS/optimization/Monte Carlo until the M2 entry criteria are independently satisfied.
 
 ## Absolute constraints
 
@@ -105,8 +83,8 @@ Close the remaining M1-B evidence gaps without changing the audited baseline or 
 - OPRO promotion forbidden;
 - GEPA implementation forbidden;
 - RE Domain implementation forbidden;
-- backtest/OOS/optimization/Monte Carlo forbidden before M1-B GREEN;
-- state/documentation never substitutes for primary evidence.
+- state/documentation never substitutes for primary evidence;
+- no downstream performance-analysis claims before their own evidence gate.
 
 ## Session close
 
