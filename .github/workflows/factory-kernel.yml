@@ -82,6 +82,13 @@ jobs:
           status=${PIPESTATUS[0]}
           printf 'opro_exit_code=%s\n' "$status" >> ci-exit-codes.env
           exit "$status"
+      - name: M2 Historical Entry Readiness
+        run: |
+          set -o pipefail
+          python3 scripts/m2_entry_review.py 2>&1 | tee m2-entry-review.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 'm2_entry_review_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
       - name: Unit and Kernel Regression
         run: |
           set -o pipefail
@@ -102,4 +109,6 @@ jobs:
             factory-demo.stdout.json
             factory-harness.stdout.json
             opro-baseline.stdout.json
+            m2-entry-review.stdout.json
+            m2-entry-review.json
             pytest.stdout.txt
