@@ -1,7 +1,7 @@
 state_version: 8
 session_id: 2026-08-20-m2-entry-review
 phase: M2
- gate: M2_ENTRY_REVIEW
+gate: M2_ENTRY_REVIEW
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
@@ -101,4 +101,4 @@ checkpoint:
   mode: descendant
   checkpoint_sha: 41259e233e5273ad2fe1577e71935702956476b1
   evidence_type: m2_entry_review_checkpoint
-updated_at_utc: 2026-08-20T08:00:00+09:00
+updated_at_utc: 2026-08-20T08:02:00+09:00
