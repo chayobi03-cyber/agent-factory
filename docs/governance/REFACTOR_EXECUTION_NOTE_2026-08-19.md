@@ -1,0 +1,1 @@
+The live branch is being returned to the last verified core execution target before the financial-data detour. Historical M1-B work is retained outside the core path.
