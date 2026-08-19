@@ -1,0 +1,1 @@
+This checkpoint exists to preserve the full pre-refactor M1-B financial provenance state as historical evidence before the live branch is returned to the core engineering roadmap. It is not part of the Agent Factory core mission.
