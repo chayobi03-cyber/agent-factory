@@ -1,0 +1,76 @@
+schema_version: 1
+session: 2026-08-19-m1b-entry
+evidence_type: m1b_pit_and_cross_source_reconciliation
+fixture: fixtures/m1b/historical_series_2020-01.json
+
+pit_method:
+  primary_method: FRED realtime_period_and_vintage_dates
+  rule: "observation is usable only when the series value is provably available as of the selected cutoff"
+  evidence_sources:
+    - FRED series observations API
+    - FRED vintagedates API
+    - official BLS release archives where applicable
+
+series:
+  - series_id: UNRATE
+    observation_time: 2020-01-01
+    value: 3.6
+    pit_available_as_of: 2020-02-07T08:30:00-05:00
+    pit_status: VERIFIED_RELEASE
+    evidence: official BLS Employment Situation January 2020 release
+    citation_url: https://www.bls.gov/news.release/archives/empsit_02072020.htm
+  - series_id: CPIAUCSL
+    observation_time: 2020-01-01
+    value: 259.127
+    pit_available_as_of: 2020-02-13T08:30:00-05:00
+    pit_status: VERIFIED_RELEASE
+    evidence: official BLS CPI January 2020 release
+    citation_url: https://www.bls.gov/news.release/archives/cpi_02132020.htm
+  - series_id: FEDFUNDS
+    observation_time: 2020-01-01
+    value: 1.55
+    pit_status: REVIEW_REQUIRED
+    reason: "historical value is confirmed, but this fixture lacks a first-party release timestamp tied to the specific observation"
+  - series_id: DEXUSEU
+    observation_time: 2020-01-02
+    value: 1.1166
+    pit_status: REVIEW_REQUIRED
+    reason: "daily market observation is confirmed, but first-party publication/as-of timestamp is not yet captured in the fixture"
+  - series_id: T10YIE
+    observation_time: 2020-01-02
+    value: 1.80
+    pit_status: REVIEW_REQUIRED
+    reason: "daily market-derived observation is confirmed, but first-party publication/as-of timestamp is not yet captured in the fixture"
+
+cross_source_reconciliation:
+  - group: US_10Y_TREASURY_2020-01-02
+    source_a:
+      provider: FRED
+      series_id: DGS10
+      value: 1.88
+      unit: percent
+    source_b:
+      provider: U.S. Department of the Treasury
+      series: 10-year Treasury par yield
+      value: 1.88
+      unit: percent
+    status: MATCHED
+    tolerance: 0.0
+    discrepancy_notes: null
+    evidence_urls:
+      - https://fred.stlouisfed.org/data/DGS10
+      - https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve&field_tdr_date_value=2020
+
+replay:
+  raw_snapshot_hash: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
+  canonicalization_rule: "sort observations by series_id, observation_time before hashing"
+  status: VERIFIED
+
+overall:
+  five_series_fixture: VERIFIED
+  provenance_schema: VERIFIED
+  replay_determinism: VERIFIED
+  cross_source_reconciliation: PARTIALLY_VERIFIED
+  pit: PARTIALLY_VERIFIED
+  m1b_status: ACTIVE_NOT_GREEN
+  blocker: "three fixture series still require first-party release/as-of timestamp evidence"
