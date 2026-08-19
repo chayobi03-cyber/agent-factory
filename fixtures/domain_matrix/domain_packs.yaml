@@ -1,0 +1,32 @@
+# Synthetic domain fixtures. These validate Kernel/Domain Pack separation only.
+version: 1
+fixture_only: true
+domains:
+  - domain_id: RE
+    version: 0.1.0
+    knowledge:
+      topic: radiated_emission
+      fact: "Synthetic RE fixture: peak frequency 120 MHz exceeds the sample limit."
+    workflow: engineering_qa
+    risk_level: medium
+  - domain_id: EMI
+    version: 0.1.0
+    knowledge:
+      topic: conducted_emission
+      fact: "Synthetic EMI fixture: conducted noise appears on the sample power line."
+    workflow: engineering_qa
+    risk_level: medium
+  - domain_id: CST
+    version: 0.1.0
+    knowledge:
+      topic: simulation
+      fact: "Synthetic CST fixture: simulated resonance is observed near 240 MHz."
+    workflow: engineering_qa
+    risk_level: high
+  - domain_id: ESD
+    version: 0.1.0
+    knowledge:
+      topic: immunity
+      fact: "Synthetic ESD fixture: the sample reset event is reproduced at contact discharge."
+    workflow: engineering_qa
+    risk_level: high

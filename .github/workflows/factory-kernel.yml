@@ -68,6 +68,13 @@ jobs:
           status=${PIPESTATUS[0]}
           printf 'factory_demo_exit_code=%s\n' "$status" >> ci-exit-codes.env
           exit "$status"
+      - name: Domain Matrix E2E
+        run: |
+          set -o pipefail
+          python3 scripts/domain_matrix_demo.py --json 2>&1 | tee domain-matrix.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 'domain_matrix_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
       - name: Deterministic Kernel Harness
         run: |
           set -o pipefail
@@ -81,13 +88,6 @@ jobs:
           python3 scripts/opro_baseline.py --json 2>&1 | tee opro-baseline.stdout.json
           status=${PIPESTATUS[0]}
           printf 'opro_exit_code=%s\n' "$status" >> ci-exit-codes.env
-          exit "$status"
-      - name: M2 Historical Entry Readiness
-        run: |
-          set -o pipefail
-          python3 scripts/m2_entry_review.py 2>&1 | tee m2-entry-review.stdout.json
-          status=${PIPESTATUS[0]}
-          printf 'm2_entry_review_exit_code=%s\n' "$status" >> ci-exit-codes.env
           exit "$status"
       - name: Unit and Kernel Regression
         run: |
@@ -107,8 +107,16 @@ jobs:
             ci-exit-codes.env
             resume.stdout.txt
             factory-demo.stdout.json
+            domain-matrix.stdout.json
             factory-harness.stdout.json
             opro-baseline.stdout.json
-            m2-entry-review.stdout.json
-            m2-entry-review.json
             pytest.stdout.txt
+      - name: Publish Domain Matrix evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: domain-matrix-evidence
+          path: |
+            domain-matrix.stdout.json
+            execution-identity.txt
+            ci-exit-codes.env

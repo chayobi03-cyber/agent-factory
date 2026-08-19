@@ -1,62 +1,47 @@
-state_version: 8
-session_id: 2026-08-20-m2-entry-review
-phase: M2
-gate: M2_ENTRY_REVIEW
+state_version: 4
+session_id: 2026-08-20-domain-matrix-ci-remediation
+phase: CORE-WORKFLOW-MATRIX
+gate: FACTORY_KERNEL_GREEN_BASELINE
 repository: chayobi03-cyber/agent-factory
-working_branch: p0/opro-baseline
+working_branch: p1/domain-matrix-workflow-v0.1
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
-task_id: M2-HISTORICAL-INTEGRATION-ENTRY-REVIEW
-current_task: define and machine-verify M2 historical integration readiness without executing historical performance analysis
+verified_kernel_target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
+task_id: AGENTFACTORY-DOMAIN-MATRIX
+current_task: validate reusable Factory workflow across multiple synthetic Domain Packs before live domain ingestion
 last_completed:
-  - evidence_execution_architecture_remediation
-  - exact_sha_checkout_and_identity_assertion
-  - run_job_log_artifact_capture
-  - machine_evidence_artifact_capture
-  - independent_artifact_digest_verification
-  - rc01_rc08_rejudgement
-  - factory_kernel_regression
-  - opro_execution_identity_regression
-  - pytest_56_of_56
-  - m1b_source_contract_v1
-  - financial_provenance_schema_v1
-  - five_series_pit_replay_reconciliation
-  - m1b_green_rejudgement
-  - m2_historical_integration_contract_v1
-  - m2_entry_review_machine_artifact
-  - m2_12_case_readiness_matrix
-  - m2_negative_regression_seeds
-  - m2_ci_readiness_integration
+  - evidence_execution_architecture_review
+  - verified_primary_factory_execution
+  - synthetic_domain_matrix_runner_added
+  - ci_trigger_and_domain_matrix_evidence_remediation
 current_focus:
-  - M2 historical dataset identity and lineage
-  - PIT availability and vintage enforcement
-  - deterministic 12-case experiment readiness
-  - OOS gate boundary
+  - synthetic_multi_domain_workflow
+  - kernel_domain_pack_boundary
+  - generic_evidence_provenance
+  - domain_matrix_regression
 next_action:
-  - execute_m2_historical_integration_validation_only_after_entry_evidence_is_available
-blocked_until:
-  - primary historical execution evidence
-  - verified historical evidence artifact and digest
+  - execute_domain_matrix_ci
+  - audit_matrix_trace_and_cer_decisions
+  - generalize_document_revision_fragment_evidence_contract
+  - implement_engineering_document_ingestion_baseline
+blocked_until: []
 forbidden:
-  - GEPA_implementation
-  - RE_domain_implementation
+  - financial_data_as_core_requirement
+  - financial_backtest
+  - portfolio_optimization
+  - GEPA_implementation_before_governed_optimizer_gate
   - OPRO_promotion
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
-  - backtest_before_M2_historical_execution_gate
-  - OOS_before_M2_OOS_GATE
-  - optimization_before_M2_PERFORMANCE_GATE
-  - stress_before_M2_STRESS_GATE
-  - monte_carlo_before_M2_MONTE_CARLO_GATE
-handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
+  - autonomous_production_self_modification
+  - autonomous_equipment_control
+  - treating_RE_as_the_only_supported_domain
+handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-20_DOMAIN_MATRIX.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
-m2_contract: docs/governance/M2_HISTORICAL_INTEGRATION_CONTRACT_V1.md
-m2_entry_review: docs/governance/M2_ENTRY_REVIEW_2026-08-20.yaml
-m2_case_matrix: fixtures/m2/historical_experiment_12_case.yaml
-m2_schema: schemas/m2_historical_experiment.schema.yaml
-m2_lessons: docs/governance/CER_M2_LESSONS_2026-08-20.md
 rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
 lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
+scope_contract: docs/governance/AGENT_FACTORY_SCOPE_V1.md
+refactor_plan: docs/governance/ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md
 m1b_lessons: docs/governance/CER_M1B_LESSONS_2026-08-19.md
 resume_status: RESUME_ALLOWED
 resume_checks:
@@ -68,37 +53,11 @@ resume_checks:
   RC-06: PASS
   RC-07: PASS
   RC-08: PASS
-last_evidence:
-  target_sha: c1efb9933fc5b3589cd43e986d4b1549f4338923
-  workflow_run_id: 32309992157
-  job_id: 96250842729
-  workflow: Factory Kernel Regression
-  event: pull_request
-  result: VERIFIED_PRIMARY_EXECUTION_EVIDENCE
-  artifact_id: 9386078714
-  artifact: factory-kernel-machine-evidence
-  github_digest: sha256:8d7864f6041352691d102d78375b76786d85b4916fdbfb313851be5358a2ec1a
-  independently_verified_digest: sha256:8d7864f6041352691d102d78375b76786d85b4916fdbfb313851be5358a2ec1a
-  factory_kernel: 10_of_10
-  opro_regression: PASS
-  opro_promotion_status: CANDIDATE
-  pytest: 56_of_56
-m1b_ingest_evidence: docs/governance/M1B_FIRST_INGEST_EVIDENCE_2026-08-19.yaml
-m1b_fixture: fixtures/m1b/historical_series_2020-01.json
-m1b_fixture_raw_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
-pit_availability: VERIFIED
-cross_source_reconciliation: VERIFIED_WITH_CLASSIFIED_DISCREPANCY
-m1b_status: GREEN
-m1b_blocker: null
-m2_status: REVIEW_REQUIRED
-m2_historical_execution: NOT_EXECUTED
-m2_oos_status: NOT_STARTED
-m2_stress_status: NOT_STARTED
-m2_monte_carlo_status: NOT_STARTED
-m2_entry_reason: contract and matrix defined; primary historical execution evidence not yet available
-m2_evidence_manifest: NOT_AVAILABLE
 checkpoint:
   mode: descendant
-  checkpoint_sha: 41259e233e5273ad2fe1577e71935702956476b1
-  evidence_type: m2_entry_review_checkpoint
-updated_at_utc: 2026-08-20T08:02:00+09:00
+  checkpoint_sha: 48e5f393577bbc2599a1239aa0d16ac783b413e1
+open_validation:
+  pr: 11
+  branch: p1/domain-matrix-workflow-v0.1
+  ci_status: NOT_YET_OBSERVED
+updated_at_utc: 2026-08-20T00:00:00+00:00
