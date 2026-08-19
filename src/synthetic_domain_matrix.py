@@ -12,6 +12,8 @@ from interfaces import Claim, EvidenceCandidate
 class FixtureDomainPack:
     """Minimal domain implementation used only to validate kernel reuse."""
 
+    CAPABILITIES = ("ingest", "parse", "normalize", "retrieve", "verify", "evaluate", "render_report")
+
     def __init__(self, spec: dict[str, Any]) -> None:
         self.domain_id = spec["domain_id"]
         self.version = spec["version"]
@@ -77,9 +79,16 @@ def run_domain(runtime: FactoryRuntime, spec: dict[str, Any]) -> dict[str, Any]:
         domain_pack_version=pack.version,
     )
     runtime.load_domain_pack(run.run_id, pack)
-    runtime.set_context(run.run_id, {"domain_id": pack.domain_id, "workflow": pack.workflow, "fixture_only": True})
+    runtime.set_context(
+        run.run_id,
+        {"domain_id": pack.domain_id, "workflow": pack.workflow, "fixture_only": True},
+    )
 
-    evidence = pack.retrieve("synthetic evidence query")
+    ingested = pack.ingest({"source_id": f"SYN-{pack.domain_id}-001"})
+    parsed = pack.parse(ingested)
+    normalized = pack.normalize(parsed)
+    evidence = pack.retrieve("synthetic evidence query", normalized=normalized)
+
     claim = Claim(
         claim_id=f"C-{pack.domain_id}-001",
         statement=pack.knowledge["fact"],
@@ -88,19 +97,42 @@ def run_domain(runtime: FactoryRuntime, spec: dict[str, Any]) -> dict[str, Any]:
         confidence=1.0,
     )
     verification = pack.verify((claim,), evidence)
+    evaluation = pack.evaluate(
+        {"query": "synthetic evidence query", "domain_id": pack.domain_id},
+        verification,
+    )
+
     decision = runtime.evaluate_gate(
         run_id=run.run_id,
         gate_id="PRE-001",
         snapshot=snapshot,
         claims=(claim,),
         evidence=evidence,
-        risk_level=spec["risk_level"],
+        risk_level="low",
     )
+    if decision.result != "PASS":
+        raise RuntimeError(f"synthetic happy-path gate did not PASS: {pack.domain_id}: {decision.result}")
+
+    workflow_result = runtime.execute_workflow(
+        run.run_id,
+        lambda _ctx: {
+            "domain_id": pack.domain_id,
+            "normalized": normalized,
+            "verification": verification,
+            "evaluation": evaluation,
+        },
+    )
+    report = pack.render_report(workflow_result)
+
     return {
         "domain_id": pack.domain_id,
         "workflow": pack.workflow,
+        "capabilities_exercised": list(pack.CAPABILITIES),
         "verification": verification,
+        "evaluation": evaluation,
         "cer_decision": decision.result,
+        "workflow_executed": True,
+        "report_rendered": bool(report.get("report")),
         "risk_level": spec["risk_level"],
         "trace_events": len(runtime.get_trace(run.run_id).events),
     }
