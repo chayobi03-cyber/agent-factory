@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, p0/**]
   pull_request:
-    branches: [main]
+    branches: [main, p0/**]
 
 jobs:
   kernel-regression:
