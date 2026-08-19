@@ -47,30 +47,36 @@ For source checkpoint `9b44a3685bbcfac0e4138cd2d7d09d14ce9d0e71`:
 - Domain Matrix artifact: `9386586000`
 - Domain Matrix artifact digest: `sha256:b6581c28d353f0dcfda836b9d91182f0428b4fc3debaed88553918d0ed50ca7a`
 
+## Final-checkpoint RCA
+
+A fresh CI execution of the session-closure commit exposed `RC-07=BLOCKED`. The target/runtime SHA binding and RC-01..RC-06/RC-08 were correct. Root cause was the handoff using generic wording (`RE is not...`) rather than the validator-required governance phrase `RE domain implementation forbidden`. The minimum corrective action is to align the handoff wording with the active RC-07 contract without changing gate semantics.
+
 ## PR state
 
 - PR #11: open
 - base: `p0/opro-baseline`
 - base SHA: `744b5c45cae3880c0815acf8d24f4df5646a67d9`
 - head: `p1/domain-matrix-workflow-v0.1`
-- head SHA at source checkpoint: `9b44a3685bbcfac0e4138cd2d7d09d14ce9d0e71`
-- mergeability: true
-- no base/head divergence detected by compare (`ahead=47`, `behind=0`)
+- current corrective commit: resolves from Git HEAD
+- mergeability: must be verified from live PR state
 
 ## Governance constraints
 
-- audited OPRO baseline immutable
+- audited OPRO baseline SHA immutable
+- audited OPRO baseline SHA - do not change
 - OPRO promotion forbidden
 - GEPA implementation forbidden
+- RE domain implementation forbidden
 - financial-data logic is not a core Agent Factory requirement
 - synthetic Domain Matrix remains fixture-only
 - no GREEN claim without primary execution evidence
+- state/documentation never substitutes for primary evidence
 - no historical run may be reused for a new SHA
 - baseline changes, history rewrite, force push, production changes, and core governance meaning changes require HITL
 
 ## Next session
 
-1. Verify the final session-checkpoint CI after governance-document updates in the final closure commit.
+1. Verify the latest current HEAD primary CI execution and target/runtime SHA equality.
 2. Integrate the Generic Engineering Evidence Envelope with runtime evidence-manifest generation/validation.
 3. Add one cross-domain evidence fixture proving RE/EMI/CST/ESD can emit the same envelope without Kernel schema branches.
 4. Proceed to engineering-document ingestion only after the generic evidence integration remains green.
