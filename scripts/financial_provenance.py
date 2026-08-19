@@ -9,13 +9,73 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+SCHEMA_VERSION = "1"
+
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
 def canonical_json(value: Any) -> bytes:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def _source_hash(
+    *,
+    provider: str,
+    dataset: str,
+    endpoint_or_locator: str,
+    authority: str,
+    retrieval_method: str,
+    retrieval_version: str,
+    raw_payload_sha256: str,
+) -> str:
+    return sha256_bytes(
+        canonical_json(
+            {
+                "authority": authority,
+                "dataset": dataset,
+                "endpoint_or_locator": endpoint_or_locator,
+                "provider": provider,
+                "raw_payload_sha256": raw_payload_sha256,
+                "retrieval_method": retrieval_method,
+                "retrieval_version": retrieval_version,
+            }
+        )
+    )
+
+
+def _replay_key(
+    *,
+    series_id: str,
+    raw_payload_sha256: str,
+    normalization: str,
+    transformation_version: str,
+) -> str:
+    return sha256_bytes(
+        canonical_json(
+            {
+                "normalization": normalization,
+                "raw_payload_sha256": raw_payload_sha256,
+                "series_id": series_id,
+                "transformation_version": transformation_version,
+            }
+        )
+    )
+
+
+def _derived_payload(record: dict[str, Any]) -> dict[str, Any]:
+    """Return the canonical replay payload without self-referential hashes."""
+    payload = json.loads(json.dumps(record))
+    payload["provenance"]["derived_hash"] = ""
+    payload["replay"]["expected_output_sha256"] = ""
+    payload.pop("record_id", None)
+    return payload
 
 
 def build_record(
@@ -45,32 +105,24 @@ def build_record(
     tolerance: float | None,
     discrepancy_notes: str | None,
 ) -> dict[str, Any]:
-    source_hash = sha256_bytes(
-        canonical_json(
-            {
-                "provider": provider,
-                "dataset": dataset,
-                "endpoint_or_locator": endpoint_or_locator,
-                "retrieval_method": retrieval_method,
-                "retrieval_version": retrieval_version,
-                "raw_payload_sha256": raw_payload_sha256,
-            }
-        )
+    source_hash = _source_hash(
+        provider=provider,
+        dataset=dataset,
+        endpoint_or_locator=endpoint_or_locator,
+        authority=authority,
+        retrieval_method=retrieval_method,
+        retrieval_version=retrieval_version,
+        raw_payload_sha256=raw_payload_sha256,
+    )
+    replay_key = _replay_key(
+        series_id=series_id,
+        raw_payload_sha256=raw_payload_sha256,
+        normalization=normalization,
+        transformation_version=transformation_version,
     )
 
-    replay_key = sha256_bytes(
-        canonical_json(
-            {
-                "series_id": series_id,
-                "raw_payload_sha256": raw_payload_sha256,
-                "transformation_version": transformation_version,
-                "normalization": normalization,
-            }
-        )
-    )
-
-    core = {
-        "schema_version": "1",
+    record: dict[str, Any] = {
+        "schema_version": SCHEMA_VERSION,
         "series_id": series_id,
         "source": {
             "provider": provider,
@@ -121,13 +173,10 @@ def build_record(
         "validity": "active",
     }
 
-    derived_hash = sha256_bytes(canonical_json(core))
-    record = dict(core)
+    derived_hash = sha256_bytes(canonical_json(_derived_payload(record)))
+    record["provenance"]["derived_hash"] = derived_hash
+    record["replay"]["expected_output_sha256"] = derived_hash
     record["record_id"] = f"FPR-{derived_hash[:20]}"
-    record["provenance"] = dict(core["provenance"], derived_hash=derived_hash)
-    record["replay"] = dict(
-        core["replay"], expected_output_sha256=derived_hash
-    )
     return record
 
 
@@ -188,8 +237,21 @@ def main() -> int:
         tolerance=args.tolerance,
         discrepancy_notes=args.discrepancy_notes,
     )
-    Path(args.output).write_text(json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"record_id": record["record_id"], "raw_payload_sha256": record["snapshot"]["raw_payload_sha256"], "derived_hash": record["provenance"]["derived_hash"], "replay_key": record["replay"]["replay_key"]}, sort_keys=True))
+    Path(args.output).write_text(
+        json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        json.dumps(
+            {
+                "derived_hash": record["provenance"]["derived_hash"],
+                "raw_payload_sha256": record["snapshot"]["raw_payload_sha256"],
+                "record_id": record["record_id"],
+                "replay_key": record["replay"]["replay_key"],
+            },
+            sort_keys=True,
+        )
+    )
     return 0
 
 
