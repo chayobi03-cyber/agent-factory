@@ -1,0 +1,85 @@
+contract_version: semver
+
+evidence:
+  evidence_id: string
+  evidence_type: string
+  domain: string
+  domain_pack_id: string
+  domain_pack_version: semver
+  scenario: string
+  task_id: string
+
+execution_identity:
+  repository: string
+  workflow: string
+  workflow_version: string
+  run_id: string
+  job_id: string|null
+  target_sha: string
+  runtime_sha: string
+  execution_id: string
+  event: string
+
+provenance:
+  source_refs: list[string]
+  source_type: string
+  source_hashes: list[string]
+  document_id: string|null
+  revision_id: string|null
+  fragment_id: string|null
+  locator: string|null
+  authority: string|null
+  ingestion_method: string|null
+  extraction_version: string|null
+  observed_at: datetime
+
+runtime:
+  runner_os: string
+  runtime_version: string
+  tool_versions: map[string,string]
+  model_provider: string|null
+  model_name: string|null
+  parser_version: string|null
+  retriever_version: string|null
+
+result:
+  status: [success, partial, failed, abstained]
+  summary: string
+  domain_payload_ref: string|null
+  failure_reason: string|null
+
+validation:
+  status: [PASS, FAIL, BLOCKED, NOT_OBSERVED, INVALID_EVIDENCE]
+  checks: list[string]
+  validator_version: string
+  validated_at: datetime|null
+
+artifact:
+  artifact_ref: string
+  artifact_name: string
+  media_type: string
+  size_bytes: integer|null
+  digest_algorithm: [sha256]
+  digest: string
+  digest_verified: boolean
+  download_verified: boolean
+
+manifest:
+  manifest_id: string
+  manifest_hash: string
+  parent_evidence_ids: list[string]
+
+quality:
+  confidence: number|null
+  limitations: list[string]
+
+hotl:
+  decision_point: string|null
+  required: boolean
+  decision_id: string|null
+  action: [none, approve, edit, reject, retry, escalate]
+  actor_ref: string|null
+  rationale: string|null
+  decided_at: datetime|null
+
+created_at: datetime
