@@ -1,0 +1,1 @@
+Historical M1-B branch should preserve the pre-refactor financial-data experiment state. Canonical product work continues on the core engineering roadmap.
