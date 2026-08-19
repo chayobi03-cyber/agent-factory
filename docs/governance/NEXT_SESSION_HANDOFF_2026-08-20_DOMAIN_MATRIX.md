@@ -8,13 +8,14 @@
 
 ## Constraints
 
-- GEPA implementation forbidden
-- OPRO promotion forbidden
-- RE Domain implementation forbidden before the governed workflow gate
+- repository: `chayobi03-cyber/agent-factory`
+- branch: `p1/domain-matrix-workflow-v0.1`
 - audited OPRO baseline SHA immutable
+- state/documentation never substitutes for primary evidence
+- OPRO promotion forbidden
+- GEPA implementation forbidden
+- RE Domain implementation forbidden
 - PASS without primary execution evidence forbidden
-- financial data is not a core Agent Factory requirement
-- synthetic Domain Matrix fixtures are fixture-only and not production domain knowledge
 
 ## Objective
 
