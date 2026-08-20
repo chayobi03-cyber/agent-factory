@@ -14,12 +14,38 @@ EXPECTED_GOVERNANCE_NAMESPACE = "AgentFactory"
 BOUNDARY_REFERENCE_FILES = {
     "docs/governance/LESSONS_LEARNED_2026-08-20_CONTEXT_BOUNDARY.md",
     "docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md",
+    "11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md",
 }
 SCAN_PATHS = ("docs/governance", ".github/workflows")
 CROSS_PROJECT_MARKERS = (
     "chayobi03-cyber/investment",
     "github.com/chayobi03-cyber/investment",
 )
+# High-confidence quarantine set. These are not generic keyword matches; they are
+# known investment-specific artifacts identified by the forensic ownership review.
+FORBIDDEN_CANONICAL_PATHS = {
+    "docs/governance/M1B_MINIMUM_SOURCE_STACK_V1.md",
+    "docs/governance/M1B_SOURCE_CONTRACT_V1.md",
+    "docs/governance/M1B_FIRST_INGEST_EVIDENCE_2026-08-19.yaml",
+    "docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-19.yaml",
+    "docs/governance/M1B_PIT_RECONCILIATION_EVIDENCE_2026-08-20.yaml",
+    "docs/governance/CER_M1B_LESSONS_2026-08-19.md",
+    "docs/governance/M2_HISTORICAL_INTEGRATION_CONTRACT_V1.md",
+    "docs/governance/M2_ENTRY_REVIEW_2026-08-20.yaml",
+    "fixtures/m1b/historical_series_2020-01.json",
+    "fixtures/m1b/pit_reconciliation_2020-01.json",
+    "fixtures/m2/historical_experiment_12_case.yaml",
+    "schemas/financial_provenance.schema.yaml",
+    "schemas/m2_historical_experiment.schema.yaml",
+    "scripts/m2_entry_review.py",
+    "src/m1b_fred.py",
+    "src/m1b_provenance.py",
+    "src/m2_historical.py",
+    "tests/test_m1b_fred.py",
+    "tests/test_m1b_pit_reconciliation.py",
+    "tests/test_m1b_provenance.py",
+    "tests/test_m2_historical_contract.py",
+}
 
 
 class ContextGuardError(RuntimeError):
@@ -73,12 +99,18 @@ def scan_cross_project_references(root: Path) -> list[str]:
     return findings
 
 
+def scan_forbidden_paths(root: Path) -> list[str]:
+    tracked = set(run_git("ls-files").splitlines())
+    return sorted(path for path in FORBIDDEN_CANONICAL_PATHS if path in tracked)
+
+
 def validate_identity(root: Path | None = None) -> list[str]:
     root = root or Path.cwd()
     state_path = root / "docs/governance/CURRENT_SESSION_STATE.yaml"
     handoff_path = root / "docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md"
-    if not state_path.exists() or not handoff_path.exists():
-        raise ContextGuardError("required governance identity files are missing")
+    scope_path = root / "docs/governance/AGENT_FACTORY_SCOPE_V1.md"
+    if not state_path.exists() or not handoff_path.exists() or not scope_path.exists():
+        raise ContextGuardError("required governance identity/scope files are missing")
 
     import yaml
 
@@ -103,6 +135,10 @@ def validate_identity(root: Path | None = None) -> list[str]:
     if remote != EXPECTED_REPOSITORY:
         failures.append(f"git.remote={remote!r}")
 
+    scope = scope_path.read_text(encoding="utf-8")
+    if "project_id: agent-factory" not in scope or "governance_namespace: AgentFactory" not in scope:
+        failures.append("canonical scope contract identity mismatch or missing")
+
     handoff = handoff_path.read_text(encoding="utf-8")
     if f"project_id: `{EXPECTED_PROJECT}`" not in handoff:
         failures.append("handoff.project_id mismatch or missing")
@@ -116,6 +152,10 @@ def validate_identity(root: Path | None = None) -> list[str]:
     findings = scan_cross_project_references(root)
     if findings:
         failures.append("cross-project reference(s): " + " | ".join(findings))
+
+    forbidden = scan_forbidden_paths(root)
+    if forbidden:
+        failures.append("investment-specific canonical artifacts present: " + ", ".join(forbidden))
 
     return failures
 
