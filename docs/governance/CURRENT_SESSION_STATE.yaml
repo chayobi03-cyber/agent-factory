@@ -7,42 +7,31 @@ repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 governance_namespace: AgentFactory
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
-task_id: PROJECT-CONTEXT-REMEDIATION
-current_task: validate canonical AgentFactory scope after controlled quarantine of confirmed investment-specific artifacts without executing M2
 canonical_scope: docs/governance/AGENT_FACTORY_SCOPE_V1.md
 canonical_roadmap: docs/ROADMAP_WBS.md
 forensic_record: 11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md
 forensic_anchor: 41259e233e5273ad2fe1577e71935702956476b1
+current_task: validate post-remediation AgentFactory scope and obtain primary current-SHA CI evidence without executing M2
 last_completed:
   - evidence_execution_architecture_remediation
-  - exact_sha_checkout_and_identity_assertion
-  - run_job_log_artifact_capture
-  - machine_evidence_artifact_capture
-  - independent_artifact_digest_verification
-  - rc01_rc08_rejudgement
-  - factory_kernel_regression
-  - opro_execution_identity_regression
-  - pytest_56_of_56
-  - project_context_guard_false_positive_analysis
   - project_objective_cross_check
   - investment_repository_scope_cross_check
   - confirmed_investment_context_contamination
+  - controlled_quarantine_of_investment_specific_artifacts
   - canonical_scope_contract_added
-  - forensic_contamination_record_added
-  - investment_artifact_quarantine
-  - factory_kernel_workflow_quarantine_cleanup
-  - stale_evidence_pr_body_corrected
+  - repository_context_forensic_record_added
+  - project_context_guard_added
+  - project_context_guard_false_positive_remediated
+  - factory_kernel_workflow_decontaminated
+  - stale_evidence_pr_metadata_corrected
 current_focus:
+  - post-remediation context validation
   - current-SHA primary CI evidence retrieval
-  - post-remediation RC-01..RC-08 validation
-  - full regression verification
-  - final project alignment decision
+  - final AgentFactory project alignment
 current_risk:
-  - current-SHA primary CI run/job/log/artifact/digest is not independently retrievable through the available workflow-run query
-next_action:
-  - obtain current-SHA primary execution evidence and revalidate all gates
+  - current-SHA primary workflow run/job/log/artifact/digest remains unobserved through the available workflow-run query
 blocked_until:
-  - current-SHA primary CI evidence is independently retrievable before any GREEN claim
+  - current-SHA primary CI evidence is independently retrievable before GREEN/REMEDIATED claim
 forbidden:
   - GEPA_implementation
   - RE_domain_implementation_until_kernel_gate
@@ -53,14 +42,13 @@ forbidden:
   - M2_historical_investment_execution
   - backtest
   - OOS
-  - optimization_of_investment_strategy
+  - investment_strategy_optimization
   - stress
   - monte_carlo
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 hotl_rule: docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md
 context_guard: scripts/validate_project_context.py
-lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
 resume_status: REVIEW_REQUIRED
 resume_checks:
   RC-01: NOT_REVALIDATED_AFTER_REMEDIATION
@@ -87,10 +75,10 @@ last_verified_primary_evidence:
   opro_promotion_status: CANDIDATE
   pytest: 56_of_56
 current_sha_execution:
+  target_sha: a74bd064fef49c45e64aa678ca4ab46675e13edc
   workflow_run: NOT_RETRIEVED
   combined_status: NOT_OBSERVED
   classification: REVIEW_REQUIRED
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-m2_historical_investment_artifacts: QUARANTINED
-updated_at_utc: 2026-08-20T11:35:00+09:00
+updated_at_utc: 2026-08-20T11:45:00+09:00
