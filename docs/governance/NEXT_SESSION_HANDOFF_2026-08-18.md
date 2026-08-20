@@ -14,20 +14,27 @@ Read first:
 8. `docs/governance/EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml`
 9. `docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md`
 10. `docs/governance/HOTL_RCA_2026-08-20_M2_CI_EVIDENCE.md`
+11. `docs/governance/LESSONS_LEARNED_2026-08-20_CONTEXT_BOUNDARY.md`
 
 Do not reload the entire prior chat. Repository governance artifacts are canonical.
 
-## Repository anchors
+## Project / repository identity
 
+- project_id: `agent-factory`
 - repository: `chayobi03-cyber/agent-factory`
 - branch: `p0/opro-baseline`
-- current canonical checkpoint commit: `da9ac8ac267c3d7df81d4292de914a05b9a2e7ec`
+- governance_namespace: `AgentFactory`
+- external_project_reference: `chayobi03-cyber/investment`
+
+The external project reference is a boundary reference only. It is not a source of canonical AgentFactory governance, session state, workflow rules, lessons, evidence, or HOTL policy.
+
+## Forensic anchors
+
+- immutable forensic anchor: `41259e233e5273ad2fe1577e71935702956476b1`
+- latest validated governance checkpoint before context-boundary remediation: `da9ac8ac267c3d7df81d4292de914a05b9a2e7ec`
 - audited OPRO baseline SHA — **DO NOT CHANGE**: `20a54b92aad0857f75c6200d984b13098c6f4927`
-- canonical handoff ancestry anchor: `ee6f5fd3e470895f9c242c8004b64b4c4f74d6b4`
-- M1-B final regression target/execution/checkout SHA: `c1efb9933fc5b3589cd43e986d4b1549f4338923`
-- M1-B regression run/job: `32309992157 / 96250842729`
-- M1-B artifact: `9386078714`
-- M1-B artifact digest: `sha256:8d7864f6041352691d102d78375b76786d85b4916fdbfb313851be5358a2ec1a`
+
+The current Git HEAD is intentionally resolved from Git/CI context and is not stored as a self-referential field here.
 
 ## Current gate
 
@@ -76,6 +83,22 @@ Reference:
 `docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md`
 
 The current M2 CI evidence problem completed three RCA cycles and remains `REVIEW_REQUIRED`; the root issue is evidence observability, not a proven CI failure.
+
+## Project-context boundary rule
+
+HOTL terminology is not itself contamination evidence. Every governance or workflow change must be classified by ownership as:
+
+- AgentFactory-native
+- generic reusable engineering governance
+- Investment-specific contamination
+- mixed-purpose
+- unclear / REVIEW_REQUIRED
+
+The machine-checkable guard is:
+
+`scripts/validate_project_context.py`
+
+It verifies project, repository, branch, governance namespace, and direct cross-project repository references. The boundary lesson is explicitly allowlisted because it documents the external boundary itself.
 
 ## M1-B evidence binding
 
@@ -164,11 +187,12 @@ No backtest/OOS/optimization/stress/Monte Carlo execution is permitted merely be
 ## Next session starting point
 
 1. Resolve the exact current branch HEAD from Git.
-2. Re-run CER RC-01..RC-08 from the current HEAD's primary execution evidence.
-3. Obtain a directly queryable current-SHA CI run, preferably with run/job/log/artifact/digest retrieval for the push-triggered execution path.
-4. Verify M2 regression output from that primary execution.
-5. Only after primary evidence exists, evaluate entry into `M2_HISTORICAL_EXECUTION_EVIDENCE`.
-6. Do not run OOS, stress, or Monte Carlo until the corresponding gate is independently GREEN.
+2. Run `scripts/validate_project_context.py` before CER resume validation.
+3. Re-run CER RC-01..RC-08 from the current HEAD's primary execution evidence.
+4. Obtain a directly queryable current-SHA CI run, preferably with run/job/log/artifact/digest retrieval for the push-triggered execution path.
+5. Verify M2 regression output from that primary execution.
+6. Only after primary evidence exists, evaluate entry into `M2_HISTORICAL_EXECUTION_EVIDENCE`.
+7. Do not run OOS, stress, or Monte Carlo until the corresponding gate is independently GREEN.
 
 ## Absolute constraints
 
@@ -182,4 +206,4 @@ No backtest/OOS/optimization/stress/Monte Carlo execution is permitted merely be
 
 ## Session close
 
-`Lessons Learned -> Permanent Rules -> Current State -> HOTL RCA -> CER CHECK -> M2 readiness evidence -> Git commit`
+`Lessons Learned -> Permanent Rules -> Current State -> Context Guard -> HOTL RCA -> CER CHECK -> M2 readiness evidence -> Git commit`
