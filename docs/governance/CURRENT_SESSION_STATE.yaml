@@ -1,12 +1,12 @@
-state_version: 9
-session_id: 2026-08-20-m2-entry-review
-phase: M2
-gate: M2_ENTRY_REVIEW
+state_version: 10
+session_id: 2026-08-20-repository-integrity-context-remediation
+phase: REPOSITORY-INTEGRITY-REMEDIATION
+gate: REVIEW_REQUIRED
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
-task_id: M2-HISTORICAL-INTEGRATION-ENTRY-REVIEW
-current_task: verify current-SHA M2 readiness execution evidence and maintain fail-closed HOTL control
+task_id: REPOSITORY-INTEGRITY-CONTEXT-BOUNDARY
+current_task: forensic classification and remediation of post-M2-checkpoint project-context risk without executing M2 historical performance
 last_completed:
   - evidence_execution_architecture_remediation
   - exact_sha_checkout_and_identity_assertion
@@ -28,16 +28,18 @@ last_completed:
   - m2_ci_readiness_integration
   - hotl_three_cycle_failure_analysis_rule
   - m2_ci_evidence_three_cycle_rca
+  - project_context_forensic_classification
+  - project_context_guard_added
 current_focus:
-  - current-SHA M2 execution evidence
-  - push-triggered CI evidence observability
-  - M2 historical dataset identity and lineage
-  - PIT availability and vintage enforcement
-  - deterministic 12-case experiment readiness
+  - descendant commit ownership classification
+  - repository/project/governance context boundary
+  - current-SHA primary evidence observability
+  - preservation of M2 readiness assets
 current_risk:
   - current-SHA workflow run/job/log/artifact/digest is not independently retrievable through the available workflow-run query
+  - branch HEAD is resolved from Git/CI context and is intentionally not stored in this state file
 next_action:
-  - obtain independently queryable current-SHA execution evidence before M2 historical execution
+  - obtain independently queryable current-SHA execution evidence before any M2 historical execution
 blocked_until:
   - primary historical execution evidence
   - verified historical evidence artifact and digest
@@ -48,6 +50,7 @@ forbidden:
   - OPRO_promotion
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
+  - M2_historical_execution
   - backtest_before_M2_historical_execution_gate
   - OOS_before_M2_OOS_GATE
   - optimization_before_M2_PERFORMANCE_GATE
@@ -63,10 +66,12 @@ m2_schema: schemas/m2_historical_experiment.schema.yaml
 m2_lessons: docs/governance/CER_M2_LESSONS_2026-08-20.md
 hotl_rule: docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md
 hotl_rca: docs/governance/HOTL_RCA_2026-08-20_M2_CI_EVIDENCE.md
+context_boundary_lesson: docs/governance/LESSONS_LEARNED_2026-08-20_CONTEXT_BOUNDARY.md
+context_guard: scripts/validate_project_context.py
 rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
 lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
 m1b_lessons: docs/governance/CER_M1B_LESSONS_2026-08-19.md
-resume_status: RESUME_ALLOWED
+resume_status: RESUME_REVIEW_REQUIRED
 resume_checks:
   RC-01: PASS
   RC-02: PASS
@@ -108,10 +113,13 @@ m2_historical_execution: NOT_EXECUTED
 m2_oos_status: NOT_STARTED
 m2_stress_status: NOT_STARTED
 m2_monte_carlo_status: NOT_STARTED
-m2_entry_reason: contract and matrix defined; current-SHA primary historical execution evidence is not available
+m2_entry_reason: repository-integrity remediation in progress; M2 contract/readiness assets are preserved and historical execution remains forbidden
 m2_evidence_manifest: NOT_AVAILABLE
 checkpoint:
   mode: descendant
-  checkpoint_sha: c956393732565115fb7e55ffe6c06801e5880101
-  evidence_type: m2_hotl_rca_checkpoint
-updated_at_utc: 2026-08-20T08:20:00+09:00
+  checkpoint_sha: da9ac8ac267c3d7df81d4292de914a05b9a2e7ec
+  evidence_type: m2_hotl_rca_validated_checkpoint
+forensic_anchor:
+  checkpoint_sha: 41259e233e5273ad2fe1577e71935702956476b1
+  purpose: immutable post-M2-entry forensic anchor
+updated_at_utc: 2026-08-20T10:45:00+09:00
