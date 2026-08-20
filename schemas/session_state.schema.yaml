@@ -1,5 +1,5 @@
 schema_id: session_state
-schema_version: 1.1.0
+schema_version: 1.2.0
 purpose: Canonical machine-readable session continuation pointer for CER-governed work sessions
 properties:
   state_version:
@@ -14,6 +14,10 @@ properties:
   gate:
     type: string
     required: true
+  project_id:
+    type: string
+    required: true
+    const: agent-factory
   repository:
     type: string
     required: true
@@ -21,6 +25,10 @@ properties:
   working_branch:
     type: string
     required: true
+  governance_namespace:
+    type: string
+    required: true
+    const: AgentFactory
   audited_baseline_sha:
     type: string|null
     required: true
@@ -80,6 +88,8 @@ properties:
     type: datetime
     required: true
 rules:
+  - name: identity_explicit
+    description: project_id, repository, working_branch, and governance_namespace are explicit canonical identity fields.
   - name: no_self_referential_head
     description: Current Git HEAD is resolved from Git/CI context and is not stored as a self-referential field in the same state commit.
   - name: baseline_immutable
