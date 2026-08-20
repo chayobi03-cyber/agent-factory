@@ -1,4 +1,4 @@
-state_version: 15
+state_version: 16
 session_id: 2026-08-20-agentfactory-project-context-remediation
 phase: PROJECT-CONTEXT-REMEDIATION
 gate: REVIEW_REQUIRED
@@ -13,17 +13,16 @@ forensic_record: 11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md
 forensic_anchor: 41259e233e5273ad2fe1577e71935702956476b1
 current_task: validate post-remediation AgentFactory scope and obtain primary current-SHA CI evidence without executing M2
 last_completed:
-  - evidence_execution_architecture_remediation
-  - project_objective_cross_check
-  - investment_repository_scope_cross_check
   - confirmed_investment_context_contamination
   - controlled_quarantine_of_investment_specific_artifacts
   - canonical_scope_contract_added
-  - repository_context_forensic_record_added
   - project_context_guard_added
   - project_context_guard_false_positive_remediated
   - factory_kernel_workflow_decontaminated
   - stale_evidence_pr_metadata_corrected
+  - remediation_rca_cycle_1_scope_verification
+  - remediation_rca_cycle_2_ownership_discrimination
+  - remediation_rca_cycle_3_control_gap_closure
 current_focus:
   - post-remediation context validation
   - current-SHA primary CI evidence retrieval
@@ -75,10 +74,10 @@ last_verified_primary_evidence:
   opro_promotion_status: CANDIDATE
   pytest: 56_of_56
 current_sha_execution:
-  target_sha: a74bd064fef49c45e64aa678ca4ab46675e13edc
+  target_sha: 422b19e841fefe0dfa073fe7e3fe55a4b1fac98f
   workflow_run: NOT_RETRIEVED
   combined_status: NOT_OBSERVED
   classification: REVIEW_REQUIRED
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-20T11:45:00+09:00
+updated_at_utc: 2026-08-20T11:50:00+09:00
