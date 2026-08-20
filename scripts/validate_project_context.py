@@ -42,7 +42,16 @@ def normalize_remote(remote: str) -> str:
 
 def scan_cross_project_references(root: Path) -> list[str]:
     result = subprocess.run(
-        ["git", "grep", "-n", "-I", "-e", "chayobi03-cyber/investment", "-e", "github.com/chayobi03-cyber/investment"],
+        [
+            "git",
+            "grep",
+            "-n",
+            "-I",
+            "-e",
+            "chayobi03-cyber/investment",
+            "-e",
+            "github.com/chayobi03-cyber/investment",
+        ],
         cwd=root,
         capture_output=True,
         text=True,
@@ -75,10 +84,14 @@ def validate_identity(root: Path | None = None) -> list[str]:
     remote = normalize_remote(run_git("config", "--get", "remote.origin.url"))
 
     failures: list[str] = []
+    if state.get("project_id") not in (None, EXPECTED_PROJECT):
+        failures.append(f"state.project_id={state.get('project_id')!r}")
     if state.get("repository") != EXPECTED_REPOSITORY:
         failures.append(f"state.repository={state.get('repository')!r}")
     if state.get("working_branch") != EXPECTED_BRANCH:
         failures.append(f"state.working_branch={state.get('working_branch')!r}")
+    if state.get("governance_namespace") not in (None, EXPECTED_GOVERNANCE_NAMESPACE):
+        failures.append(f"state.governance_namespace={state.get('governance_namespace')!r}")
     if branch != EXPECTED_BRANCH:
         failures.append(f"git.branch={branch!r}")
     if remote != EXPECTED_REPOSITORY:
