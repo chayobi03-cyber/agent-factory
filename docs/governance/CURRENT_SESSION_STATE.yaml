@@ -1,4 +1,4 @@
-state_version: 14
+state_version: 15
 session_id: 2026-08-20-agentfactory-project-context-remediation
 phase: PROJECT-CONTEXT-REMEDIATION
 gate: REVIEW_REQUIRED
@@ -8,7 +8,7 @@ working_branch: p0/opro-baseline
 governance_namespace: AgentFactory
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
 task_id: PROJECT-CONTEXT-REMEDIATION
-current_task: restore canonical AgentFactory scope and quarantine confirmed investment-specific branch artifacts without executing M2
+current_task: validate canonical AgentFactory scope after controlled quarantine of confirmed investment-specific artifacts without executing M2
 canonical_scope: docs/governance/AGENT_FACTORY_SCOPE_V1.md
 canonical_roadmap: docs/ROADMAP_WBS.md
 forensic_record: 11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md
@@ -29,18 +29,19 @@ last_completed:
   - confirmed_investment_context_contamination
   - canonical_scope_contract_added
   - forensic_contamination_record_added
+  - investment_artifact_quarantine
+  - factory_kernel_workflow_quarantine_cleanup
+  - stale_evidence_pr_body_corrected
 current_focus:
-  - quarantine confirmed investment-specific artifacts
-  - restore canonical AgentFactory session state
-  - validate project/repository/governance boundary
-  - preserve generic CER/HOTL/evidence/optimization governance
+  - current-SHA primary CI evidence retrieval
+  - post-remediation RC-01..RC-08 validation
+  - full regression verification
+  - final project alignment decision
 current_risk:
-  - confirmed investment-specific artifacts remain in active tree pending controlled quarantine
   - current-SHA primary CI run/job/log/artifact/digest is not independently retrievable through the available workflow-run query
 next_action:
-  - complete controlled quarantine and run full repository regression
+  - obtain current-SHA primary execution evidence and revalidate all gates
 blocked_until:
-  - no investment-specific artifact remains in canonical AgentFactory runtime/governance path
   - current-SHA primary CI evidence is independently retrievable before any GREEN claim
 forbidden:
   - GEPA_implementation
@@ -91,5 +92,5 @@ current_sha_execution:
   classification: REVIEW_REQUIRED
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-m2_historical_investment_artifacts: QUARANTINE_PENDING
-updated_at_utc: 2026-08-20T11:25:00+09:00
+m2_historical_investment_artifacts: QUARANTINED
+updated_at_utc: 2026-08-20T11:35:00+09:00
