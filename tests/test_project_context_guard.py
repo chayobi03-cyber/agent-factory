@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 import yaml
 
 from scripts.validate_project_context import (
@@ -43,11 +42,10 @@ def test_current_session_state_declares_canonical_identity():
     assert state["governance_namespace"] == EXPECTED_GOVERNANCE_NAMESPACE
 
 
-def test_resolve_branch_prefers_ci_ref_when_git_is_detached(monkeypatch, monkeypatch):
+def test_resolve_branch_uses_ci_ref_when_git_is_detached(monkeypatch):
     monkeypatch.setenv("GITHUB_HEAD_REF", "")
     monkeypatch.setenv("GITHUB_REF_NAME", EXPECTED_BRANCH)
 
-    import subprocess
     from scripts import validate_project_context as guard
 
     original = guard.run_git
