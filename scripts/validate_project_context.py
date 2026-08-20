@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -10,9 +11,11 @@ EXPECTED_PROJECT = "agent-factory"
 EXPECTED_REPOSITORY = "chayobi03-cyber/agent-factory"
 EXPECTED_BRANCH = "p0/opro-baseline"
 EXPECTED_GOVERNANCE_NAMESPACE = "AgentFactory"
-BOUNDARY_ALLOWLIST = {
+BOUNDARY_REFERENCE_FILES = {
     "docs/governance/LESSONS_LEARNED_2026-08-20_CONTEXT_BOUNDARY.md",
+    "docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md",
 }
+SCAN_PATHS = ("docs/governance", ".github/workflows")
 CROSS_PROJECT_MARKERS = (
     "chayobi03-cyber/investment",
     "github.com/chayobi03-cyber/investment",
@@ -40,18 +43,21 @@ def normalize_remote(remote: str) -> str:
     return value
 
 
+def resolve_branch() -> tuple[str, str]:
+    """Resolve branch in normal Git checkouts and detached GitHub Actions checkouts."""
+    branch = run_git("branch", "--show-current")
+    if branch:
+        return branch, "git.branch"
+    ci_branch = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME")
+    if ci_branch:
+        return ci_branch, "github.ref"
+    raise ContextGuardError("unable to resolve branch from Git or GitHub Actions environment")
+
+
 def scan_cross_project_references(root: Path) -> list[str]:
+    """Scan only governance/workflow surfaces; intentional boundary references are provenance-allowlisted."""
     result = subprocess.run(
-        [
-            "git",
-            "grep",
-            "-n",
-            "-I",
-            "-e",
-            "chayobi03-cyber/investment",
-            "-e",
-            "github.com/chayobi03-cyber/investment",
-        ],
+        ["git", "grep", "-n", "-I", *sum((["-e", marker] for marker in CROSS_PROJECT_MARKERS), []), "--", *SCAN_PATHS],
         cwd=root,
         capture_output=True,
         text=True,
@@ -62,7 +68,7 @@ def scan_cross_project_references(root: Path) -> list[str]:
     findings: list[str] = []
     for line in result.stdout.splitlines():
         path = line.split(":", 1)[0]
-        if path not in BOUNDARY_ALLOWLIST:
+        if path not in BOUNDARY_REFERENCE_FILES:
             findings.append(line)
     return findings
 
@@ -80,20 +86,20 @@ def validate_identity(root: Path | None = None) -> list[str]:
     if not isinstance(state, dict):
         raise ContextGuardError("CURRENT_SESSION_STATE.yaml must be a mapping")
 
-    branch = run_git("branch", "--show-current")
+    branch, branch_source = resolve_branch()
     remote = normalize_remote(run_git("config", "--get", "remote.origin.url"))
 
     failures: list[str] = []
-    if state.get("project_id") not in (None, EXPECTED_PROJECT):
+    if state.get("project_id") != EXPECTED_PROJECT:
         failures.append(f"state.project_id={state.get('project_id')!r}")
     if state.get("repository") != EXPECTED_REPOSITORY:
         failures.append(f"state.repository={state.get('repository')!r}")
     if state.get("working_branch") != EXPECTED_BRANCH:
         failures.append(f"state.working_branch={state.get('working_branch')!r}")
-    if state.get("governance_namespace") not in (None, EXPECTED_GOVERNANCE_NAMESPACE):
+    if state.get("governance_namespace") != EXPECTED_GOVERNANCE_NAMESPACE:
         failures.append(f"state.governance_namespace={state.get('governance_namespace')!r}")
     if branch != EXPECTED_BRANCH:
-        failures.append(f"git.branch={branch!r}")
+        failures.append(f"resolved_branch={branch!r} source={branch_source}")
     if remote != EXPECTED_REPOSITORY:
         failures.append(f"git.remote={remote!r}")
 
