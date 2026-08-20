@@ -1,106 +1,80 @@
 # Repository Context Contamination Forensic Record — 2026-08-20
 
-## Finding
+## Final finding
 
-A post-checkpoint branch review found a set of financial/investment-specific M1-B/M2 historical artifacts in `p0/opro-baseline` that do not belong to the canonical AgentFactory project roadmap.
+A post-checkpoint review confirmed that the `p0/opro-baseline` branch had allowed investment-specific financial M1-B/M2 historical-performance artifacts to become part of the active AgentFactory tree. This was real project-context contamination, not a HOTL keyword false-positive.
 
-The canonical AgentFactory roadmap defines M1 as RE Hybrid RAG and M2 as RE Engineering Agent. The affected artifacts instead define financial-source ingestion, PIT/vintage financial datasets, historical performance experiments, OOS, stress, and Monte Carlo sequencing.
+The canonical AgentFactory roadmap defines M1 as RE Hybrid RAG and M2 as RE Engineering Agent. The quarantined material instead defined financial source ingestion, PIT/vintage financial datasets, historical performance experiments, OOS, stress, Monte Carlo, and related regression machinery.
 
-The AgentFactory `main` session state independently records that financial domain drift had been identified and that the financial experiment was moved to a historical branch. This is supporting evidence that the material is not canonical AgentFactory scope.
-
-The separate `chayobi03-cyber/investment` repository is explicitly a capital-preservation public-equity research project with M0 Risk Contract, M1 Data Integrity, M2 Portfolio Risk Engine, and M3 Asset Allocation Backtest. Its milestone semantics match the affected M1-B/M2 material much more closely than the AgentFactory roadmap.
+The separate `chayobi03-cyber/investment` repository is a capital-preservation public-equity research program with M0 Risk Contract, M1 Data Integrity, M2 Portfolio Risk Engine, and M3 Asset Allocation Backtest. The milestone semantics match the quarantined material directly.
 
 ## Classification
 
 | Category | Classification |
 |---|---|
-| Generic HOTL / CER / evidence governance | AgentFactory-native |
+| Generic CER / HOTL / evidence governance | AgentFactory-native |
 | Generic optimization governance | AgentFactory-native |
 | Project/repository identity guard | AgentFactory-native |
 | Financial M1-B source/provenance stack | Investment-specific contamination |
 | Financial M1-B fixtures/evidence | Investment-specific contamination |
-| Historical-performance M2 contract/matrix/implementation | Investment-specific contamination |
-| M2 CI readiness tied to historical performance | Investment-specific contamination |
-| Cross-project boundary lesson | Audit evidence, not canonical project context |
+| Historical-performance M2 contract/matrix/runtime/tests | Investment-specific contamination |
+| Investment-specific M2 readiness CI | Investment-specific contamination |
+| Cross-project boundary documentation | AgentFactory audit evidence |
 
 ## Forensic anchor
 
 `41259e233e5273ad2fe1577e71935702956476b1`
 
-All affected content remains recoverable through Git history. The remediation removes the material from the active AgentFactory tree; it does not rewrite history or force-push.
-
-## HOTL cycle 1 — confirm scope drift
-
-**Observation:** AgentFactory roadmap says M1 = RE Hybrid RAG and M2 = RE Engineering Agent, while the branch introduced financial M1-B and historical M2 artifacts.
-
-**Cause:** Project milestone context had drifted from AgentFactory into investment-research semantics.
-
-**Countermeasure:** Establish `AGENT_FACTORY_SCOPE_V1.md`, classify ownership by purpose, and record the finding in the audit tree.
-
-**Verification:** Cross-check against AgentFactory `main` state and the separate Investment repository objective. Scope mismatch confirmed.
-
-## HOTL cycle 2 — verify that the finding is not a false-positive
-
-**Observation:** The affected artifacts were internally coherent and included legitimate generic concepts such as PIT, provenance, evidence, HOTL, and fail-closed gates.
-
-**Cause assessment:** Generic engineering concepts are not contamination by themselves; the decisive signal is their binding to financial source stacks, historical performance, OOS/stress/Monte Carlo, and an M1-B/M2 milestone chain that belongs to the investment project.
-
-**Countermeasure:** Preserve generic CER/HOTL/evidence/optimization governance; quarantine only the high-confidence investment-specific files and remove their workflow references.
-
-**Verification:** Compare against the canonical AgentFactory roadmap and Investment repository README. Classification remains investment-specific for the quarantined set.
-
-## HOTL cycle 3 — recurrence/control-gap remediation
-
-**Observation:** Existing tests checked internal correctness but did not check project ownership. The workflow also retained a direct dependency on the quarantined M2 entry runner.
-
-**Cause:** No canonical machine-readable project scope existed, and the CI gate did not enforce the project boundary before execution.
-
-**Countermeasure:**
-
-1. Add `docs/governance/AGENT_FACTORY_SCOPE_V1.md`.
-2. Strengthen `scripts/validate_project_context.py` with identity checks and a high-confidence forbidden-artifact set.
-3. Preserve false-positive protection for explicit boundary documentation.
-4. Remove quarantined M1-B/M2 financial runtime, schemas, fixtures, tests, governance, and workflow references.
-5. Keep Git history intact.
-
-**Verification:** Current checkpoint comparison shows the investment-specific files as removals; current search returns no M1-B/M2 historical artifacts. The Factory Kernel workflow no longer invokes the removed M2 entry runner.
-
-## Remediation policy
-
-1. Preserve Git history.
-2. Remove investment-specific material from active AgentFactory governance/runtime/tests.
-3. Keep generic factory governance and HOTL mechanisms.
-4. Restore canonical AgentFactory project context.
-5. Add machine-checkable project scope and repository identity guards.
-6. Require primary CI evidence before declaring GREEN.
+All contaminated content remains recoverable through Git history. Active-tree remediation used file-level inverse changes only; no history rewrite and no force-push were used.
 
 ## Root cause
 
-The immediate cause was project-context drift: a branch-level historical investment experiment was allowed to become represented as the active AgentFactory M1-B/M2 governance context. The deeper control failure was the absence of a canonical project-scope contract enforced at session start and CI.
+### Why did the wrong context enter?
 
-## Detection gap
+A branch-level historical Investment experiment was allowed to become represented as active AgentFactory M1-B/M2 governance context. The immediate failure was project-context identification; the deeper failure was that milestone/workstream ownership was not machine-enforced.
 
-Existing tests and CER checks verified internal consistency of the affected artifacts. They did not verify that the milestone, dataset, and governance vocabulary belonged to the AgentFactory project. Therefore internally coherent but wrong-project artifacts could pass their own local contracts.
+### Why was it not detected?
 
-## Current remediation result
+Existing tests and CER checks primarily verified internal consistency of the introduced artifacts. They did not independently verify that the milestone, dataset, governance vocabulary, and workflow belonged to the AgentFactory project. Therefore a coherent but wrong-project artifact set could pass local contracts.
 
-The confirmed investment-specific active artifacts have been removed by normal corrective commits. No reset, force-push, or history rewrite was used.
+## Remediation
 
-Generic AgentFactory-native assets intentionally retained include:
+1. Established canonical project scope in `docs/governance/AGENT_FACTORY_SCOPE_V1.md`.
+2. Added machine-checkable identity/context guard in `scripts/validate_project_context.py`.
+3. Added project-context regression tests.
+4. Removed investment-specific M1-B/M2 financial runtime, schema, fixtures, governance, and tests from the active tree.
+5. Removed the investment M2 readiness step from `.github/workflows/factory-kernel.yml`.
+6. Preserved generic CER/HOTL/evidence/optimization governance.
+7. Corrected stale evidence-only PR metadata.
+8. Preserved the audited OPRO baseline SHA unchanged.
 
-- CER / evidence contracts;
-- HOTL failure-analysis loop;
-- project/repository identity guard;
-- generic optimization governance;
-- Factory Kernel workflow;
-- Factory Runtime / evaluation harness;
-- OPRO baseline regression and candidate status;
-- session continuity and evidence-chain governance.
+## RCA cycles
 
-## Remaining validation boundary
+### Cycle 1 — Scope verification
+Confirmed the mismatch between AgentFactory roadmap and active branch milestone structure.
 
-The current branch has not yet produced independently retrievable primary CI evidence after this remediation. Therefore repository remediation is **not** promoted to a GREEN/CLEAN claim until the current-SHA workflow run/job/log/artifact/digest chain is independently retrievable.
+Result: project-context contamination confirmed.
 
-## Required permanent controls
+### Cycle 2 — Ownership discrimination
+Verified that HOTL/CER/evidence/optimization terminology is valid AgentFactory architecture. Only financial/investment-specific workflow material was classified as contamination.
 
-Project identity must be checked before governance/resume validation, and project scope must be machine-readable. Generic governance terms must be classified by ownership rather than keyword matching.
+Result: false-positive risk eliminated from ownership decision.
+
+### Cycle 3 — Control-gap closure
+Added project scope contract, identity guard, provenance-aware boundary scan, regression coverage, and workflow decontamination.
+
+Result: recurrence control established.
+
+## Final evidence boundary
+
+Repository/tree remediation is complete by static forensic inspection. Final `CLEAN` / `REMEDIATED` status still requires primary current-SHA runtime evidence:
+
+`target SHA -> workflow run -> job -> logs -> artifact -> digest -> independent digest verification`
+
+The available workflow-run connector exposes pull-request-triggered runs only. Current push-triggered execution is therefore `EVIDENCE_UNAVAILABLE` when no PR run is returned; it must not be inferred as PASS or FAIL.
+
+## Final status
+
+`REVIEW_REQUIRED`
+
+Reason: contamination was actually found and remediated, but current-SHA primary CI evidence is not independently retrievable through the available evidence path.
