@@ -26,3 +26,13 @@ def test_boundary_lesson_is_the_only_allowlisted_investment_reference():
     root = Path(__file__).resolve().parents[1]
     findings = scan_cross_project_references(root)
     assert findings == []
+
+
+def test_current_session_state_declares_agentfactory_identity():
+    root = Path(__file__).resolve().parents[1]
+    state = (root / "docs/governance/CURRENT_SESSION_STATE.yaml").read_text(encoding="utf-8")
+    assert "repository: chayobi03-cyber/agent-factory" in state
+    assert "working_branch: p0/opro-baseline" in state
+    # Older valid states did not yet carry these fields; current remediation should.
+    assert "session_id: 2026-08-20-repository-integrity-context-remediation" in state
+    assert "gate: REVIEW_REQUIRED" in state
