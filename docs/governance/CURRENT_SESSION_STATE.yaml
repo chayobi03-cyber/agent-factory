@@ -1,12 +1,12 @@
-state_version: 11
-session_id: 2026-08-20-repository-integrity-context-remediation
-phase: REPOSITORY-INTEGRITY-REMEDIATION
+state_version: 12
+session_id: 2026-08-20-project-objective-audit-handoff
+phase: PROJECT-AUDIT-PREPARATION
 gate: REVIEW_REQUIRED
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
-task_id: REPOSITORY-INTEGRITY-CONTEXT-BOUNDARY
-current_task: forensic classification and remediation of post-M2-checkpoint project-context risk without executing M2 historical performance
+task_id: PROJECT-OBJECTIVE-MILESTONE-AUDIT
+current_task: prepare cold project audit of objective, outcomes, milestones, workstreams, tasks, evidence, gaps, and next actions without executing M2
 last_completed:
   - evidence_execution_architecture_remediation
   - exact_sha_checkout_and_identity_assertion
@@ -31,20 +31,22 @@ last_completed:
   - project_context_forensic_classification
   - project_context_guard_added
   - checkpoint_pointer_revalidation
+  - context_boundary_lessons_consolidated
 current_focus:
-  - descendant commit ownership classification
-  - repository/project/governance context boundary
-  - current-SHA primary evidence observability
-  - preservation of M2 readiness assets
+  - project objective audit
+  - target outcomes and acceptance criteria
+  - milestone and workstream map
+  - task inventory and evidence-state classification
+  - scope drift and governance debt
+  - priority-ranked next actions
 current_risk:
   - current-SHA workflow run/job/log/artifact/digest is not independently retrievable through the available workflow-run query
-  - branch HEAD is resolved from Git/CI context and is intentionally not stored in this state file
+  - project-level objective/milestone alignment has not yet been freshly audited from canonical source documents
 next_action:
-  - obtain independently queryable current-SHA execution evidence before any M2 historical execution
+  - perform cold project objective and milestone audit before new implementation
 blocked_until:
-  - primary historical execution evidence
+  - primary historical execution evidence for any M2 performance claim
   - verified historical evidence artifact and digest
-  - queryable current-SHA CI execution evidence
 forbidden:
   - GEPA_implementation
   - RE_domain_implementation
@@ -98,8 +100,8 @@ last_verified_primary_evidence:
   opro_promotion_status: CANDIDATE
   pytest: 56_of_56
 current_sha_execution:
-  target_sha: 33ba2e963ab42dd86f8f9722d5f1dda95a9dd0f7
-  workflow_run: NOT_RETRIEVABLE
+  target_sha: 1763df181cd39fb6db8a430663711606e26dc1d5
+  workflow_run: NOT_RETRIEVED
   combined_status: NOT_OBSERVED
   classification: REVIEW_REQUIRED
 m1b_ingest_evidence: docs/governance/M1B_FIRST_INGEST_EVIDENCE_2026-08-19.yaml
@@ -114,13 +116,13 @@ m2_historical_execution: NOT_EXECUTED
 m2_oos_status: NOT_STARTED
 m2_stress_status: NOT_STARTED
 m2_monte_carlo_status: NOT_STARTED
-m2_entry_reason: repository-integrity remediation in progress; M2 contract/readiness assets are preserved and historical execution remains forbidden
+m2_entry_reason: project-level audit required before further implementation or historical execution
 m2_evidence_manifest: NOT_AVAILABLE
 checkpoint:
   mode: descendant
-  checkpoint_sha: c956393732565115fb7e55ffe6c06801e5880101
-  evidence_type: m2_hotl_rca_checkpoint
+  checkpoint_sha: 1763df181cd39fb6db8a430663711606e26dc1d5
+  evidence_type: context-boundary-remediation-closeout
 forensic_anchor:
   checkpoint_sha: 41259e233e5273ad2fe1577e71935702956476b1
   purpose: immutable post-M2-entry forensic anchor
-updated_at_utc: 2026-08-20T10:55:00+09:00
+updated_at_utc: 2026-08-20T11:10:00+09:00
