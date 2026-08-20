@@ -1,4 +1,4 @@
-state_version: 16
+state_version: 17
 session_id: 2026-08-20-agentfactory-project-context-remediation
 phase: PROJECT-CONTEXT-REMEDIATION
 gate: REVIEW_REQUIRED
@@ -23,8 +23,8 @@ last_completed:
   - remediation_rca_cycle_1_scope_verification
   - remediation_rca_cycle_2_ownership_discrimination
   - remediation_rca_cycle_3_control_gap_closure
+  - final_forensic_closeout_documentation
 current_focus:
-  - post-remediation context validation
   - current-SHA primary CI evidence retrieval
   - final AgentFactory project alignment
 current_risk:
@@ -74,10 +74,10 @@ last_verified_primary_evidence:
   opro_promotion_status: CANDIDATE
   pytest: 56_of_56
 current_sha_execution:
-  target_sha: 422b19e841fefe0dfa073fe7e3fe55a4b1fac98f
+  target_sha: 55b253750a519300ccf3566cf37e3145977147cc
   workflow_run: NOT_RETRIEVED
   combined_status: NOT_OBSERVED
   classification: REVIEW_REQUIRED
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-20T11:50:00+09:00
+updated_at_utc: 2026-08-20T11:52:00+09:00
