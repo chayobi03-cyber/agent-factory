@@ -40,6 +40,17 @@ workflow_run:
   started_at: datetime|null
   completed_at: datetime|null
 
+execution_evidence:
+  command: string
+  commit_sha: string
+  timestamp: datetime
+  exit_code: integer
+  stdout: string
+  stderr: string
+  result_summary: string
+  artifact_refs: list[string]
+  execution_manifest_hash: string
+
 agent_step:
   step_id: string
   run_id: string
