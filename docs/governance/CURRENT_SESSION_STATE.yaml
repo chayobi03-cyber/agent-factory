@@ -1,14 +1,18 @@
-state_version: 13
-session_id: 2026-08-20-project-objective-audit-handoff
-phase: PROJECT-AUDIT-PREPARATION
+state_version: 14
+session_id: 2026-08-20-agentfactory-project-context-remediation
+phase: PROJECT-CONTEXT-REMEDIATION
 gate: REVIEW_REQUIRED
 project_id: agent-factory
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
 governance_namespace: AgentFactory
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
-task_id: PROJECT-OBJECTIVE-MILESTONE-AUDIT
-current_task: prepare cold project audit of objective, outcomes, milestones, workstreams, tasks, evidence, gaps, and next actions without executing M2
+task_id: PROJECT-CONTEXT-REMEDIATION
+current_task: restore canonical AgentFactory scope and quarantine confirmed investment-specific branch artifacts without executing M2
+canonical_scope: docs/governance/AGENT_FACTORY_SCOPE_V1.md
+canonical_roadmap: docs/ROADMAP_WBS.md
+forensic_record: 11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md
+forensic_anchor: 41259e233e5273ad2fe1577e71935702956476b1
 last_completed:
   - evidence_execution_architecture_remediation
   - exact_sha_checkout_and_identity_assertion
@@ -19,73 +23,53 @@ last_completed:
   - factory_kernel_regression
   - opro_execution_identity_regression
   - pytest_56_of_56
-  - m1b_source_contract_v1
-  - financial_provenance_schema_v1
-  - five_series_pit_replay_reconciliation
-  - m1b_green_rejudgement
-  - m2_historical_integration_contract_v1
-  - m2_entry_review_machine_artifact
-  - m2_12_case_readiness_matrix
-  - m2_negative_regression_seeds
-  - m2_ci_readiness_integration
-  - hotl_three_cycle_failure_analysis_rule
-  - m2_ci_evidence_three_cycle_rca
-  - project_context_forensic_classification
-  - project_context_guard_added
-  - checkpoint_pointer_revalidation
-  - context_boundary_lessons_consolidated
+  - project_context_guard_false_positive_analysis
+  - project_objective_cross_check
+  - investment_repository_scope_cross_check
+  - confirmed_investment_context_contamination
+  - canonical_scope_contract_added
+  - forensic_contamination_record_added
 current_focus:
-  - project objective audit
-  - target outcomes and acceptance criteria
-  - milestone and workstream map
-  - task inventory and evidence-state classification
-  - scope drift and governance debt
-  - priority-ranked next actions
+  - quarantine confirmed investment-specific artifacts
+  - restore canonical AgentFactory session state
+  - validate project/repository/governance boundary
+  - preserve generic CER/HOTL/evidence/optimization governance
 current_risk:
-  - current-SHA workflow run/job/log/artifact/digest is not independently retrievable through the available workflow-run query
-  - project-level objective/milestone alignment has not yet been freshly audited from canonical source documents
+  - confirmed investment-specific artifacts remain in active tree pending controlled quarantine
+  - current-SHA primary CI run/job/log/artifact/digest is not independently retrievable through the available workflow-run query
 next_action:
-  - perform cold project objective and milestone audit before new implementation
+  - complete controlled quarantine and run full repository regression
 blocked_until:
-  - primary historical execution evidence for any M2 performance claim
-  - verified historical evidence artifact and digest
+  - no investment-specific artifact remains in canonical AgentFactory runtime/governance path
+  - current-SHA primary CI evidence is independently retrievable before any GREEN claim
 forbidden:
   - GEPA_implementation
-  - RE_domain_implementation
+  - RE_domain_implementation_until_kernel_gate
   - OPRO_promotion
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
-  - M2_historical_execution
-  - backtest_before_M2_historical_execution_gate
-  - OOS_before_M2_OOS_GATE
-  - optimization_before_M2_PERFORMANCE_GATE
-  - stress_before_M2_STRESS_GATE
-  - monte_carlo_before_M2_MONTE_CARLO_GATE
-handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
+  - investment_specific_workflow_as_canonical_agentfactory_milestone
+  - M2_historical_investment_execution
+  - backtest
+  - OOS
+  - optimization_of_investment_strategy
+  - stress
+  - monte_carlo
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
-m2_contract: docs/governance/M2_HISTORICAL_INTEGRATION_CONTRACT_V1.md
-m2_entry_review: docs/governance/M2_ENTRY_REVIEW_2026-08-20.yaml
-m2_case_matrix: fixtures/m2/historical_experiment_12_case.yaml
-m2_schema: schemas/m2_historical_experiment.schema.yaml
-m2_lessons: docs/governance/CER_M2_LESSONS_2026-08-20.md
 hotl_rule: docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md
-hotl_rca: docs/governance/HOTL_RCA_2026-08-20_M2_CI_EVIDENCE.md
-context_boundary_lesson: docs/governance/LESSONS_LEARNED_2026-08-20_CONTEXT_BOUNDARY.md
 context_guard: scripts/validate_project_context.py
-rca: docs/governance/EVIDENCE_EXECUTION_ARCHITECTURE_RCA_2026-08-18.md
 lessons: docs/governance/CER_OPRO_GEPA_LESSONS_2026-08-18.md
-m1b_lessons: docs/governance/CER_M1B_LESSONS_2026-08-19.md
-resume_status: RESUME_REVIEW_REQUIRED
+resume_status: REVIEW_REQUIRED
 resume_checks:
-  RC-01: PASS
-  RC-02: PASS
-  RC-03: PASS
-  RC-04: PASS
-  RC-05: PASS
-  RC-06: PASS
-  RC-07: PASS
-  RC-08: PASS
+  RC-01: NOT_REVALIDATED_AFTER_REMEDIATION
+  RC-02: NOT_REVALIDATED_AFTER_REMEDIATION
+  RC-03: NOT_REVALIDATED_AFTER_REMEDIATION
+  RC-04: NOT_REVALIDATED_AFTER_REMEDIATION
+  RC-05: NOT_REVALIDATED_AFTER_REMEDIATION
+  RC-06: NOT_REVALIDATED_AFTER_REMEDIATION
+  RC-07: NOT_REVALIDATED_AFTER_REMEDIATION
+  RC-08: NOT_REVALIDATED_AFTER_REMEDIATION
 last_verified_primary_evidence:
   target_sha: c1efb9933fc5b3589cd43e986d4b1549f4338923
   workflow_run_id: 32309992157
@@ -102,29 +86,10 @@ last_verified_primary_evidence:
   opro_promotion_status: CANDIDATE
   pytest: 56_of_56
 current_sha_execution:
-  target_sha: 1763df181cd39fb6db8a430663711606e26dc1d5
   workflow_run: NOT_RETRIEVED
   combined_status: NOT_OBSERVED
   classification: REVIEW_REQUIRED
-m1b_ingest_evidence: docs/governance/M1B_FIRST_INGEST_EVIDENCE_2026-08-19.yaml
-m1b_fixture: fixtures/m1b/historical_series_2020-01.json
-m1b_fixture_raw_sha256: 12615dc1bc24a9bc41099c626e92eceaf8f12541ccdf460c810a6ddf4e3d7935
-pit_availability: VERIFIED
-cross_source_reconciliation: VERIFIED_WITH_CLASSIFIED_DISCREPANCY
-m1b_status: GREEN
-m1b_blocker: null
-m2_status: REVIEW_REQUIRED
-m2_historical_execution: NOT_EXECUTED
-m2_oos_status: NOT_STARTED
-m2_stress_status: NOT_STARTED
-m2_monte_carlo_status: NOT_STARTED
-m2_entry_reason: project-level audit required before further implementation or historical execution
-m2_evidence_manifest: NOT_AVAILABLE
-checkpoint:
-  mode: descendant
-  checkpoint_sha: 1763df181cd39fb6db8a430663711606e26dc1d5
-  evidence_type: context-boundary-remediation-closeout
-forensic_anchor:
-  checkpoint_sha: 41259e233e5273ad2fe1577e71935702956476b1
-  purpose: immutable post-M2-entry forensic anchor
-updated_at_utc: 2026-08-20T11:15:00+09:00
+m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
+m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
+m2_historical_investment_artifacts: QUARANTINE_PENDING
+updated_at_utc: 2026-08-20T11:25:00+09:00
