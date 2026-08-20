@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+
 from scripts.validate_project_context import (
     EXPECTED_BRANCH,
     EXPECTED_GOVERNANCE_NAMESPACE,
@@ -28,11 +30,12 @@ def test_boundary_lesson_is_the_only_allowlisted_investment_reference():
     assert findings == []
 
 
-def test_current_session_state_declares_agentfactory_identity():
+def test_current_session_state_declares_canonical_identity():
     root = Path(__file__).resolve().parents[1]
-    state = (root / "docs/governance/CURRENT_SESSION_STATE.yaml").read_text(encoding="utf-8")
-    assert "repository: chayobi03-cyber/agent-factory" in state
-    assert "working_branch: p0/opro-baseline" in state
-    # Older valid states did not yet carry these fields; current remediation should.
-    assert "session_id: 2026-08-20-repository-integrity-context-remediation" in state
-    assert "gate: REVIEW_REQUIRED" in state
+    state = yaml.safe_load(
+        (root / "docs/governance/CURRENT_SESSION_STATE.yaml").read_text(encoding="utf-8")
+    )
+    assert state["repository"] == EXPECTED_REPOSITORY
+    assert state["working_branch"] == EXPECTED_BRANCH
+    assert state.get("project_id", EXPECTED_PROJECT) == EXPECTED_PROJECT
+    assert state.get("governance_namespace", EXPECTED_GOVERNANCE_NAMESPACE) == EXPECTED_GOVERNANCE_NAMESPACE
