@@ -1,4 +1,4 @@
-state_version: 10
+state_version: 11
 session_id: 2026-08-20-repository-integrity-context-remediation
 phase: REPOSITORY-INTEGRITY-REMEDIATION
 gate: REVIEW_REQUIRED
@@ -30,6 +30,7 @@ last_completed:
   - m2_ci_evidence_three_cycle_rca
   - project_context_forensic_classification
   - project_context_guard_added
+  - checkpoint_pointer_revalidation
 current_focus:
   - descendant commit ownership classification
   - repository/project/governance context boundary
@@ -117,9 +118,9 @@ m2_entry_reason: repository-integrity remediation in progress; M2 contract/readi
 m2_evidence_manifest: NOT_AVAILABLE
 checkpoint:
   mode: descendant
-  checkpoint_sha: da9ac8ac267c3d7df81d4292de914a05b9a2e7ec
-  evidence_type: m2_hotl_rca_validated_checkpoint
+  checkpoint_sha: c956393732565115fb7e55ffe6c06801e5880101
+  evidence_type: m2_hotl_rca_checkpoint
 forensic_anchor:
   checkpoint_sha: 41259e233e5273ad2fe1577e71935702956476b1
   purpose: immutable post-M2-entry forensic anchor
-updated_at_utc: 2026-08-20T10:45:00+09:00
+updated_at_utc: 2026-08-20T10:55:00+09:00
