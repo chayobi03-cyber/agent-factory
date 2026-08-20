@@ -8,11 +8,9 @@
 - external_project_reference: `chayobi03-cyber/investment` (boundary reference only)
 
 ## Canonical scope
-AgentFactory is a domain-agnostic engineering Agent Factory. Its canonical roadmap is:
+AgentFactory is a domain-agnostic engineering Agent Factory. The canonical roadmap is M0 Foundation -> M0.5 Factory Kernel Verification -> M1 RE Hybrid RAG -> M2 RE Engineering Agent -> M3 Reporting -> M4 Agentic RAG -> M5 Method Ensemble -> M6 EMI/RFI -> M7 CST -> M8 Optimization -> M9 Domain Factory.
 
-`M0 Foundation -> M0.5 Factory Kernel Verification -> M1 RE Hybrid RAG -> M2 RE Engineering Agent -> M3 Reporting -> M4 Agentic RAG -> M5 Method Ensemble -> M6 EMI/RFI -> M7 CST -> M8 Optimization -> M9 Domain Factory`
-
-Investment-specific financial M1-B/M2 historical-performance work is not part of this repository's canonical milestone sequence.
+Investment-specific financial M1-B/M2 historical-performance work is not part of the canonical AgentFactory milestone sequence.
 
 ## Forensic anchor
 `41259e233e5273ad2fe1577e71935702956476b1`
@@ -38,10 +36,9 @@ RE domain implementation until Factory Kernel gate = FORBIDDEN
 
 ## Primary evidence rule
 Documentation and state are not execution evidence. A GREEN/REMEDIATED claim requires:
-
 `target SHA -> workflow run -> job -> logs -> artifact -> GitHub digest -> independent verification`
 
-The current evidence-retrieval connector only exposes pull-request-triggered runs for commit lookup. Absence of a returned run must therefore remain `EVIDENCE_UNAVAILABLE`, not inferred failure or success.
+The available workflow-run connector only exposes pull-request-triggered runs for commit lookup. Absence of a returned run must remain `EVIDENCE_UNAVAILABLE`, not inferred failure or success.
 
 ## Preserved generic governance
 - CER Session Continuity / Resume Contract
@@ -57,4 +54,4 @@ The current evidence-retrieval connector only exposes pull-request-triggered run
 Financial source/PIT/vintage/provenance stack, financial fixtures, historical-performance M2 contract/matrix, related runtime, and related tests were removed from the active canonical AgentFactory tree. They remain recoverable through Git history.
 
 ## Next session
-Do not begin M2 historical work. First establish current-SHA primary CI evidence and re-run the repository/project boundary validation. Once evidence is independently retrievable, reassess final repository status and then choose the next canonical AgentFactory milestone from the roadmap.
+Do not begin M2 historical work. First establish current-SHA primary CI evidence and re-run repository/project boundary validation. Once evidence is independently retrievable, reassess final repository status and then choose the next canonical AgentFactory milestone from the roadmap.
