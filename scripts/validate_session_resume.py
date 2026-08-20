@@ -14,6 +14,9 @@ from typing import Any
 import yaml
 
 REPO = "chayobi03-cyber/agent-factory"
+PROJECT = "agent-factory"
+GOVERNANCE_NAMESPACE = "AgentFactory"
+SUPPORTED_SCHEMA_VERSION = "1.2.0"
 FORWARD_BLOCK_GATES = {"NOT_GREEN", "BLOCKED", "HOLD", "INCONCLUSIVE"}
 
 
@@ -79,6 +82,8 @@ def parse_handoff(text: str) -> dict[str, str]:
     patterns = {
         "repository": r"\brepository\s*:\s*`([^`]+)`",
         "branch": r"\bbranch\s*:\s*`([^`]+)`",
+        "project": r"\bproject_id\s*:\s*`([^`]+)`",
+        "governance_namespace": r"\bgovernance_namespace\s*:\s*`([^`]+)`",
         "baseline": r"\baudited\s+(?:OPRO\s+)?baseline\s+SHA\b[^\n]*?([0-9a-f]{40})",
     }
     for key, pattern in patterns.items():
@@ -121,8 +126,8 @@ def _contains_any(text: str, phrases: tuple[str, ...]) -> bool:
 def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[ResumeCheck]:
     root = repo_root or Path.cwd()
     required = [
-        "state_version", "session_id", "phase", "gate", "repository", "working_branch",
-        "audited_baseline_sha", "task_id", "current_task", "last_completed", "current_focus",
+        "state_version", "session_id", "phase", "gate", "project_id", "repository", "working_branch",
+        "governance_namespace", "audited_baseline_sha", "task_id", "current_task", "last_completed", "current_focus",
         "next_action", "blocked_until", "forbidden", "handoff", "resume_contract", "resume_status",
         "resume_checks", "checkpoint", "updated_at_utc",
     ]
@@ -175,6 +180,8 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     handoff_state_ok = (
         handoff.get("repository") == state["repository"]
         and handoff.get("branch") == state["working_branch"]
+        and handoff.get("project") == state["project_id"]
+        and handoff.get("governance_namespace") == state["governance_namespace"]
         and handoff_path.exists()
     )
     handoff_git_ok = (
@@ -216,10 +223,14 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
         bool(contract_text)
         and bool(schema_text)
         and bool(target_contract_text)
-        and "schema_version: 1.1.0" in schema_text
+        and f"schema_version: {SUPPORTED_SCHEMA_VERSION}" in schema_text
+        and f"project_id: {PROJECT}" in schema_text
+        and f"governance_namespace: {GOVERNANCE_NAMESPACE}" in schema_text
         and ("CER Session Continuity Contract" in contract_text or "CER Resume Contract" in contract_text)
         and "RC-08" in contract_text
         and "execution_sha == target_sha" in target_contract_text
+        and state["project_id"] == PROJECT
+        and state["governance_namespace"] == GOVERNANCE_NAMESPACE
     )
 
     rc02_ok = head_ok and target_binding_ok
@@ -230,7 +241,7 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
         check("RC-01", actual_branch, str(state["working_branch"]), f"state.working_branch + {branch_source}", branch_ok),
         check("RC-02", target_observed, target_expected, f"state.checkpoint + git.HEAD + {target_source}", rc02_ok),
         check("RC-03", str(state["audited_baseline_sha"]), str(handoff.get("baseline")), "state.audited_baseline_sha + handoff", baseline_ok),
-        check("RC-04", str(handoff_path), f"{state['repository']}@{state['working_branch']}", "state.handoff + handoff identity", handoff_state_ok),
+        check("RC-04", str(handoff_path), f"{state['project_id']}@{state['repository']}@{state['working_branch']}:{state['governance_namespace']}", "state.handoff + handoff identity", handoff_state_ok),
         check("RC-05", remote, f"{REPO}@{actual_branch}", "git.remote + handoff", handoff_git_ok),
         check("RC-06", str(handoff.get("baseline")), str(state["audited_baseline_sha"]), "handoff.baseline + state", handoff_baseline_ok),
         check("RC-07", str(state["gate"]), "gate/forbidden/handoff constraints consistent", "state.gate + forbidden + handoff", forbidden_ok),
