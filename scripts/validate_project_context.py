@@ -12,9 +12,9 @@ EXPECTED_REPOSITORY = "chayobi03-cyber/agent-factory"
 EXPECTED_BRANCH = "p0/opro-baseline"
 EXPECTED_GOVERNANCE_NAMESPACE = "AgentFactory"
 BOUNDARY_REFERENCE_FILES = {
+    "docs/governance/AGENT_FACTORY_SCOPE_V1.md",
     "docs/governance/LESSONS_LEARNED_2026-08-20_CONTEXT_BOUNDARY.md",
     "docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md",
-    "11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md",
 }
 SCAN_PATHS = ("docs/governance", ".github/workflows")
 CROSS_PROJECT_MARKERS = (
