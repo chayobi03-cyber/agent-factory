@@ -84,6 +84,13 @@ jobs:
           status=${PIPESTATUS[0]}
           printf 'opro_exit_code=%s\n' "$status" >> ci-exit-codes.env
           exit "$status"
+      - name: M1 RE Hybrid RAG Benchmark
+        run: |
+          set -o pipefail
+          python3 scripts/re_demo.py --json 2>&1 | tee re-demo.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 're_demo_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
       - name: Unit and Kernel Regression
         run: |
           set -o pipefail
@@ -104,4 +111,5 @@ jobs:
             factory-demo.stdout.json
             factory-harness.stdout.json
             opro-baseline.stdout.json
+            re-demo.stdout.json
             pytest.stdout.txt

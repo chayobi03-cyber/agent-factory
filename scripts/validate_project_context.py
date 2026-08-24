@@ -70,11 +70,29 @@ def normalize_remote(remote: str) -> str:
 
 
 def resolve_branch() -> tuple[str, str]:
-    """Resolve branch in normal Git checkouts and detached GitHub Actions checkouts."""
+    """Resolve branch in normal Git checkouts and CI checkouts.
+
+    Root-cause fix (2026-08-24): a `pull_request` event checks out the PR's
+    HEAD ref in a detached state, and `GITHUB_HEAD_REF` is the PR's *source*
+    branch name (e.g. a fix branch), which will almost never equal
+    EXPECTED_BRANCH. The governance boundary this guard actually cares
+    about is which branch the PR would land in -- the *base* ref
+    (`GITHUB_BASE_REF`) -- not what the source branch happens to be named.
+    Using HEAD_REF made every PR-triggered run fail this guard regardless
+    of content, which is why PR-triggered CI runs never observed
+    RC-01..08/pytest results after this guard was introduced (see
+    11_Audit/LSN-0001 and CER_CI_PR_EXECUTION_LESSONS_2026-08-20.md for the
+    PR#11 run that predated this guard and did pass). `GITHUB_REF_NAME`
+    remains the fallback for `push` events, where it already correctly
+    resolves to the pushed branch name.
+    """
     branch = run_git("branch", "--show-current")
     if branch:
         return branch, "git.branch"
-    ci_branch = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME")
+    base_ref = os.environ.get("GITHUB_BASE_REF")
+    if base_ref:
+        return base_ref, "github.base_ref"
+    ci_branch = os.environ.get("GITHUB_REF_NAME")
     if ci_branch:
         return ci_branch, "github.ref"
     raise ContextGuardError("unable to resolve branch from Git or GitHub Actions environment")

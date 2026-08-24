@@ -57,3 +57,28 @@ def test_resolve_branch_uses_ci_ref_when_git_is_detached(monkeypatch):
     branch, source = resolve_branch()
     assert branch == EXPECTED_BRANCH
     assert source == "github.ref"
+
+
+def test_resolve_branch_uses_base_ref_for_pull_request_events(monkeypatch):
+    """Root-cause regression test (2026-08-24): a pull_request-triggered run
+    checks out the PR's HEAD in a detached state with GITHUB_HEAD_REF set to
+    the *source* branch name (e.g. a fix branch) -- never EXPECTED_BRANCH --
+    while GITHUB_BASE_REF is the PR's target branch. This guard must key off
+    the base ref, not the head ref, or every PR ever fails Context Guard
+    regardless of content. See 11_Audit/LSN-0001 and
+    docs/governance/CER_CI_PR_EXECUTION_LESSONS_2026-08-20.md."""
+    monkeypatch.setenv("GITHUB_HEAD_REF", "fix/some-unrelated-branch-name")
+    monkeypatch.setenv("GITHUB_BASE_REF", EXPECTED_BRANCH)
+    monkeypatch.setenv("GITHUB_REF_NAME", "refs/pull/13/merge")
+
+    from scripts import validate_project_context as guard
+
+    original = guard.run_git
+    monkeypatch.setattr(
+        guard,
+        "run_git",
+        lambda *args: "" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = resolve_branch()
+    assert branch == EXPECTED_BRANCH
+    assert source == "github.base_ref"

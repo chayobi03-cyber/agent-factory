@@ -1,0 +1,46 @@
+lesson_id: LSN-0002
+source_run_id: N/A (cross-branch forensic comparison, not a single workflow run)
+failure_type: guard_false_negative_on_pull_request_event
+pattern: >
+  Every pull_request-triggered Factory Kernel CI run failed at the
+  "Project / Repository / Context Guard" step (exit 2), before any
+  RC-01..08/pytest evidence could be produced. Root cause: resolve_branch()
+  read GITHUB_HEAD_REF for CI runs, which for a pull_request event is the
+  PR's *source* branch name (e.g. "fix/rc-schema-drift-e11a663a") -- never
+  EXPECTED_BRANCH ("p0/opro-baseline") -- so the guard failed unconditionally
+  for any PR, regardless of the PR's actual content or safety.
+root_cause: >
+  Confirmed by direct commit-timeline comparison: PR#11 achieved a genuine
+  GREEN run (RC-01..08 PASS, Domain Matrix 4/4, pytest PASS) at commit
+  67e5d93 (2026-08-20 07:53:47) -- validate_project_context.py did not exist
+  yet at that commit. It was added later the same day at commit 7af0344
+  (2026-08-20 10:34:01) as part of the investment-contamination remediation,
+  and was apparently only ever tested via direct `push` to p0/opro-baseline
+  (where GITHUB_REF_NAME correctly resolves), never via an actual
+  pull_request event. The guard shipped with a latent false-negative for the
+  one event type (pull_request) the project's own
+  AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md "evidence-only branch + PR" pattern
+  depends on.
+lesson_text: >
+  When adding a new fail-closed guard, test it against every CI trigger
+  event it will actually run under (push AND pull_request), not just the
+  one used during development. A guard that only self-tests via `push` can
+  silently make `pull_request` structurally unusable while looking
+  "correctly strict" in isolation. Fixed by keying branch resolution off
+  GITHUB_BASE_REF (the PR's target branch) rather than GITHUB_HEAD_REF (the
+  PR's source branch) for pull_request events -- the governance boundary
+  this guard checks is "which branch would this land in", not "what is the
+  branch literally named".
+candidate_change:
+  component: scripts/validate_project_context.py
+  change_type: bugfix
+  details:
+    function: resolve_branch
+    before: "GITHUB_HEAD_REF or GITHUB_REF_NAME"
+    after: "GITHUB_BASE_REF or GITHUB_REF_NAME (base ref takes priority for pull_request events)"
+validation_plan:
+  benchmark_cases:
+    - tests/test_project_context_guard.py::test_resolve_branch_uses_base_ref_for_pull_request_events
+  success_metric: "a simulated pull_request-event branch resolution returns EXPECTED_BRANCH via github.base_ref"
+  regression_guard: "existing push-event test (test_resolve_branch_uses_ci_ref_when_git_is_detached) still passes unchanged"
+status: candidate

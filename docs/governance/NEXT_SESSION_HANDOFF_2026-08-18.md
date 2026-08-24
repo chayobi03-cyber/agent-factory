@@ -1,3 +1,16 @@
+---
+project_id: agent-factory
+repository: chayobi03-cyber/agent-factory
+branch: p0/opro-baseline
+governance_namespace: AgentFactory
+audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
+forbidden:
+  - GEPA_implementation
+  - OPRO_promotion
+  - RE_domain_implementation
+  - audited_baseline_redefinition
+  - PASS_without_primary_execution_evidence
+---
 # AgentFactory Next Session Handoff — 2026-08-20 Project Context Remediation
 
 ## Canonical identity
@@ -14,6 +27,9 @@ Investment-specific financial M1-B/M2 historical-performance work is not part of
 
 ## Forensic anchor
 `41259e233e5273ad2fe1577e71935702956476b1`
+
+## Audited baseline
+audited OPRO baseline SHA: `20a54b92aad0857f75c6200d984b13098c6f4927`
 
 ## Remediation outcome
 Confirmed investment-specific artifacts were removed from the active AgentFactory tree without history rewrite or force-push. Generic CER/HOTL/evidence/optimization governance was preserved. The Factory Kernel workflow no longer invokes the removed investment M2 entry runner.
@@ -39,6 +55,14 @@ Documentation and state are not execution evidence. A GREEN/REMEDIATED claim req
 `target SHA -> workflow run -> job -> logs -> artifact -> GitHub digest -> independent verification`
 
 The available workflow-run connector only exposes pull-request-triggered runs for commit lookup. Absence of a returned run must remain `EVIDENCE_UNAVAILABLE`, not inferred failure or success.
+
+
+## Constraints (canonical wording)
+GEPA implementation forbidden.
+OPRO promotion forbidden.
+RE domain implementation forbidden until the Factory Kernel gate is GREEN.
+Audited OPRO baseline SHA must not change.
+PASS without primary execution evidence forbidden.
 
 ## Preserved generic governance
 - CER Session Continuity / Resume Contract
