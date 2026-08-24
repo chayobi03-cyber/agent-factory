@@ -219,13 +219,58 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     )
     forbidden_ok = gate_constraints_ok and handoff_constraints_ok
 
+    # Parse the schema structurally instead of substring-matching raw YAML text.
+    # session_state.schema.yaml declares project_id/governance_namespace as nested
+    # properties (`properties.project_id.const: agent-factory`), not flat
+    # `project_id: agent-factory` lines, so a raw-text `in` check on those two
+    # identity fields was structurally guaranteed to fail against the real schema
+    # even when the schema was fully compatible. Fall back to raw-text containment
+    # only for fixtures/older schema shapes that are flat key: value files.
+    schema_project_id: str | None = None
+    schema_governance_namespace: str | None = None
+    schema_version_value: str | None = None
+    if schema_text:
+        try:
+            parsed_schema = yaml.safe_load(schema_text)
+        except yaml.YAMLError:
+            parsed_schema = None
+        if isinstance(parsed_schema, dict):
+            schema_version_value = parsed_schema.get("schema_version")
+            properties = parsed_schema.get("properties")
+            if isinstance(properties, dict):
+                project_id_prop = properties.get("project_id")
+                if isinstance(project_id_prop, dict):
+                    schema_project_id = project_id_prop.get("const")
+                governance_prop = properties.get("governance_namespace")
+                if isinstance(governance_prop, dict):
+                    schema_governance_namespace = governance_prop.get("const")
+            # Flat-schema fixtures (e.g. test doubles) declare these at top level.
+            if schema_project_id is None and isinstance(parsed_schema.get("project_id"), str):
+                schema_project_id = parsed_schema["project_id"]
+            if schema_governance_namespace is None and isinstance(
+                parsed_schema.get("governance_namespace"), str
+            ):
+                schema_governance_namespace = parsed_schema["governance_namespace"]
+
+    schema_version_ok = (
+        schema_version_value == SUPPORTED_SCHEMA_VERSION
+        or f"schema_version: {SUPPORTED_SCHEMA_VERSION}" in schema_text
+    )
+    schema_project_id_ok = (
+        schema_project_id == PROJECT or f"project_id: {PROJECT}" in schema_text
+    )
+    schema_governance_ok = (
+        schema_governance_namespace == GOVERNANCE_NAMESPACE
+        or f"governance_namespace: {GOVERNANCE_NAMESPACE}" in schema_text
+    )
+
     context_ok = (
         bool(contract_text)
         and bool(schema_text)
         and bool(target_contract_text)
-        and f"schema_version: {SUPPORTED_SCHEMA_VERSION}" in schema_text
-        and f"project_id: {PROJECT}" in schema_text
-        and f"governance_namespace: {GOVERNANCE_NAMESPACE}" in schema_text
+        and schema_version_ok
+        and schema_project_id_ok
+        and schema_governance_ok
         and ("CER Session Continuity Contract" in contract_text or "CER Resume Contract" in contract_text)
         and "RC-08" in contract_text
         and "execution_sha == target_sha" in target_contract_text
