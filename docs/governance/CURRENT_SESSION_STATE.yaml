@@ -43,6 +43,9 @@ last_completed:
   - open_decisions_register_created
   - d01_resolved_kernel_gated_constraint_made_time_bounded_and_discharged_at_factory_kernel_green
   - d04_resolved_domain_matrix_and_generic_engineering_evidence_assets_recovered_file_by_file
+  - d03_partly_resolved_pr13_and_pr11_closed_pr1_kept_open_after_confirmation_reversed_its_disposition
+  - d09_opened_trunk_declares_audit_evidence_chain_contract_with_no_implementation
+  - d05_branch_deletion_guide_written_and_verifier_dry_run_reproduces_30_safe_8_keep
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
   - hold the trunk on `main` now that the divergent default branch is folded in
@@ -52,7 +55,8 @@ current_risk:
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
   - expand M1 RE corpus/benchmark toward the RE_POC.md target (20+ documents / 150 cases)
-  - close or rebase the three stale open pull requests (OPEN_DECISIONS D-03)
+  - decide OPEN_DECISIONS D-09 - recover the evidence-gate implementation from PR #1 or weaken the contract it cannot enforce
+  - execute the prepared branch deletion from a local clone (11_Audit/MERGED_BRANCH_CLEANUP_2026-08-25.md, OPEN_DECISIONS D-05)
 blocked_until: []
 forbidden:
   - GEPA_implementation
@@ -137,4 +141,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-25T06:30:00+00:00
+updated_at_utc: 2026-08-25T06:45:00+00:00
