@@ -50,6 +50,7 @@ last_completed:
   - d02_resolved_context_guard_honours_a_local_target_branch_ignored_inside_github_actions
   - d07_resolved_superseded_resume_contract_header_corrected_and_retained_as_history
   - d05_and_d06_resolved_31_merged_branches_deleted_by_dispatch_remote_41_to_10_no_history_lost
+  - d08_resolved_repository_stays_public_which_constrains_m1_real_documents_to_an_out_of_tree_source
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
   - hold the trunk on `main` now that the divergent default branch is folded in
@@ -142,4 +143,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-25T07:50:00+00:00
+updated_at_utc: 2026-08-25T08:15:00+00:00

@@ -6,11 +6,9 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** eight of nine resolved 2026-08-25 — D-01 through D-07 and D-09.
-Resolved entries are kept as the record of why.
-
-**One open:** D-08, this repository's public visibility, which belongs to its
-owner rather than to anyone acting on their behalf.
+**Status:** all nine resolved 2026-08-25. Entries are kept as the record of why,
+not cleared. Add new decisions here rather than starting a fresh register — the
+point is that a session reads one file and knows what is settled.
 
 ---
 
@@ -314,6 +312,14 @@ being rediscovered.
 ---
 
 ## D-08 — This repository is public
+
+> **RESOLVED 2026-08-25 — staying public.** Decided by the owner. Recorded here
+> because it had never been an explicit decision in any governance document, and
+> because it is now a live constraint on M1 rather than a passive fact: real RE
+> test reports carry customer and product identifiers, and CISPR standards are
+> copyrighted, so neither can ever be committed to this tree. The PoC's "20+
+> representative legacy documents" therefore has to reach the kernel through an
+> out-of-tree corpus source, not through the repository.
 
 `visibility: public`. Everything discussed here is world-readable, including the
 quarantined investment artifacts on the retained branches and the full forensic
