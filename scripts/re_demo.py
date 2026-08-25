@@ -23,7 +23,7 @@ if str(SRC) not in sys.path:
 
 from interfaces import CERSnapshot, Claim  # noqa: E402
 from cer_runtime import CERGateRuntime  # noqa: E402
-from re_domain_pack import REDomainPack  # noqa: E402
+from re_domain_pack import RETRIEVAL_MODES, REDomainPack  # noqa: E402
 
 BENCHMARK_PATH = ROOT / "templates" / "benchmark" / "re_hybrid_rag_v0.1.json"
 
@@ -48,8 +48,9 @@ def load_benchmark() -> dict:
 TOP_K = 10
 
 
-def run_case(pack: REDomainPack, gate: CERGateRuntime, case: dict) -> dict:
-    evidence = pack.retrieve(case["query"], top_k=TOP_K)
+def run_case(pack: REDomainPack, gate: CERGateRuntime, case: dict,
+             *, mode: str | None = None) -> dict:
+    evidence = pack.retrieve(case["query"], top_k=TOP_K, mode=mode)
     if evidence:
         claim = Claim(
             claim_id=f"C-{case['case_id']}",
@@ -122,6 +123,7 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
     """
     by_id = {c["case_id"]: c for c in benchmark["cases"]}
     recalls: list[float] = []
+    ranks: list[int | None] = []
     bands: dict[str, list[bool]] = {}
     for result in results:
         case = by_id[result["case_id"]]
@@ -131,6 +133,7 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
             )
         elif result["score"]["evidence_recall"] is not None:
             recalls.append(result["score"]["evidence_recall"])
+            ranks.append(result["score"].get("first_relevant_rank"))
 
     targets = benchmark.get("acceptance_targets", {})
     recall = sum(recalls) / len(recalls) if recalls else 0.0
@@ -141,8 +144,21 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
     )
     recall_ok = recall >= targets.get("evidence_recall_at_10", 0.90)
     all_abstain = [v for results_ in bands.values() for v in results_]
+    # Rank-sensitive metrics, because Recall@10 is not.
+    #
+    # Measured across every blend from pure trigram to pure BM25, Recall@10 is
+    # 0.914 for all of them: the coverage floor and the abstention rules decide
+    # the result set, and ranking rarely moves a document across k=10. A metric
+    # that cannot separate the retrieval methods RE_POC.md asks us to compare
+    # three of is not measuring retrieval. R@1 and MRR do separate them.
+    hit = [r for r in ranks if r]
+    n_ans = len(ranks) or 1
     return {
         "evidence_recall_at_10": round(recall, 4),
+        "recall_at_1": round(sum(1 for r in hit if r <= 1) / n_ans, 4),
+        "recall_at_3": round(sum(1 for r in hit if r <= 3) / n_ans, 4),
+        "mean_reciprocal_rank": round(sum(1.0 / r for r in hit) / n_ans, 4),
+        "retrieval_mode": benchmark.get("retrieval_mode", "hybrid"),
         "evidence_recall_target": targets.get("evidence_recall_at_10"),
         "evidence_recall_meets_target": recall_ok,
         "abstention_overall": round(sum(all_abstain) / len(all_abstain), 4) if all_abstain else None,
@@ -153,13 +169,14 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
     }
 
 
-def run(benchmark_id: str | None = None) -> dict:
+def run(benchmark_id: str | None = None, *, mode: str | None = None) -> dict:
     pack = REDomainPack()
     loaded = pack.load()
     gate = CERGateRuntime()
     benchmark = load_benchmark()
+    benchmark["retrieval_mode"] = mode or pack.default_retrieval_mode
     cases = benchmark["cases"]
-    results = [run_case(pack, gate, case) for case in cases]
+    results = [run_case(pack, gate, case, mode=mode) for case in cases]
     passed = sum(1 for r in results if r["score"]["passed"])
     return {
         "domain_pack": {"domain_id": pack.domain_id, "version": pack.version},
@@ -178,9 +195,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     parser.add_argument("--report", metavar="CASE_ID", help="render a markdown report for one case")
+    parser.add_argument("--mode", choices=sorted(RETRIEVAL_MODES),
+                        help="retrieval method (default: the Domain Pack policy's)")
     args = parser.parse_args()
 
-    summary = run()
+    summary = run(mode=args.mode)
 
     if args.report:
         pack = REDomainPack()
@@ -220,6 +239,9 @@ def main() -> int:
         mark = "MEETS" if acc["evidence_recall_meets_target"] else "BELOW"
         print(f"Evidence Recall@10 : {acc['evidence_recall_at_10']:.3f}  "
               f"[{mark} target {acc['evidence_recall_target']}]")
+        print(f"Recall@1 / @3      : {acc['recall_at_1']:.3f} / {acc['recall_at_3']:.3f}"
+              f"   MRR: {acc['mean_reciprocal_rank']:.3f}"
+              f"   (mode: {acc['retrieval_mode']})")
         print("Abstention by band :")
         for band, s_ in sorted(acc["abstention_by_band"].items()):
             gated = band != "near_miss_domain_subject"
