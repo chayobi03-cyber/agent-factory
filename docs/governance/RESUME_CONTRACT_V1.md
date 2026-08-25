@@ -1,6 +1,16 @@
 # CER Resume Contract v1.1
 
-**Status:** Active governance contract
+> **SUPERSEDED 2026-08-25** by `CER_SESSION_CONTINUITY_CONTRACT_V1.md`
+> (OPEN_DECISIONS D-07). Both documents are labelled v1.1 and cover the same
+> purpose; only the Continuity Contract is read by code —
+> `CURRENT_SESSION_STATE.resume_contract` points at it and RC-08 loads it
+> directly. Nothing anywhere references this file.
+>
+> Retained as history. Its own header previously read *"Active governance
+> contract"*, which is what made two documents each claim to be the live resume
+> contract while one of them was enforced and the other was not.
+
+**Status:** Superseded — historical record, not enforced
 **Scope:** Cross-session continuity and safe workflow resumption
 **Branch:** `p0/opro-baseline`
 

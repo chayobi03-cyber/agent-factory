@@ -88,3 +88,62 @@ def test_resolve_branch_uses_base_ref_for_pull_request_events(monkeypatch):
     branch, source = resolve_branch()
     assert branch == EXPECTED_BRANCH
     assert source == "github.base_ref"
+
+
+# --- D-02: the guard asks "where would this land", locally too ---------------
+
+
+def test_local_override_lets_a_feature_branch_resolve_its_landing_target(monkeypatch):
+    """Before this, the guard compared the *checkout name* to EXPECTED_BRANCH,
+    so it failed on every local feature branch and the only way to verify a
+    change was to name the checkout after the trunk."""
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.setenv("AGENTFACTORY_TARGET_BRANCH", EXPECTED_BRANCH)
+
+    from scripts import validate_project_context as guard
+
+    original = guard.run_git
+    monkeypatch.setattr(
+        guard,
+        "run_git",
+        lambda *args: "feature/some-local-work" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = guard.resolve_branch()
+    assert branch == EXPECTED_BRANCH
+    assert source == "local.target_branch_override"
+
+
+def test_local_override_is_ignored_inside_github_actions(monkeypatch):
+    """The override must never be able to weaken CI. With GITHUB_ACTIONS set it
+    is not consulted at all, whatever it says."""
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("AGENTFACTORY_TARGET_BRANCH", "anything-at-all")
+
+    from scripts import validate_project_context as guard
+
+    original = guard.run_git
+    monkeypatch.setattr(
+        guard,
+        "run_git",
+        lambda *args: "some-ci-checkout" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = guard.resolve_branch()
+    assert branch == "some-ci-checkout"
+    assert source == "git.branch"
+
+
+def test_absent_override_leaves_resolution_unchanged(monkeypatch):
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.delenv("AGENTFACTORY_TARGET_BRANCH", raising=False)
+
+    from scripts import validate_project_context as guard
+
+    original = guard.run_git
+    monkeypatch.setattr(
+        guard,
+        "run_git",
+        lambda *args: "feature/some-local-work" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = guard.resolve_branch()
+    assert branch == "feature/some-local-work"
+    assert source == "git.branch"
