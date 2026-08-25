@@ -3,19 +3,50 @@
 > **Status: PREPARED, NOT EXECUTED.** Deletion was attempted from the session that
 > produced this record and refused with `HTTP 403` on every ref delete — that
 > session's credentials permit pushes but not deletions, and the GitHub MCP server
-> exposes no branch-deletion tool. The branches below are still on the remote.
-> Run the procedure from a normal local clone, then change this heading.
+> exposes no branch-deletion tool. The branches are still on the remote.
+> Run **Option A** below (one dispatch, works from a phone) or **Option B** from a
+> local clone, then change this heading.
+>
+> Since 2026-08-25 the trunk move folded `p0/opro-baseline` into `main`, so it now
+> classifies as safe too and this operation closes **D-06** along with D-05.
 
 ## What was verified
 
-Each of the 30 branches carries **zero commits** not already reachable from the
-trunk. Deleting them loses no history: every commit they point at stays in `main`.
+Each safe branch carries **zero commits** not already reachable from the trunk.
+Deleting them loses no history: every commit they point at stays in `main`. The
+count was 30 when this was written and is 31 now that `p0/opro-baseline` is
+merged — which is exactly why both options re-derive the set rather than trusting
+this number.
 
 Rationale: `11_Audit/LSN-0001` identified the ambient condition — many stale
 branches, no single canonical trunk — as the cause of a session re-deriving its plan
 from the wrong line and proposing to rebuild ~6,000 lines that already existed.
 
-## Procedure
+## Option A — one dispatch, from anything with a browser
+
+`.github/workflows/branch-cleanup.yml` does the whole procedure. It is
+`workflow_dispatch` only: it never runs on a push, a PR, or a schedule.
+
+**Actions → Merged Branch Cleanup → Run workflow.**
+
+1. Leave `mode` on **dry-run** and run it. The job summary lists what would go,
+   with a restore SHA for each, and what is kept and why. Nothing is touched.
+2. Read the summary. If it matches what you expect, run it again with `mode` set
+   to **delete** and type `DELETE` in the confirm box.
+
+Deleting requires both the mode *and* the typed word, so a stray tap on a phone
+cannot do it. `main` and `claude/handover-rxravc` are refused regardless of what
+the merge check says.
+
+This works from the GitHub mobile web UI. The GitHub mobile app does not expose
+workflow dispatch inputs, so use a browser (request desktop site if the Run
+workflow button is hard to reach). Everything renders in the job summary, which
+is readable on a phone.
+
+If the run fails with a permissions error, check **Settings → Actions → General
+→ Workflow permissions** is set to *Read and write*.
+
+## Option B — from a local clone
 
 ### 1. Get a current clone and confirm you are on the trunk
 
@@ -101,10 +132,11 @@ git push origin <sha>:refs/heads/<name>
 | `governance/ci-pr-execution-lessons-2026-08-20`, `p0/m1b-ingestion-v1b` | unmerged commits plus quarantined artifacts; salvage files individually, never merge |
 | `p0/re-domain-pack-v0.1`, `p1/re-domain-pack-v0.1`, `fix/rc-schema-drift-e11a663a` | unmerged commits, contamination-free, pending salvage review |
 
-## The 30 branches, with restore SHAs
+## Snapshot, with restore SHAs
 
-Snapshot taken 2026-08-25 against trunk `19294f25b2574de34cc1f9b3d30e8650cc7c93e2`.
-Step 2 re-derives this list; the snapshot is here for restore and audit.
+Taken 2026-08-25 against trunk `19294f25b2574de34cc1f9b3d30e8650cc7c93e2`, when the
+set was 30. Both options re-derive the live set; this is here for restore and
+audit, not as the list to act on.
 
 ```
 20a54b92aad0857f75c6200d984b13098c6f4927 audit-remediation/p0-evidence-chain

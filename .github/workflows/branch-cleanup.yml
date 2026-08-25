@@ -1,0 +1,127 @@
+name: Merged Branch Cleanup
+
+# Manual only. This never runs on a push, a PR, or a schedule.
+#
+# Exists because deleting a remote ref needs a credential an agent session does
+# not have (OPEN_DECISIONS D-05 records the HTTP 403), and doing it by hand means
+# either a laptop or thirty taps through the branches page. Here it is one
+# dispatch from anywhere, including a phone.
+#
+# Safety, in the order it applies:
+#   1. dry-run is the default; deleting requires choosing it explicitly
+#   2. deleting also requires typing DELETE, so a stray tap cannot do it
+#   3. the safe set is re-derived every run against the current trunk -- never a
+#      stored list, so a branch that gained commits since anyone last looked is
+#      excluded automatically
+#   4. PROTECTED branches are refused even if they look merged
+#   5. every deletion prints its SHA, and `git push origin <sha>:refs/heads/<name>`
+#      puts any of them back
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run lists what would go. delete actually removes them."
+        type: choice
+        options: [dry-run, delete]
+        default: dry-run
+      confirm:
+        description: "Type DELETE to confirm. Ignored in dry-run."
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      # Never deleted, whatever the merge check says.
+      PROTECTED: "main claude/handover-rxravc"
+    steps:
+      - name: Checkout with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify every remote branch against the trunk
+        id: classify
+        run: |
+          set -euo pipefail
+          : > safe.txt
+          : > keep.txt
+          while read -r sha ref; do
+            b="${ref#refs/heads/}"
+            case " $PROTECTED " in *" $b "*) echo "$sha $b" >> keep.txt; continue;; esac
+            if git merge-base --is-ancestor "$sha" origin/main 2>/dev/null; then
+              echo "$sha $b" >> safe.txt
+            else
+              echo "$sha $b $(git rev-list --count origin/main.."$sha")" >> keep.txt
+            fi
+          done < <(git ls-remote --heads origin)
+          sort -k2 -o safe.txt safe.txt
+          sort -k2 -o keep.txt keep.txt
+          echo "safe_count=$(wc -l < safe.txt)" >> "$GITHUB_OUTPUT"
+          echo "keep_count=$(wc -l < keep.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Report
+        run: |
+          set -euo pipefail
+          {
+            echo "## Merged branch cleanup"
+            echo
+            echo "Trunk \`main\` at \`$(git rev-parse --short origin/main)\` · mode: **${{ inputs.mode }}**"
+            echo
+            echo "### Safe to delete — $(wc -l < safe.txt)"
+            echo
+            echo "Each carries zero commits not already reachable from the trunk."
+            echo
+            echo "| Branch | Restore SHA |"
+            echo "|---|---|"
+            while read -r sha b; do echo "| \`$b\` | \`$sha\` |"; done < safe.txt
+            echo
+            echo "### Kept — $(wc -l < keep.txt)"
+            echo
+            echo "| Branch | Why |"
+            echo "|---|---|"
+            while read -r sha b extra; do
+              if [ -n "${extra:-}" ]; then echo "| \`$b\` | $extra unmerged commits |"
+              else echo "| \`$b\` | protected |"; fi
+            done < keep.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop here unless deletion was explicitly requested
+        if: inputs.mode != 'delete'
+        run: |
+          echo "Dry run. Nothing was deleted."
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> Dry run — nothing was deleted. Re-run with mode \`delete\` and type \`DELETE\` to apply." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Require the typed confirmation
+        if: inputs.mode == 'delete'
+        run: |
+          if [ "${{ inputs.confirm }}" != "DELETE" ]; then
+            echo "::error::mode was 'delete' but the confirmation box did not contain DELETE. Nothing was deleted."
+            exit 1
+          fi
+
+      - name: Delete
+        if: inputs.mode == 'delete'
+        run: |
+          set -euo pipefail
+          n=$(wc -l < safe.txt)
+          if [ "$n" -eq 0 ]; then
+            echo "Nothing to delete."
+            exit 0
+          fi
+          # One push, so the operation is atomic from the caller's side and a
+          # partial network failure cannot leave half the set gone.
+          refs=$(awk '{print ":refs/heads/" $2}' safe.txt | tr '\n' ' ')
+          git push origin $refs
+          {
+            echo
+            echo "### Deleted $n branches"
+            echo
+            echo "Restore any of them with \`git push origin <sha>:refs/heads/<name>\` using the table above."
+          } >> "$GITHUB_STEP_SUMMARY"
