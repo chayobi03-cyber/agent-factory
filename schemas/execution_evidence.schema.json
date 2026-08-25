@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentFactory Execution Evidence Record",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "command",
+    "repository",
+    "commit_sha",
+    "timestamp_utc",
+    "exit_code",
+    "stdout",
+    "stderr",
+    "stdout_sha256",
+    "stderr_sha256",
+    "workflow_run_id",
+    "job_id",
+    "artifact_id"
+  ],
+  "properties": {
+    "evidence_id": {"type": "string", "minLength": 1},
+    "command": {"type": "string", "minLength": 1},
+    "repository": {"type": "string", "minLength": 1},
+    "commit_sha": {"type": "string", "minLength": 7},
+    "timestamp_utc": {"type": "string", "format": "date-time"},
+    "exit_code": {"type": "integer"},
+    "stdout": {"type": "string"},
+    "stderr": {"type": "string"},
+    "stdout_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "stderr_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "workflow_run_id": {"type": ["integer", "null"]},
+    "job_id": {"type": ["integer", "null"]},
+    "artifact_id": {"type": ["integer", "null"]},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "workflow_name": {"type": ["string", "null"]},
+        "job_name": {"type": ["string", "null"]},
+        "python_version": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "additionalProperties": false
+}

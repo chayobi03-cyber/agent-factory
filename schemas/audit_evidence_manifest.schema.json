@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentFactory Audit Evidence Manifest",
+  "type": "object",
+  "required": ["manifest_version", "repository", "workflow_run_id", "expected_results", "observed_results", "verified_results", "decision_results"],
+  "properties": {
+    "manifest_version": {"type": "string"},
+    "repository": {"type": "string"},
+    "workflow_run_id": {"type": ["integer", "null"]},
+    "expected_results": {"type": "object"},
+    "observed_results": {"type": "object"},
+    "verified_results": {"type": "object"},
+    "decision_results": {"type": "object"}
+  },
+  "additionalProperties": false
+}
