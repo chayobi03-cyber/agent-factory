@@ -628,13 +628,23 @@ def near_duplicate_revisions() -> list[RawDocument]:
     """Later revisions of baseline documents differing by one measurement.
 
     Revision-compare queries are only meaningfully tested when two revisions are
-    nearly identical -- if REV-B were obviously different, matching it would not
-    demonstrate revision discrimination.
+    nearly identical -- if the later one were obviously different, matching it
+    would not demonstrate revision discrimination.
+
+    REV-C, not REV-B. This emitted REV-B, which the baseline corpus has held
+    since the beginning as the real EUT-7 retest, so `adversarial_corpus()` was
+    producing two *different* documents under one identity -- one reporting the
+    132 MHz peak dropping to 31.4 dBuV/m after mitigation, the other reporting a
+    41.7 dBuV/m exceedance at 148 MHz. Both were indexed, every
+    document-frequency statistic counted them twice, and the stability tests
+    measured that corpus without anyone noticing. It surfaced only when
+    src/corpus_source.py started refusing duplicate document/revision pairs,
+    which is the argument for validating a corpus rather than trusting one.
     """
     return [
         {
             "document_id": "DOC-RE-001",
-            "revision_id": "REV-B",
+            "revision_id": "REV-C",
             "title": "EUT-7 Radiated Emissions Test Report",
             "doc_type": "test_report",
             "text": (
