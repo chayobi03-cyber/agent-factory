@@ -136,6 +136,7 @@ def validate_expected_results(records: dict[str, dict], errors: list[str]) -> di
             "cases_passed": passed,
             "cases_failed": failed,
             "evidence_recall_at_10": (acceptance or {}).get("evidence_recall_at_10"),
+            "evidence_recall_excluding_verbatim": (acceptance or {}).get("evidence_recall_excluding_verbatim"),
             "abstention_by_band": (acceptance or {}).get("abstention_by_band"),
         }
         if not isinstance(total, int) or total < 1:
@@ -143,10 +144,16 @@ def validate_expected_results(records: dict[str, dict], errors: list[str]) -> di
         if not isinstance(acceptance, dict):
             errors.append("E-M1-RE-DEMO: no acceptance block -- cannot judge the run against RE_POC targets")
         else:
-            recall = acceptance.get("evidence_recall_at_10")
+            # The figure excluding cases whose query restates its own answer,
+            # falling back to the headline for evidence produced before that
+            # split existed. Judging the headline would let a regression hide
+            # behind eleven cases that cannot fail.
+            recall = acceptance.get("evidence_recall_excluding_verbatim")
+            if recall is None:
+                recall = acceptance.get("evidence_recall_at_10")
             target = acceptance.get("evidence_recall_target")
             if not isinstance(recall, (int, float)) or not isinstance(target, (int, float)):
-                errors.append("E-M1-RE-DEMO: evidence_recall_at_10/target not numeric")
+                errors.append("E-M1-RE-DEMO: evidence recall/target not numeric")
             elif recall < target:
                 errors.append(f"E-M1-RE-DEMO: Evidence Recall@10 {recall} is below target {target}")
             if acceptance.get("abstention_decidable_bands_perfect") is not True:

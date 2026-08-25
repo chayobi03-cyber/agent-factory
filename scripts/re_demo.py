@@ -109,7 +109,7 @@ def run_case(pack: REDomainPack, gate: CERGateRuntime, case: dict,
     }
 
 
-def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
+def score_benchmark(benchmark: dict, results: list[dict], pack: REDomainPack) -> dict:
     """Aggregate the run into the RE_POC.md acceptance metrics.
 
     Per-case pass/fail is kept for diagnosis but is no longer the verdict. At
@@ -125,6 +125,11 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
     by_id = {c["case_id"]: c for c in benchmark["cases"]}
     recalls: list[float] = []
     ranks: list[int | None] = []
+    # Split out the cases whose query is a restatement of its own answer. See
+    # REDomainPack.query_is_verbatim_in_its_answer -- they cannot really fail,
+    # so the headline recall is higher than what the retriever earns.
+    verbatim: list[float] = []
+    earned: list[float] = []
     bands: dict[str, list[bool]] = {}
     for result in results:
         case = by_id[result["case_id"]]
@@ -135,6 +140,10 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
         elif result["score"]["evidence_recall"] is not None:
             recalls.append(result["score"]["evidence_recall"])
             ranks.append(result["score"].get("first_relevant_rank"))
+            if pack.query_is_verbatim_in_its_answer(case):
+                verbatim.append(result["score"]["evidence_recall"])
+            else:
+                earned.append(result["score"]["evidence_recall"])
 
     targets = benchmark.get("acceptance_targets", {})
     recall = sum(recalls) / len(recalls) if recalls else 0.0
@@ -143,7 +152,13 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
     decidable_ok = all(
         band_scores[b]["held"] == band_scores[b]["total"] for b in gated if b in band_scores
     )
-    recall_ok = recall >= targets.get("evidence_recall_at_10", 0.90)
+    # Gated on what the retriever earns, not on the headline. 11 of the 139
+    # answerable cases restate their own answer and cannot really fail; scoring
+    # the target against the inflated figure would let a real regression hide
+    # behind them. The margin over 0.90 is genuinely thin -- 0.006 -- and that
+    # is the point of measuring it rather than the 0.014 the headline suggests.
+    earned_recall = sum(earned) / len(earned) if earned else recall
+    recall_ok = earned_recall >= targets.get("evidence_recall_at_10", 0.90)
     all_abstain = [v for results_ in bands.values() for v in results_]
     # Rank-sensitive metrics, because Recall@10 is not.
     #
@@ -156,12 +171,15 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
     n_ans = len(ranks) or 1
     return {
         "evidence_recall_at_10": round(recall, 4),
+        "evidence_recall_excluding_verbatim": round(sum(earned) / len(earned), 4) if earned else None,
+        "verbatim_case_count": len(verbatim),
         "recall_at_1": round(sum(1 for r in hit if r <= 1) / n_ans, 4),
         "recall_at_3": round(sum(1 for r in hit if r <= 3) / n_ans, 4),
         "mean_reciprocal_rank": round(sum(1.0 / r for r in hit) / n_ans, 4),
         "retrieval_mode": benchmark.get("retrieval_mode", "hybrid"),
         "evidence_recall_target": targets.get("evidence_recall_at_10"),
         "evidence_recall_meets_target": recall_ok,
+        "evidence_recall_gated_on": "evidence_recall_excluding_verbatim",
         "abstention_overall": round(sum(all_abstain) / len(all_abstain), 4) if all_abstain else None,
         "abstention_by_band": band_scores,
         "abstention_decidable_bands_perfect": decidable_ok,
@@ -193,7 +211,7 @@ def run(benchmark_id: str | None = None, *, mode: str | None = None,
         "cases_total": len(results),
         "cases_passed": passed,
         "cases_failed": len(results) - passed,
-        "acceptance": score_benchmark(benchmark, results),
+        "acceptance": score_benchmark(benchmark, results, pack),
         "results": results,
     }
 
@@ -256,6 +274,8 @@ def main() -> int:
         mark = "MEETS" if acc["evidence_recall_meets_target"] else "BELOW"
         print(f"Evidence Recall@10 : {acc['evidence_recall_at_10']:.3f}  "
               f"[{mark} target {acc['evidence_recall_target']}]")
+        print(f"  ...excluding {acc['verbatim_case_count']} cases whose query restates its own "
+              f"answer: {acc['evidence_recall_excluding_verbatim']:.3f}")
         print(f"Recall@1 / @3      : {acc['recall_at_1']:.3f} / {acc['recall_at_3']:.3f}"
               f"   MRR: {acc['mean_reciprocal_rank']:.3f}"
               f"   (mode: {acc['retrieval_mode']})")

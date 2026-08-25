@@ -824,3 +824,67 @@ survivable, already recorded. Choosing C and being wrong is worse and quieter:
 the evidence chain keeps producing GREEN decisions that can no longer be
 re-derived from the commit they name, which is the failure the contract exists
 to prevent.
+
+---
+
+## Audit note — 2026-08-26: what the reported numbers were hiding
+
+A cold audit of this session's own work. Three findings, all fixed; recorded
+because two of them are the failure this register keeps catching in other
+people's code, committed here.
+
+**1. The headline recall was inflated, and the margin was a third of what it
+looked like.** Eleven of the 139 answerable benchmark cases have queries whose
+every informative term already appears, word for word, in the document the
+benchmark expects back. They are lookups by copy — they pass at 100% and cannot
+really fail.
+
+| | Evidence Recall@10 |
+|---|---|
+| the 11 self-answering cases | 1.000 |
+| the other 128 | **0.906** |
+| headline, as reported everywhere above | 0.914 |
+
+Every claim of *"0.914, meeting the 0.90 target with margin"* in this register
+and in PRs #26–#29 overstated it. The real margin is **0.006**, not 0.014 — one
+case from missing the target.
+
+Fixed by measurement rather than by a note: `evidence_recall_excluding_verbatim`
+is computed on every run from the corpus itself (`query_is_verbatim_in_its_answer`
+— derived, not hand-labelled, since a hand-labelled "this one is easy" flag
+drifts the first time a document is edited), it is printed by the demo, and
+**it is the figure the acceptance target is now gated on**, in both
+`scripts/re_demo.py` and `scripts/evidence_gate.py`. Scoring the headline would
+let a real regression hide behind eleven cases that cannot fail; a gate test
+now proves exactly that scenario blocks.
+
+**2. The test named for the D-10 signature could not detect D-10.**
+`test_no_case_flips_back_and_forth_as_the_corpus_grows` required a case to flip
+*twice* — the pass/fail/pass oscillation D-10 produced at 10 documents — and its
+docstring claimed it pinned that defect directly. Re-introducing the exact
+`_distinctive_terms` gate left it **green**: at 30 documents the same defect
+produces a single flip, not an oscillation.
+
+The suite as a whole did catch the re-introduced defect, through two other
+tests, so this was false assurance rather than an open hole. It now asserts that
+no case changes outcome at all across the distractor-volume series — measured
+first: nothing differs on the current retriever, one case differs under the
+re-introduced gate. Verified by re-introducing the defect and watching it fail.
+
+**3. `_distinctive_terms` outlived its last caller, and `retrieve()`'s docstring
+still described it as the live mechanism.** The method D-10 exists to have
+removed was still in the file, uncalled, while the entry point told any reader
+that candidate gating worked by literal distinctive-term hits. It has been
+deleted and the docstring rewritten to describe the rules that actually run.
+
+That is the same declared-but-not-implemented pattern D-09 found in the audit
+evidence contract and D-12 found in `retrieval_policy.allowed_modes` — this time
+in code written while fixing those.
+
+**Two smaller items, not fixed, recorded so they are not rediscovered as news:**
+`mean_reciprocal_rank` is computed over the top ten and is therefore MRR@10; the
+value is identical to true MRR here because no case's correct document sits
+beyond rank 10, so the number is right and only the name is loose. And the
+`hybrid 40/60` row of D-12's table is not reproducible from the shipped code,
+because `RETRIEVAL_MODES` has no 0.4 entry — it is the measured basis for
+*not* changing the default, and a reader cannot re-derive it with `--mode`.
