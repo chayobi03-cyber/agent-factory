@@ -6,7 +6,8 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01 and D-04 resolved 2026-08-25. Six items remain open.
+**Status:** D-01 and D-04 resolved, D-03 partly (2 of 3 PRs closed). D-09 opened
+by the check D-03 asked for. Six items open.
 
 ---
 
@@ -124,6 +125,11 @@ set, so it can never weaken CI.
 
 ## D-03 — Three stale open pull requests
 
+> **RESOLVED 2026-08-25 — partly.** #13 and #11 closed. **#1 stays open**: the
+> confirmation this entry asked for returned the opposite of what it assumed,
+> and closing it would have discarded unmerged implementation of a canonical
+> contract. Raised as D-09.
+
 All three predate the trunk move and none can pass CI as they stand: PRs #13 and
 #11 target `p0/opro-baseline`, which the workflow no longer triggers on
 (`branches: [main]`).
@@ -136,6 +142,24 @@ All three predate the trunk move and none can pass CI as they stand: PRs #13 and
 
 Merging #11 as a branch would reintroduce paths listed in the guard's
 `FORBIDDEN_CANONICAL_PATHS` and turn the Context Guard red on the trunk.
+
+### Outcome
+
+**#13 closed.** Supersession verified rather than assumed: all four files it
+touches exist on `main` with the trunk strictly ahead on each, and RC-01..08 pass
+there. Its own CI failure was the LSN-0002 guard bug, not its content.
+
+**#11 closed.** Its assets landed via D-04, recovered file-by-file. The branch
+itself must never merge.
+
+**#1 kept open.** This entry said *"confirm before closing"* — the confirmation
+came back the other way, and the assumption behind the disposition was wrong.
+See **D-09**.
+
+The lesson generalises past this entry: two of the three dispositions here were
+written from document names rather than diffs, and one of them was wrong. A
+branch is closeable when a diff says its content is reachable from the trunk,
+not when a similarly-named document exists there.
 
 ---
 
@@ -218,7 +242,15 @@ returned `HTTP 403` — that session's credentials permit pushes but not ref
 deletions, and the GitHub MCP server exposes no branch-deletion tool. The
 repository owner has `admin`, so this succeeds from a normal local clone.
 
-Command and restore SHAs: `11_Audit/MERGED_BRANCH_CLEANUP_2026-08-25.md`.
+**Step-by-step procedure:** `11_Audit/MERGED_BRANCH_CLEANUP_2026-08-25.md`. It
+re-derives the safe set against *your* current `main` rather than trusting a
+hardcoded list, prints `SAFE` / `KEEP` per branch, and deletes only what it just
+proved safe. A branch that has gained commits since the snapshot shows `KEEP` and
+is skipped automatically — including `audit/evidence-chain-remediation`, which
+must survive (D-09). Restore SHAs are in the same file; deletion is reversible
+with `git push origin <sha>:refs/heads/<name>`.
+
+The verifier was dry-run on 2026-08-25 and reproduces 30 `SAFE` / 8 `KEEP`.
 
 Rationale: LSN-0001 named the ambient condition — many stale branches, no single
 canonical trunk — as the cause of a session re-deriving its plan from the wrong
@@ -255,6 +287,51 @@ contamination record.
 No action implied — flagged because it was never an explicit decision in any
 governance document, and the quarantine discussion reads as though the material
 were internal.
+
+---
+
+## D-09 — The trunk declares an evidence-chain contract it cannot enforce
+
+Found while confirming D-03's disposition for PR #1, and the reason that PR is
+still open.
+
+`AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md` is CANONICAL on the trunk — referenced
+by `CURRENT_SESSION_STATE.audit_evidence_contract`, indexed as actively
+enforced — and it requires, among other items, *"independent digest verification
+where the artifact is downloaded"*.
+
+Nothing on the trunk does that:
+
+```
+$ grep -rl "sha256\|digest" scripts/ .github/workflows/
+(no matches)
+```
+
+`CURRENT_SESSION_STATE.last_verified_primary_evidence.independently_verified_digest`
+is recorded by hand. No tool on the trunk produces or checks it.
+
+The enforcement exists, unmerged, on `audit/evidence-chain-remediation` (PR #1,
+draft since 2026-08-18) — nine files absent from `main`:
+
+| | |
+|---|---|
+| Gate tooling | `scripts/evidence_gate.py`, `scripts/capture_execution.py`, `scripts/verify_artifact_sha256.py` |
+| Schemas | `schemas/audit_evidence_manifest.schema.json`, `schemas/execution_evidence.schema.json` |
+| CI | `.github/workflows/audit-evidence-chain.yml` |
+| Records | remediation doc, external cold-audit record, internal rating matrix |
+
+**The decision:** recover this tooling the way D-04's assets were recovered, or
+weaken the contract to match what is actually enforced. Leaving both as they are
+means a canonical contract whose central requirement is satisfied by assertion.
+
+**Recommendation:** recover, but as its own reviewed change. It adds a second CI
+workflow and gate tooling that can block merges — larger and more consequential
+than D-04's demo-and-fixtures recovery, and it needs the base rebased from
+`16936fe` onto the current `main` first.
+
+**Why this matters beyond PR #1:** the contract is what
+`AUDIT_EVIDENCE_CHAIN=GREEN` claims rest on. A gate that cannot fail is not a
+gate, and every evidence claim citing this contract inherits that.
 
 ---
 
