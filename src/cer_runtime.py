@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Sequence
 import uuid
 
+from claim_verification import VerificationReport
 from interfaces import CERDecision, CERSnapshot, Claim, EvidenceCandidate
 
 DECISIONS = {"PASS", "REVIEW", "CHANGE", "BLOCK"}
@@ -45,21 +46,43 @@ class CERGateRuntime:
         claims: Sequence[Claim],
         evidence: Sequence[EvidenceCandidate],
         risk_level: str = "low",
+        verification: VerificationReport | None = None,
     ) -> CERDecision:
+        """`verification`, when supplied, is what makes support mean support.
+
+        Without it this gate can only check that a claim cites an evidence id
+        that *exists*, which is not the same thing: a claim citing a real
+        fragment with almost no relationship to what it asserts still reached
+        PASS. A Domain Pack that wants its own
+        `verification_policy.require_evidence_for_claims` honoured must pass
+        the report from its verifier. See src/claim_verification.py.
+        """
         evidence_by_id = {item.evidence_id: item for item in evidence}
         claim_ids = tuple(claim.claim_id for claim in claims)
         evidence_refs = tuple(sorted(evidence_by_id))
         unsupported = [claim for claim in claims if not any(eid in evidence_by_id for eid in claim.evidence_ids)]
+        ungrounded_ids = set(verification.ungrounded_claim_ids) if verification else set()
+        # A claim whose evidence does not support it is unsupported in
+        # substance, so it lands in the same fail-closed branch rather than a
+        # softer one. Excluding the claims already caught above keeps one claim
+        # from producing two findings for the same defect.
+        ungrounded = [
+            claim for claim in claims
+            if claim.claim_id in ungrounded_ids and claim not in unsupported
+        ]
         contradictory = [
             claim for claim in claims
             if len(claim.evidence_ids) >= 2
             and len({evidence_by_id[eid].text.strip() for eid in claim.evidence_ids if eid in evidence_by_id}) >= 2
         ]
 
-        if unsupported:
+        if unsupported or ungrounded:
             result = "BLOCK"
             human_required = False
-            findings = tuple(f"UNSUPPORTED_CLAIM:{claim.claim_id}" for claim in unsupported)
+            findings = (
+                tuple(f"UNSUPPORTED_CLAIM:{claim.claim_id}" for claim in unsupported)
+                + tuple(f"UNGROUNDED_CLAIM:{claim.claim_id}" for claim in ungrounded)
+            )
             actions = ("REMEDIATE_EVIDENCE",)
         elif contradictory:
             result = "REVIEW"
