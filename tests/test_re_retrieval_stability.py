@@ -30,6 +30,10 @@ from re_corpus import (  # noqa: E402
     CORPUS,
     DISTRACTOR_CHAMBERS,
     adversarial_corpus,
+    contradicting_documents,
+    distractor_documents,
+    near_duplicate_revisions,
+    notation_variant_documents,
     term_saturating_documents,
 )
 from re_domain_pack import REDomainPack  # noqa: E402
@@ -156,6 +160,33 @@ def test_abstention_holds_at_every_corpus_size(outcomes_by_size) -> None:
             f"abstention degraded under corpus shape {shape!r}: "
             f"{held}/{len(abstain_ids)} against {baseline}/{len(abstain_ids)} at baseline"
         )
+
+
+def test_no_generator_collides_with_a_baseline_document_identity() -> None:
+    """Every adversarial shape must add documents, never silently replace one.
+
+    `near_duplicate_revisions()` emitted DOC-RE-001/REV-B, which the baseline
+    corpus already held, so the adversarial corpus carried two different
+    documents under one identity and every df statistic counted them twice.
+    Nothing detected it until the corpus loader started validating identities.
+    """
+    from corpus_source import from_documents
+
+    baseline = {(d["document_id"], d["revision_id"]) for d in CORPUS}
+    for name, generated in (
+        ("near_duplicate_revisions", near_duplicate_revisions()),
+        ("contradicting_documents", contradicting_documents()),
+        ("notation_variant_documents", notation_variant_documents()),
+        ("distractor_documents", distractor_documents(25)),
+        ("term_saturating_documents", term_saturating_documents(25)),
+    ):
+        clashes = baseline & {(d["document_id"], d["revision_id"]) for d in generated}
+        assert not clashes, f"{name} reuses baseline identities: {sorted(clashes)}"
+
+    # And the assembled corpus must load cleanly through the same validation a
+    # real out-of-tree corpus goes through.
+    for n in (0, 40):
+        from_documents(adversarial_corpus(n), origin=f"adversarial_corpus({n})")
 
 
 def test_distractor_chambers_are_reserved_in_both_directions() -> None:

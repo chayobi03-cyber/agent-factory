@@ -38,6 +38,7 @@ from typing import Any, Sequence
 import yaml
 
 from claim_verification import ClaimVerifier
+from corpus_source import CorpusSource, from_documents
 from interfaces import Claim, EvidenceCandidate
 
 from re_corpus import CORPUS, RawDocument
@@ -375,6 +376,7 @@ class REDomainPack:
         self._frag_term_counts: list[Counter[str]] = []
         self._frag_trigrams: list[set[str]] = []
         self._verifier: ClaimVerifier | None = None
+        self._corpus_source: CorpusSource | None = None
         self._doc_freq: Counter[str] = Counter()
         self._avg_fragment_len = 0.0
         self._loaded = False
@@ -387,8 +389,27 @@ class REDomainPack:
     # -- DomainPack protocol -------------------------------------------------
 
     def ingest(self, source: Any = None) -> list[Document]:
-        raw = source if source is not None else self._raw_corpus
-        return [Document(**item) for item in raw]
+        """Accepts a CorpusSource, a raw document sequence, or nothing.
+
+        A CorpusSource carries an origin and a content digest, which is what
+        lets a run say *which* corpus produced its numbers -- necessary once
+        the documents can live outside the repository (OPEN_DECISIONS D-08).
+        A bare sequence is still accepted and gets wrapped, so nothing that
+        passed a list before has to change.
+        """
+        if isinstance(source, CorpusSource):
+            self._corpus_source = source
+        elif source is not None:
+            self._corpus_source = from_documents(source, origin="caller:sequence")
+        else:
+            self._corpus_source = from_documents(self._raw_corpus)
+        return [Document(**item) for item in self._corpus_source.documents]
+
+    @property
+    def corpus_identity(self) -> dict[str, Any]:
+        """Origin, digest and size of the corpus currently loaded."""
+        self._ensure_loaded()
+        return self._corpus_source.identity() if self._corpus_source else {}
 
     def parse(self, artifact: Document) -> list[str]:
         """Split a document into paragraph-level chunks."""

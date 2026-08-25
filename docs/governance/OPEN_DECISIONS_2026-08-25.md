@@ -578,6 +578,30 @@ case stops abstaining at any shape, if a near-duplicate revision displaces the
 original, or if a contradicting document becomes unreachable alongside the
 document it contradicts. It is the D-10 defect's own probe, kept as a test.
 
+**Re-verified 2026-08-26, after a defect in the corpus it was measured against.**
+The corpus loader's identity validation revealed that `near_duplicate_revisions()`
+had been emitting `DOC-RE-001/REV-B`, an identity the baseline corpus already
+held, so every shape in the sweep above contained two different documents under
+one identity and counted that document twice in each document-frequency
+statistic. The sweep was therefore run against a corrupted corpus.
+
+Re-run after the fix, at 30 documents and 159 cases:
+
+| floor | Recall@10 | shape-unstable cases |
+|---|---|---|
+| 0.00 | 0.914 | 1 |
+| 0.08 | 0.914 | 1 |
+| **0.12** | **0.914** | 1 |
+| 0.16 | 0.906 | 1 |
+| 0.20 | 0.906 | 1 |
+| 0.24 | 0.906 | 2 |
+
+The conclusion holds: 0.12 sits in the best band and 0.16 upward degrades. The
+single unstable case is RE-BC-133, marginal by construction. This is recorded
+because the original result was measured against a corrupted corpus and
+happening to survive that is not the same as having been checked — the check is
+what makes the number usable.
+
 ---
 
 ## D-11 — A lexical retriever cannot abstain on a near-miss, and no threshold changes that

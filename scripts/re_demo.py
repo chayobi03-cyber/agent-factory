@@ -23,6 +23,7 @@ if str(SRC) not in sys.path:
 
 from interfaces import CERSnapshot, Claim  # noqa: E402
 from cer_runtime import CERGateRuntime  # noqa: E402
+from corpus_source import CorpusError, from_directory  # noqa: E402
 from re_domain_pack import RETRIEVAL_MODES, REDomainPack  # noqa: E402
 
 BENCHMARK_PATH = ROOT / "templates" / "benchmark" / "re_hybrid_rag_v0.1.json"
@@ -169,9 +170,10 @@ def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
     }
 
 
-def run(benchmark_id: str | None = None, *, mode: str | None = None) -> dict:
+def run(benchmark_id: str | None = None, *, mode: str | None = None,
+        corpus: str | None = None) -> dict:
     pack = REDomainPack()
-    loaded = pack.load()
+    loaded = pack.load(from_directory(corpus) if corpus else None)
     gate = CERGateRuntime()
     benchmark = load_benchmark()
     benchmark["retrieval_mode"] = mode or pack.default_retrieval_mode
@@ -182,7 +184,12 @@ def run(benchmark_id: str | None = None, *, mode: str | None = None) -> dict:
         "domain_pack": {"domain_id": pack.domain_id, "version": pack.version},
         "benchmark_id": benchmark["benchmark_id"],
         "fragments_indexed": loaded,
-        "documents_indexed": len({(d["document_id"], d["revision_id"]) for d in pack._raw_corpus}),
+        "documents_indexed": pack.corpus_identity["documents"],
+        # Which corpus produced these numbers. Necessary once the documents can
+        # live outside the repository (OPEN_DECISIONS D-08): a benchmark result
+        # measured against an out-of-tree corpus is not re-derivable from the
+        # commit SHA alone, so the run has to name and digest what it read.
+        "corpus": pack.corpus_identity,
         "cases_total": len(results),
         "cases_passed": passed,
         "cases_failed": len(results) - passed,
@@ -197,9 +204,18 @@ def main() -> int:
     parser.add_argument("--report", metavar="CASE_ID", help="render a markdown report for one case")
     parser.add_argument("--mode", choices=sorted(RETRIEVAL_MODES),
                         help="retrieval method (default: the Domain Pack policy's)")
+    parser.add_argument("--corpus", metavar="DIR",
+                        help="load documents from a directory of JSON files instead of the "
+                             "in-tree synthetic corpus. The result is recorded with the "
+                             "corpus origin and digest, because it is no longer reproducible "
+                             "from the commit SHA alone (OPEN_DECISIONS D-08)")
     args = parser.parse_args()
 
-    summary = run(mode=args.mode)
+    try:
+        summary = run(mode=args.mode, corpus=args.corpus)
+    except CorpusError as exc:
+        print(f"corpus error: {exc}", file=sys.stderr)
+        return 2
 
     if args.report:
         pack = REDomainPack()
@@ -231,6 +247,7 @@ def main() -> int:
         print(f"Documents indexed: {summary['documents_indexed']}"
               f"   Fragments: {summary['fragments_indexed']}"
               f"   Cases: {summary['cases_total']}")
+        print(f"Corpus: {summary['corpus']['origin']}  {summary['corpus']['digest'][:23]}...")
         print()
         for r in summary["results"]:
             if not r["score"]["passed"]:
