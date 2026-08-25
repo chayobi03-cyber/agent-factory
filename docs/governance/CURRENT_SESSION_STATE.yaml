@@ -49,16 +49,15 @@ last_completed:
   - d09_resolved_evidence_gate_tooling_recovered_extended_to_all_six_gates_and_proven_to_fail
   - d02_resolved_context_guard_honours_a_local_target_branch_ignored_inside_github_actions
   - d07_resolved_superseded_resume_contract_header_corrected_and_retained_as_history
+  - d05_and_d06_resolved_31_merged_branches_deleted_by_dispatch_remote_41_to_10_no_history_lost
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
   - hold the trunk on `main` now that the divergent default branch is folded in
-  - execute the prepared merged-branch deletion (11_Audit/MERGED_BRANCH_CLEANUP_2026-08-25.md) from a credential that permits ref deletion
 current_risk:
   - M1 corpus/benchmark is a first slice (8 docs / 15 cases), not yet the RE_POC.md PoC target size
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
   - expand M1 RE corpus/benchmark toward the RE_POC.md target (20+ documents / 150 cases)
-  - execute the prepared branch deletion from a local clone (11_Audit/MERGED_BRANCH_CLEANUP_2026-08-25.md, OPEN_DECISIONS D-05)
 blocked_until: []
 forbidden:
   - GEPA_implementation
@@ -143,4 +142,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-25T07:10:00+00:00
+updated_at_utc: 2026-08-25T07:50:00+00:00
