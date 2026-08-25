@@ -1,5 +1,5 @@
 # Governance Documents Index
-**Purpose:** so a new session can tell in under a minute which of the 20 documents in `docs/governance/` are the live, actively-enforced contracts versus historical record. Nothing below was deleted — this is a status index, not a cleanup.
+**Purpose:** so a new session can tell in under a minute which of the 22 documents in `docs/governance/` are the live, actively-enforced contracts versus historical record. Nothing below was deleted — this is a status index, not a cleanup.
 
 Status legend: **CANONICAL** (actively read/enforced by code, or the current live contract) · **HISTORICAL** (valid record of a past session, not enforced) · **SUPERSEDED** (replaced by a newer canonical doc, kept for history) · **NEEDS REVIEW** (stale reference found)
 
@@ -16,6 +16,8 @@ Status legend: **CANONICAL** (actively read/enforced by code, or the current liv
 | `CER_CONTEXT_CONTRACT.md` | **CANONICAL** | Defines CER itself (Gap/Method/Risk/Evidence/Regression/Learning) — the conceptual root the runtime implements. |
 | `OPTIMIZATION_BENCHMARK_CONTRACT_V1.md` | **CANONICAL** | Governs `src/opro*.py` / `scripts/opro_baseline.py` benchmark behavior. |
 | `OPTIMIZATION_METHOD_CONTROL_V1.md` | **CANONICAL** | Governs which optimization methods (OPRO vs GEPA) are permitted; GEPA remains forbidden per this doc. |
+| `ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md` | **CANONICAL** | States the active architecture direction (domain-agnostic engineering platform; provenance as generic evidence) and the implementation sequence `Factory Kernel GREEN → RE Domain Pack → ingestion → parsing → hybrid retrieval → …`. Recovered to the trunk 2026-08-25: it existed only on four unmerged branches, so the trunk carried no statement of its own refactor direction. |
+| `CER_CI_PR_EXECUTION_LESSONS_2026-08-20.md` | **CANONICAL** | Cited by name in `scripts/validate_project_context.py` and `tests/test_project_context_guard.py`. Recovered to the trunk 2026-08-25 — those citations were dangling, pointing at a file that existed only on unmerged branches. Establishes the rule that historical CI success is never reusable after a new commit. |
 | `RESUME_CONTRACT_V1.md` | **SUPERSEDED** by `CER_SESSION_CONTINUITY_CONTRACT_V1.md` | Both are "v1.1", same purpose (cross-session resume). Code only ever reads the Continuity Contract; this one is not referenced anywhere. Recommend keeping as history, not deleting. |
 | `CER_ARCHITECTURE_CONTRACT_V1.md` | **NEEDS REVIEW** | States *"Canonical source: Git repository `main`"* — written before the `p0/opro-baseline` divergence. The architecture it describes is still accurate, but the branch pointer is stale. Should be corrected once the main/p0 branch reconciliation (structural refactor Phase 3) is decided. |
 | `CER_SESSION_CLOSURE_2026-08-14.md` | **HISTORICAL** | Session-close record, 08-14. |

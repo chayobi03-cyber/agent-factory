@@ -1,7 +1,7 @@
-state_version: 17
-session_id: 2026-08-20-agentfactory-project-context-remediation
-phase: PROJECT-CONTEXT-REMEDIATION
-gate: REVIEW_REQUIRED
+state_version: 18
+session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
+phase: M0.5-FACTORY-KERNEL-VERIFIED
+gate: FACTORY_KERNEL_GREEN
 project_id: agent-factory
 repository: chayobi03-cyber/agent-factory
 working_branch: p0/opro-baseline
@@ -30,18 +30,27 @@ last_completed:
   - handoff_identity_and_constraints_migrated_to_structured_frontmatter
   - factory_kernel_verified_green_locally_context_guard_rc_demo_harness_opro_pytest
   - m1_re_domain_pack_first_slice_implemented
+  - context_guard_pull_request_false_negative_fixed_both_validators
+  - checkpoint_mode_corrected_exact_to_descendant
+  - push_event_branch_test_environment_leak_fixed
+  - factory_kernel_green_confirmed_by_observed_github_actions_run_on_p0_opro_baseline
+  - first_green_pull_request_triggered_run_restores_evidence_only_branch_pr_pattern
+  - architecture_refactor_plan_and_ci_pr_execution_lessons_recovered_to_trunk
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
-  - real GitHub-Actions-confirmed GREEN for the Factory Kernel (currently locally-verified only)
+  - trunk reconciliation: retire the divergent default branch so a fresh clone starts on the canonical line
+  - branch hygiene: delete the 31 fully-merged branches that make cross-branch plan divergence likely
 current_risk:
-  - Factory Kernel GREEN is locally verified but not yet confirmed by an observed GitHub Actions run on p0/opro-baseline
   - M1 corpus/benchmark is a first slice (8 docs / 15 cases), not yet the RE_POC.md PoC target size
+  - default branch `main` is not the trunk; a fresh clone lands on a 1-commit stale line whose state pointer would fail the Context Guard
+  - 31 fully-merged branches remain on the remote, the same ambient condition LSN-0001 identified as the cause of cross-branch plan divergence
+  - governance contradiction - validator REQUIRED_HANDOFF_CONSTRAINTS pins `RE_domain_implementation` as absolutely forbidden, while ROADMAP_WBS makes M1 RE the next milestone after Factory Kernel GREEN; state wording (`..._until_kernel_gate`) is time-bounded but the handoff/validator token is not
 next_action:
-  - obtain current-SHA primary CI workflow/job/artifact/digest evidence
-  - resolve RC-01..RC-08 schema drift (missing task_id/next_action/handoff/checkpoint fields)
-  - resolve handoff-document baseline-SHA marker drift (RC-03/RC-06)
+  - decide trunk reconciliation (main vs p0/opro-baseline) and delete the 31 merged branches
+  - resolve the RE_domain_implementation constraint contradiction before expanding M1 beyond the first slice
+  - expand M1 RE corpus/benchmark toward the RE_POC.md target (20+ documents / 150 cases)
 blocked_until:
-  - current-SHA primary CI evidence is independently retrievable before GREEN/REMEDIATED claim
+  - RE_domain_implementation constraint is reconciled with the roadmap before M1 work beyond the delivered first slice
 forbidden:
   - GEPA_implementation
   - RE_domain_implementation_until_kernel_gate
@@ -60,16 +69,16 @@ resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 hotl_rule: docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md
 context_guard: scripts/validate_project_context.py
-resume_status: REVIEW_REQUIRED
+resume_status: RESUME_ALLOWED
 resume_checks:
-  RC-01: NOT_REVALIDATED_AFTER_REMEDIATION
-  RC-02: NOT_REVALIDATED_AFTER_REMEDIATION
-  RC-03: NOT_REVALIDATED_AFTER_REMEDIATION
-  RC-04: NOT_REVALIDATED_AFTER_REMEDIATION
-  RC-05: NOT_REVALIDATED_AFTER_REMEDIATION
-  RC-06: NOT_REVALIDATED_AFTER_REMEDIATION
-  RC-07: NOT_REVALIDATED_AFTER_REMEDIATION
-  RC-08: NOT_REVALIDATED_AFTER_REMEDIATION
+  RC-01: PASS
+  RC-02: PASS
+  RC-03: PASS
+  RC-04: PASS
+  RC-05: PASS
+  RC-06: PASS
+  RC-07: PASS
+  RC-08: PASS
 last_verified_primary_evidence:
   target_sha: c1efb9933fc5b3589cd43e986d4b1549f4338923
   workflow_run_id: 32309992157
@@ -86,10 +95,32 @@ last_verified_primary_evidence:
   opro_promotion_status: CANDIDATE
   pytest: 56_of_56
 current_sha_execution:
-  target_sha: 55b253750a519300ccf3566cf37e3145977147cc
-  workflow_run: NOT_RETRIEVED
-  combined_status: NOT_OBSERVED
-  classification: REVIEW_REQUIRED
+  target_sha: 59db368d98b4f89c7ce4183c04de3c25de8892c1
+  workflow_run_id: 32804843817
+  job_id: 97672827319
+  workflow: Factory Kernel Regression
+  event: push
+  branch: p0/opro-baseline
+  combined_status: SUCCESS
+  steps: 27_of_27
+  classification: VERIFIED_PRIMARY_EXECUTION_EVIDENCE
+  artifact_id: 9547765868
+  artifact: factory-kernel-machine-evidence
+  github_digest: sha256:b4768f5eff6123543d7c882d8d2b3f02a0e60bf2d238b868723dc8353682bf58
+  context_guard: PASS
+  resume_rc_01_08: ALL_PASS
+  factory_demo: PASS
+  kernel_harness: PASS
+  opro_baseline: PASS
+  m1_re_hybrid_rag_benchmark: 15_of_15
+  pytest: 86_of_86
+  # Companion pull_request-event run on the same tree, proving the
+  # AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1 evidence-only-branch/PR pattern is
+  # usable again after the LSN-0002 guard fix. First green PR-triggered run
+  # in this repository.
+  paired_pull_request_run_id: 32804716473
+  paired_pull_request_head_sha: 65886ad62f71ef213f07bda70943599f6d1f2db0
+  paired_pull_request_status: SUCCESS
 checkpoint:
   # `exact` pins HEAD to checkpoint_sha, so RC-02 can only pass while no new
   # commit exists -- any commit that advances HEAD past the checkpoint fails it
