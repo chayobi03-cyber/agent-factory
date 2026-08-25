@@ -581,6 +581,14 @@ document it contradicts. It is the D-10 defect's own probe, kept as a test.
 
 ## D-11 — A lexical retriever cannot abstain on a near-miss, and no threshold changes that
 
+> **PARTIALLY ADDRESSED 2026-08-25 — option A implemented, option C built and
+> measured as *not* the fix.** Claim-evidence verification is now a kernel
+> capability and the CER gate acts on its verdict, which closed a separate and
+> more serious hole and moved near-miss abstention from 3/8 to 4/8 as a side
+> effect. It does not resolve this entry. The band stays open and the
+> recommendation below is revised: **B is now the only remaining option that
+> can close it.** Notes at the end of this entry.
+
 Raised 2026-08-25 by the M1-3 corpus and benchmark scale-up (10 → 30 documents,
 15 → 159 cases). Not a regression: the scale-up is the first thing large enough
 to measure it. D-10's resolution named this exact gap — *"it has not been tested
@@ -653,3 +661,62 @@ produces a confident, cited answer drawn from documents about a different test.
 The mitigation until C lands is that those answers are still fully traced, so a
 reviewer sees the evidence is about radiated emission when the question was
 about immunity. That is a human catching it, not the system.
+
+---
+
+### Update — 2026-08-25, after building option C
+
+Option C was implemented rather than argued about, and the result changes the
+recommendation.
+
+**Option C does not fix this entry, and that was measured.** Five
+verification-side statistics were scored on separating the 139 answerable
+benchmark cases from the near-miss ones — the same treatment the eight
+retrieval-side statistics got above:
+
+| Verification statistic | Answerable lost for a full catch |
+|---|---|
+| Query terms present in the top evidence | 32 / 127 |
+| IDF-weighted coverage of the top evidence | 29 / 127 |
+| Top candidate's hybrid score | 33 / 127 |
+| Corpus-known query terms present in the top evidence | 48 / 127 |
+| …the same over the top three | 61 / 127 |
+
+Verification is no better placed than retrieval to tell *"the corpus lacks
+this subject"* from *"the question is phrased differently"*. Both are looking
+at the same lexical evidence. The architectural intuition that sufficiency
+belongs at verification was right; the expectation that moving it there would
+decide the near-miss was not.
+
+**What building it was worth anyway.** Two things, neither of them this entry:
+
+1. **It closed a real hole.** `CERGateRuntime.evaluate` treated a claim as
+   supported when a cited evidence id merely *existed*. A claim citing a real
+   fragment with almost no relationship to what it asserts reached `PASS` — in
+   a system whose entire purpose is that answers are grounded. Meanwhile
+   `domains/re/domain_pack.yaml` had declared `require_evidence_for_claims:
+   true` and `abstain_when_evidence_insufficient: true` from the beginning with
+   nothing enforcing either: the same declared-but-unimplemented pattern D-09
+   found in the audit evidence contract. `src/claim_verification.py` is the
+   kernel mechanism; the threshold is the domain's half and lives in the policy
+   file.
+
+2. **It made this entry's mitigation concrete.** The mitigation recorded above
+   was that a reviewer sees the evidence is about the wrong thing. That was a
+   hope. The verifier now emits `unsupported_terms` — the parts of a question
+   the cited evidence never mentions — so for *"What field strength is applied
+   during a radiated immunity test?"* the report names `immunity`. Where the
+   threshold cannot decide, the gap is at least on the page.
+
+Near-miss abstention moved 3/8 → 4/8, at no cost to Evidence Recall@10 (0.914,
+unchanged). The grounding floor is **0.25** against a measured answerable
+minimum of 0.300. It was deliberately not raised to chase this band: 0.30
+catches two of five but leaves zero margin, and 0.32 starts costing answerable
+cases. **The floor is not an abstention mechanism and must not be tuned as
+one** — that is how the coverage floor became corpus-dependent in D-10.
+
+**Revised recommendation.** A is implemented. C is built, worth keeping on its
+own merits, and struck as a fix for this band. **B — a second retrieval method
+with semantic similarity — is the only remaining option that can close it**,
+and `RE_POC.md` already requires three retrieval methods, so it is scheduled
+work rather than new scope. D stays rejected.

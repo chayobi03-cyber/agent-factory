@@ -37,6 +37,7 @@ from typing import Any, Sequence
 
 import yaml
 
+from claim_verification import ClaimVerifier
 from interfaces import Claim, EvidenceCandidate
 
 from re_corpus import CORPUS, RawDocument
@@ -281,6 +282,11 @@ _COVERAGE_FLOOR = 0.12
 # OPEN_DECISIONS D-11 rather than tuned around.
 _UNSEEN_TERM_CEILING = 0.35
 
+# Fallback for the claim-grounding floor when domain_pack.yaml is absent (the
+# code-only minimal mode load_domain_policy supports). The policy file is the
+# source of truth; tests assert the two agree.
+_CLAIM_GROUNDING_FLOOR = 0.25
+
 _DOMAIN_GENERIC_TERMS = {
     "radiated", "emission", "emissions", "test", "tested", "testing",
     "measurement", "measured", "measure", "device", "dut", "eut",
@@ -334,6 +340,7 @@ class REDomainPack:
         self._frag_term_sets: list[set[str]] = []
         self._frag_term_counts: list[Counter[str]] = []
         self._frag_trigrams: list[set[str]] = []
+        self._verifier: ClaimVerifier | None = None
         self._doc_freq: Counter[str] = Counter()
         self._avg_fragment_len = 0.0
         self._loaded = False
@@ -573,36 +580,37 @@ class REDomainPack:
             )
         return results
 
+    @property
+    def claim_verifier(self) -> ClaimVerifier:
+        """The kernel's verifier, bound to this domain's tokenizer and floor.
+
+        The mechanism is domain-agnostic and lives in src/claim_verification.py;
+        what RE contributes is how its text tokenizes (measurements, unit-
+        bearing levels, hyphenated identifiers) and what share of a claim its
+        evidence must supply. Any Domain Pack binds the same class the same way.
+        """
+        if self._verifier is None:
+            policy = (self.policy.get("verification_policy", {}) or {}) if self.policy else {}
+            self._verifier = ClaimVerifier(
+                _tokenize,
+                grounding_floor=float(policy.get("claim_grounding_floor", _CLAIM_GROUNDING_FLOOR)),
+                ignore_terms=_STOPWORDS | _DOMAIN_GENERIC_TERMS,
+            )
+        return self._verifier
+
     def verify(
         self, claims: Sequence[Claim], evidence: Sequence[EvidenceCandidate], **kwargs: Any
     ) -> dict[str, Any]:
-        """Lexical grounding check: does the claim statement's vocabulary
-        actually overlap with the text of the evidence it cites? This runs
-        in addition to (not instead of) the CER gate's own
-        evidence-id-exists check.
+        """Does the cited evidence support the claim, or merely exist?
+
+        Delegates to the kernel verifier. Previously this computed a term
+        overlap and returned it, and nothing consumed the result -- the CER
+        gate decided on evidence-id existence alone, so a claim citing evidence
+        with almost no relationship to it still reached PASS. The verdict now
+        travels into the gate; see CERGateRuntime.evaluate.
         """
-        evidence_by_id = {e.evidence_id: e for e in evidence}
-        per_claim: dict[str, dict[str, Any]] = {}
-        for claim in claims:
-            cited = [evidence_by_id[eid] for eid in claim.evidence_ids if eid in evidence_by_id]
-            claim_terms = set(_tokenize(claim.statement))
-            overlap = 0.0
-            if cited and claim_terms:
-                evidence_terms: set[str] = set()
-                for item in cited:
-                    evidence_terms |= set(_tokenize(item.text))
-                overlap = len(claim_terms & evidence_terms) / len(claim_terms)
-            grounded = bool(cited) and overlap >= 0.3
-            per_claim[claim.claim_id] = {
-                "cited_evidence": [e.evidence_id for e in cited],
-                "term_overlap": round(overlap, 4),
-                "grounded": grounded,
-            }
-        return {
-            "domain": DOMAIN_ID,
-            "claims": per_claim,
-            "all_grounded": all(v["grounded"] for v in per_claim.values()) if per_claim else False,
-        }
+        report = self.claim_verifier.verify(claims, evidence)
+        return {"domain": DOMAIN_ID, **report.as_dict()}
 
     def evaluate(self, case: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
         """Score one benchmark case against a produced result.

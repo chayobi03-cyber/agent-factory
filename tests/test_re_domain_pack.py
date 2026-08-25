@@ -220,31 +220,35 @@ def test_pinned_regression_case_still_behaves(pack: REDomainPack, case: dict) ->
 # how a benchmark ends up measuring nothing. The targets live in the benchmark
 # file so the bar and the cases move together.
 
-def _score(pack: REDomainPack, cases: list[dict]) -> tuple[float, dict[str, tuple[int, int]]]:
-    recalls = []
-    bands: dict[str, list[bool]] = {}
-    for case in cases:
-        evidence = pack.retrieve(case["query"], top_k=10)
-        if case.get("expect_abstain"):
-            bands.setdefault(case["abstention_band"], []).append(not evidence)
-            continue
-        expected = set(case["expected_document_ids"])
-        found = {e.document_id for e in evidence}
-        recalls.append(len(found & expected) / len(expected) if expected else 1.0)
-    return (
-        sum(recalls) / len(recalls),
-        {band: (sum(results), len(results)) for band, results in bands.items()},
-    )
+# Scored by running the demo, not by reimplementing it here.
+#
+# This used to recompute recall and abstention from pack.retrieve() alone, and
+# the two drifted the moment claim verification landed: the demo gates on
+# retrieve -> verify -> CER, so a claim whose evidence does not support it now
+# BLOCKs, while a test looking only at retrieval could not see that and
+# reported the old number. Two places encoding one definition is the same
+# defect this codebase has already hit at the D-02 override and at the
+# evidence gate's benchmark rule. There is one definition, and it is the one
+# that ships.
+
+def _acceptance() -> dict:
+    from scripts import re_demo
+
+    return re_demo.run()["acceptance"]
 
 
-def test_evidence_recall_meets_the_acceptance_target(pack: REDomainPack) -> None:
-    benchmark = _load_benchmark()
-    target = benchmark["acceptance_targets"]["evidence_recall_at_10"]
-    recall, _ = _score(pack, benchmark["cases"])
+def _bands() -> dict[str, dict[str, int]]:
+    return _acceptance()["abstention_by_band"]
+
+
+def test_evidence_recall_meets_the_acceptance_target() -> None:
+    acceptance = _acceptance()
+    target = acceptance["evidence_recall_target"]
+    recall = acceptance["evidence_recall_at_10"]
     assert recall >= target, f"Evidence Recall@10 {recall:.3f} < target {target}"
 
 
-def test_abstention_is_perfect_on_the_bands_that_are_decidable(pack: REDomainPack) -> None:
+def test_abstention_is_perfect_on_the_bands_that_are_decidable() -> None:
     """Two of the three abstention bands must never be missed.
 
     A question about a subject outside the domain, or about an equipment or
@@ -252,28 +256,30 @@ def test_abstention_is_perfect_on_the_bands_that_are_decidable(pack: REDomainPac
     statistics alone -- the terms that carry the question are simply absent.
     Missing one of these is a defect, not a limitation.
     """
-    benchmark = _load_benchmark()
-    _, bands = _score(pack, benchmark["cases"])
+    bands = _bands()
     for band in ("subject_outside_domain", "entity_absent_from_corpus"):
-        held, total = bands[band]
-        assert held == total, f"{band}: abstained on only {held}/{total}"
+        assert bands[band]["held"] == bands[band]["total"], f"{band}: {bands[band]}"
 
 
-def test_near_miss_abstention_limitation_is_still_what_the_record_says(pack: REDomainPack) -> None:
+def test_near_miss_abstention_limitation_is_still_what_the_record_says() -> None:
     """The third band is a measured open limitation (OPEN_DECISIONS D-11), and
     this test exists so it cannot drift quietly in either direction.
 
     A near-miss query names real RE subject matter this corpus happens not to
     cover -- conducted emission, immunity, ESD, another standard. No threshold
-    on lexical statistics separates it from an answerable question; the sweep
-    that established this is recorded at `_UNSEEN_TERM_CEILING`. If this
-    assertion starts failing because the number went *up*, something genuinely
-    improved and D-11 should be revisited rather than the number edited.
+    on lexical statistics separates it from an answerable question; that was
+    measured for eight retrieval-side statistics and again for five
+    verification-side ones.
+
+    4/8 rather than 3/8 because claim verification catches one more as a side
+    effect: where the cited evidence supplies too little of what the question
+    asks, the gate BLOCKs. That is not a fix for the band -- it is a partial
+    catch, and the register says which is which. If this number moves again,
+    update D-11 and this test together.
     """
-    _, bands = _score(pack, _load_benchmark()["cases"])
-    held, total = bands["near_miss_domain_subject"]
-    assert held == 3 and total == 8, (
-        f"near-miss abstention is now {held}/{total}, recorded as 3/8. "
+    band = _bands()["near_miss_domain_subject"]
+    assert band == {"held": 4, "total": 8}, (
+        f"near-miss abstention is now {band}, recorded as 4/8. "
         "Update OPEN_DECISIONS D-11 and this test together."
     )
 
@@ -399,3 +405,43 @@ def test_measurement_policy_matches_the_code_that_implements_it() -> None:
     assert {k: Decimal(str(v)) for k, v in policy["frequency_units"].items()} == _FREQ_TO_MHZ
     assert tuple(policy["level_units"]) == _LEVEL_UNITS
     assert tuple(policy["identifier_prefixes"]) == _ID_PREFIXES
+
+
+# --- claim verification: the Domain Pack's half of a kernel mechanism --------
+
+def test_claim_grounding_floor_comes_from_the_policy_not_the_code() -> None:
+    """Same code<->YAML guarantee the ontology and measurement policy have.
+
+    The threshold is corpus-fitted and belongs to the domain; the kernel owns
+    only the mechanism. If these drift, the policy file becomes documentation
+    of something that is not happening -- which is exactly the state
+    `require_evidence_for_claims` was in before the verifier existed.
+    """
+    import yaml
+
+    policy = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "domains" / "re" / "domain_pack.yaml")
+        .read_text(encoding="utf-8")
+    )
+    declared = policy["verification_policy"]["claim_grounding_floor"]
+    assert REDomainPack().claim_verifier.grounding_floor == declared
+
+
+def test_a_pack_with_no_policy_file_still_verifies() -> None:
+    """load_domain_policy supports a code-only minimal mode. The verifier has
+    to work there too, or the fallback mode silently stops enforcing grounding
+    rather than failing loudly."""
+    minimal = REDomainPack(policy={})
+    assert minimal.claim_verifier.grounding_floor > 0
+
+
+def test_verification_names_what_the_evidence_did_not_supply(pack: REDomainPack) -> None:
+    """The reviewer-facing half of OPEN_DECISIONS D-11's mitigation: where the
+    threshold cannot decide a near-miss, the report still says which part of
+    the question went unanswered."""
+    query = "What field strength is applied during a radiated immunity test?"
+    evidence = pack.retrieve(query, top_k=3)
+    assert evidence, "expected this near-miss query to retrieve something"
+    claim = Claim("C-NM", query, "answer", [evidence[0].evidence_id], 0.5)
+    report = pack.verify([claim], evidence)
+    assert "immunity" in report["claims"]["C-NM"]["unsupported_terms"]

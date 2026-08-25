@@ -72,14 +72,19 @@ def run_case(pack: REDomainPack, gate: CERGateRuntime, case: dict) -> dict:
         )
         claims = [claim]
 
+    # Verify first, then gate on the verdict. Running the gate on evidence-id
+    # existence and computing verification afterwards -- which is what this did
+    # -- means the grounding check can never affect an outcome.
+    report = pack.claim_verifier.verify(claims, evidence)
     decision = gate.evaluate(
         snapshot=SNAPSHOT,
         run_id=f"RUN-{case['case_id']}",
         gate_id="RE-QA-001",
         claims=claims,
         evidence=evidence,
+        verification=report,
     )
-    verification = pack.verify(claims, evidence)
+    verification = {"domain": pack.domain_id, **report.as_dict()}
 
     result = {
         "query": case["query"],

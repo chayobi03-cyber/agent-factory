@@ -1,4 +1,4 @@
-state_version: 20
+state_version: 21
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -64,16 +64,20 @@ last_completed:
   - m1_3_benchmark_gated_on_re_poc_acceptance_targets_rather_than_per_case_perfection
   - d02_second_half_resume_validator_now_honours_the_same_local_target_branch_override_as_the_context_guard
   - d11_opened_near_miss_abstention_is_not_decidable_by_any_lexical_threshold_measured_over_eight_statistics
+  - refactor_evidence_and_claim_verification_extracted_to_the_kernel_as_src_claim_verification_py
+  - cer_gate_now_blocks_a_claim_whose_cited_evidence_does_not_support_it_instead_of_only_checking_the_id_exists
+  - domain_pack_yaml_require_evidence_for_claims_is_enforced_for_the_first_time_since_it_was_declared
+  - d11_option_c_built_and_measured_as_not_the_fix_five_verification_side_statistics_scored_recommendation_revised_to_option_b
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target, now that retrieval no longer moves with corpus composition
   - hold the trunk on `main` now that the divergent default branch is folded in
 current_risk:
-  - near-miss abstention is 3/8 and no lexical threshold fixes it - eight candidate statistics were scored and the best costs 32-42 answerable cases to catch all 20 (OPEN_DECISIONS D-11); until a claim-evidence verifier or a semantic retrieval method lands, the pack will answer a question it should refuse roughly five times in eight of that class, with full trace but no automatic catch
+  - near-miss abstention is 4/8 and no lexical statistic fixes it - eight retrieval-side and five verification-side statistics were scored, and the claim verifier that was expected to resolve it was built and measured as not the fix (OPEN_DECISIONS D-11); a semantic retrieval method is now the only remaining option, and until it lands the pack answers a question it should refuse half the time in that class. The verifier does name the unanswered part of the question in `unsupported_terms`, so the gap reaches a reviewer rather than passing silently
   - the two remaining retrieval constants are still corpus-scale dependent: _COVERAGE_FLOOR 0.12 and _UNSEEN_TERM_CEILING 0.35 were re-derived at 108 fragments / 159 cases, which is the right scale for now but not the PoC end state; re-run the sweeps in tests/test_re_retrieval_stability.py when the corpus changes materially
   - the corpus is synthetic. D-08 keeps the repository public, so real RE reports and CISPR text cannot be committed; every acceptance number is measured against documents written for this repository
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
-  - settle OPEN_DECISIONS D-11 - option C (decide evidence sufficiency at claim-evidence verification rather than at retrieval) is the recommended fix and needs a claim-level verifier the kernel does not have
+  - OPEN_DECISIONS D-11 option B - a second retrieval method with semantic similarity, now the only remaining option that can close the near-miss band, and required by RE_POC.md independently
   - M1 step 4 - out-of-tree corpus source for real RE documents, required because the repository stays public (OPEN_DECISIONS D-08)
   - RE_POC.md's remaining PoC requirements - 3 retrieval methods minimum and 2 model providers minimum; the second retrieval method is also option B for D-11
 blocked_until: []
@@ -160,4 +164,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-25T10:40:00+00:00
+updated_at_utc: 2026-08-25T11:20:00+00:00

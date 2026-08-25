@@ -120,6 +120,26 @@ verification_policy:
     - mitigation claims require before_after or reproduction evidence when available
   cross_method_for_high_risk: true
   abstain_when_evidence_insufficient: true
+  # Minimum share of a claim's informative vocabulary that the evidence it
+  # cites must actually supply. Below this the claim is not supported by what
+  # it points at, and the CER gate BLOCKs it.
+  #
+  # `require_evidence_for_claims` and `abstain_when_evidence_insufficient`
+  # above were declared here from the start and enforced by nothing: the gate
+  # checked only that a cited evidence id *existed*. src/claim_verification.py
+  # is the kernel mechanism that makes them real, and this number is the
+  # domain's half of it -- the kernel owns the mechanism and has no defensible
+  # opinion about the threshold.
+  #
+  # 0.25 against a measured answerable minimum of 0.300 over the 159-case
+  # benchmark, so it has room to spare and rejects no legitimately grounded
+  # claim. Corpus-fitted like every other threshold here; re-derive it when the
+  # corpus changes materially.
+  #
+  # It is NOT an abstention mechanism. Raising it to chase the near-miss band
+  # of OPEN_DECISIONS D-11 was measured and rejected: 0.30 catches two of five
+  # but leaves zero margin, and 0.32 starts costing answerable cases.
+  claim_grounding_floor: 0.25
 
 report_policy:
   template_id: engineering_report_v1
