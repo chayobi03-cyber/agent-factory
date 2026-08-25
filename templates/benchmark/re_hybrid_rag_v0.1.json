@@ -1,15 +1,17 @@
 {
-  "benchmark_id": "re-hybrid-rag-v0.1",
-  "version": "0.1.0",
+  "benchmark_id": "re-hybrid-rag-v0.2",
+  "version": "0.2.0",
   "judge": "deterministic-recall-and-abstention",
   "llm_judge_is_ground_truth": false,
-  "note": "First working slice against docs/RE_POC.md's query taxonomy (9 categories). NOT the full 150-case PoC target -- 12 cases sized to be reviewable while giving real pass/fail signal on the M1 RE Domain Pack (src/re_domain_pack.py) against a small synthetic corpus (src/re_corpus.py).",
+  "note": "Meets docs/RE_POC.md's 150-case target: 159 cases over all 9 query-taxonomy categories, authored against the 30-document corpus in src/re_corpus.py. Each answerable case names content a specific document actually contains; queries are deliberately not lexical copies of the source sentence, because a benchmark whose queries are derived from the documents measures the generator rather than the retriever. The 20 abstention cases run in three bands -- subject far outside the domain, named entities the corpus lacks, and near-miss RE subject matter this corpus genuinely does not cover (conducted emission, immunity, ESD, other standards). Band 3 is the test OPEN_DECISIONS D-10 recorded as missing.",
   "cases": [
     {
       "case_id": "RE-BC-001",
       "query": "What is the CISPR 32 Class B radiated emission limit at 3 meters for 30 to 230 MHz?",
       "query_type": "definition_factual",
-      "expected_document_ids": ["DOC-RE-002"],
+      "expected_document_ids": [
+        "DOC-RE-002"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -17,7 +19,9 @@
       "case_id": "RE-BC-002",
       "query": "Which document describes the chamber CH-2 antenna setup and calibration?",
       "query_type": "document_location",
-      "expected_document_ids": ["DOC-RE-003"],
+      "expected_document_ids": [
+        "DOC-RE-003"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -25,7 +29,9 @@
       "case_id": "RE-BC-003",
       "query": "How did the 132 MHz emission peak on EUT-7 change between the original test and the retest after mitigation?",
       "query_type": "revision_comparison",
-      "expected_document_ids": ["DOC-RE-001"],
+      "expected_document_ids": [
+        "DOC-RE-001"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -33,7 +39,9 @@
       "case_id": "RE-BC-004",
       "query": "What caused the radiated emission limit exceedance on EUT-12 at 340 MHz?",
       "query_type": "condition_cause_analysis",
-      "expected_document_ids": ["DOC-RE-004"],
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -41,7 +49,9 @@
       "case_id": "RE-BC-005",
       "query": "A device shows a radiated emission peak from its switching power supply output cable; what failure mode is likely and has it been seen before?",
       "query_type": "re_failure_diagnosis",
-      "expected_document_ids": ["DOC-RE-004"],
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
       "expect_abstain": false,
       "min_recall": 0.5
     },
@@ -49,7 +59,9 @@
       "case_id": "RE-BC-006",
       "query": "Does EUT-19 exceed the CISPR 32 Class B radiated emission limit anywhere from 30 MHz to 1 GHz?",
       "query_type": "evidence_for_or_against_hypothesis",
-      "expected_document_ids": ["DOC-RE-005"],
+      "expected_document_ids": [
+        "DOC-RE-005"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -57,7 +69,9 @@
       "case_id": "RE-BC-007",
       "query": "What mitigation techniques are typically recommended for a radiated emission exceedance, and in what order?",
       "query_type": "recommended_additional_test",
-      "expected_document_ids": ["DOC-RE-006"],
+      "expected_document_ids": [
+        "DOC-RE-006"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -65,7 +79,9 @@
       "case_id": "RE-BC-008",
       "query": "How long should a DUT be powered up and warmed up before radiated emissions measurement begins?",
       "query_type": "engineering_report",
-      "expected_document_ids": ["DOC-RE-007"],
+      "expected_document_ids": [
+        "DOC-RE-007"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -74,13 +90,16 @@
       "query": "What is the radiated emissions performance of EUT-99 at 5.8 GHz?",
       "query_type": "evidence_sufficiency_abstention",
       "expected_document_ids": [],
-      "expect_abstain": true
+      "expect_abstain": true,
+      "abstention_band": "entity_absent_from_corpus"
     },
     {
       "case_id": "RE-BC-010",
       "query": "What ground loop precautions should be taken during radiated emissions testing?",
       "query_type": "definition_factual",
-      "expected_document_ids": ["DOC-RE-007"],
+      "expected_document_ids": [
+        "DOC-RE-007"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -88,7 +107,9 @@
       "case_id": "RE-BC-011",
       "query": "Was a ferrite choke used as mitigation for the EUT-7 132 MHz peak, and was it effective?",
       "query_type": "evidence_for_or_against_hypothesis",
-      "expected_document_ids": ["DOC-RE-001"],
+      "expected_document_ids": [
+        "DOC-RE-001"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -97,13 +118,16 @@
       "query": "What is the recommended lunar regolith shielding thickness for radiated emissions?",
       "query_type": "evidence_sufficiency_abstention",
       "expected_document_ids": [],
-      "expect_abstain": true
+      "expect_abstain": true,
+      "abstention_band": "subject_outside_domain"
     },
     {
       "case_id": "RE-BC-013",
       "query": "What caused EUT-24 to fail radiated emissions at 185 MHz?",
       "query_type": "condition_cause_analysis",
-      "expected_document_ids": ["DOC-RE-008"],
+      "expected_document_ids": [
+        "DOC-RE-008"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -111,7 +135,9 @@
       "case_id": "RE-BC-014",
       "query": "What wiring harness routing guidelines reduce radiated emissions from common-mode current?",
       "query_type": "recommended_additional_test",
-      "expected_document_ids": ["DOC-RE-009"],
+      "expected_document_ids": [
+        "DOC-RE-009"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
     },
@@ -119,9 +145,1438 @@
       "case_id": "RE-BC-015",
       "query": "Why did the EUT-24 wiring harness act as an unintentional antenna at 185 MHz?",
       "query_type": "re_failure_diagnosis",
-      "expected_document_ids": ["DOC-RE-008"],
+      "expected_document_ids": [
+        "DOC-RE-008"
+      ],
       "expect_abstain": false,
       "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-016",
+      "query": "What is the CISPR 32 Class B radiated emission limit at 3 meters between 230 MHz and 1 GHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-002"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-017",
+      "query": "Which detector does CISPR 16-1-1 require for compliance assessment below 1 GHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-015"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-018",
+      "query": "What resolution bandwidth applies to radiated emission measurement from 30 MHz to 1 GHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-015"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-019",
+      "query": "What is the laboratory expanded measurement uncertainty for radiated emission below 1 GHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-019"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-020",
+      "query": "What is the CISPR 25 Class 5 limit for automotive components between 75 and 400 MHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-012"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-021",
+      "query": "At what distance are CISPR 25 automotive component limits specified?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-012"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-022",
+      "query": "How is field strength in dBuV/m derived from a receiver reading in dBuV?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-013"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-023",
+      "query": "What shielding effectiveness does beryllium copper finger stock provide at 200 MHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-017"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-024",
+      "query": "Over what frequency band does nickel-zinc ferrite give its highest impedance?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-023"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-025",
+      "query": "What test distances does chamber CH-5 support?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-011"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-026",
+      "query": "What is the acceptance criterion for normalized site attenuation deviation?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-022"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-027",
+      "query": "Which antennas make up the standard antenna set in chamber CH-2?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-003"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-028",
+      "query": "What exceedance size requires a documented root cause analysis before rework?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-021"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-029",
+      "query": "What turntable step size is required when maximizing an emission?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-020"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-030",
+      "query": "What detector is used during a prescan and why?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-025"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-031",
+      "query": "What is the cable loss of the CH-2 chamber run at 1 GHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-013"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-032",
+      "query": "What resolution bandwidth does CISPR 16-1-1 require above 1 GHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-015"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-033",
+      "query": "What coverage factor is used in the laboratory uncertainty budget?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-019"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-034",
+      "query": "How often must normalized site attenuation validation be repeated?",
+      "query_type": "definition_factual",
+      "expected_document_ids": [
+        "DOC-RE-022"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-035",
+      "query": "Which document records the qualification of the fully-anechoic chamber?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-011"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-036",
+      "query": "Where are the receiver bandwidth and detector requirements written down?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-015"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-037",
+      "query": "Which document holds the automotive component emission limits?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-012"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-038",
+      "query": "Where is the procedure for correcting a reading with antenna factor and cable loss?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-013"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-039",
+      "query": "Which document covers gasket material shielding effectiveness?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-017"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-040",
+      "query": "Where is the escalation policy for a radiated emission failure recorded?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-021"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-041",
+      "query": "Which document describes the ferrite core material choice for a cable problem?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-023"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-042",
+      "query": "Where is the site attenuation validation result for the semi-anechoic chamber?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-022"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-043",
+      "query": "Which document explains how to maximize an emission before the final reading?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-020"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-044",
+      "query": "Where is the prescan and final measurement workflow described?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-025"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-045",
+      "query": "Which report covers the broadband motor drive emission failure?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-046",
+      "query": "Which report covers the Ethernet port emission at 125 MHz?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-016"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-047",
+      "query": "Which document contains the measurement uncertainty budget?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-019"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-048",
+      "query": "Which report records the display panel failure at 220 MHz?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-049",
+      "query": "Where are the wiring harness routing guidelines written?",
+      "query_type": "document_location",
+      "expected_document_ids": [
+        "DOC-RE-009"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-050",
+      "query": "How did the EUT-12 340 MHz peak change after the common-mode choke was fitted?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-051",
+      "query": "What happened to the EUT-31 375 MHz peak once spread-spectrum clocking was enabled?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-052",
+      "query": "Did the EUT-19 result at 10 meters agree with the earlier 3 meter measurement?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-005"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-053",
+      "query": "How does the second EUT-44 analysis differ from the first on the radiating element?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-054",
+      "query": "What margin did EUT-12 have against the limit before and after mitigation?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-055",
+      "query": "Did any new peak appear on EUT-31 after the clocking change?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-056",
+      "query": "Was the EUT-19 pass reproduced in a second chamber?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-005"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-057",
+      "query": "Did the secondary harmonic on EUT-12 change when the choke was added?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-058",
+      "query": "What level did the EUT-7 132 MHz peak reach after the ferrite choke and rerouting?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-001"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-059",
+      "query": "Which EUT-44 conclusion is supported by the gasket experiment rather than the ferrite clamp?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-060",
+      "query": "Was the EUT-12 shielded backshell contribution separable from the choke?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-061",
+      "query": "How much margin did EUT-31 gain from the spread-spectrum change?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-062",
+      "query": "Which EUT-19 measurement distance gave the larger margin?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-005"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-063",
+      "query": "Did shielding the flexible flat cable alone bring EUT-44 below the limit?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-064",
+      "query": "What was the EUT-7 132 MHz level before mitigation and how far above the limit was it?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": [
+        "DOC-RE-001"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-065",
+      "query": "What caused the 375 MHz exceedance on EUT-31?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-066",
+      "query": "Why did EUT-51 emit at 125 MHz?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-016"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-067",
+      "query": "What produced the broadband emission on EUT-63 below 200 MHz?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-068",
+      "query": "Which interface clock is behind the 220 MHz peak on EUT-44?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-069",
+      "query": "Why does the EUT-31 emission appear narrowband rather than broadband?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-070",
+      "query": "What carries the common-mode current out of the EUT-63 enclosure?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-071",
+      "query": "Why did disconnecting a cable remove the EUT-51 peak entirely?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-016"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-072",
+      "query": "Which harmonic of the EUT-31 crystal falls at the failing frequency?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-073",
+      "query": "Why can a pre-compliance result disagree with a full-compliance result?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-013"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-074",
+      "query": "What makes a seam behave as an aperture regardless of gasket material?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-017"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-075",
+      "query": "Why does a manganese-zinc ferrite fail to help above 30 MHz?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-023"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-076",
+      "query": "Why does inter-turn capacitance limit a ferrite choke at high frequency?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-023"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-077",
+      "query": "Why is a height scan mandatory in the semi-anechoic chamber?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-020"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-078",
+      "query": "Why are results in the fully-anechoic chamber lower than in the semi-anechoic one?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-011"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-079",
+      "query": "What caused the largest recorded exceedance in this document set?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-080",
+      "query": "Why does spread-spectrum clocking lower a measured level without lowering emitted energy?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-081",
+      "query": "What coupling path took the EUT-24 harness emission to free space?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": [
+        "DOC-RE-008"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-082",
+      "query": "An unshielded patch cable on a network port is suspected of radiating; how was that confirmed on a previous unit?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-016"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-083",
+      "query": "A device emits continuously across a wide band rather than at discrete harmonics; what failure mode does that indicate?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-084",
+      "query": "A narrow peak sits exactly on a multiple of the board oscillator; what is the likely mechanism?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-085",
+      "query": "A flat cable to a display is suspected as the radiator; what test distinguishes it from the enclosure?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-086",
+      "query": "A ferrite clamp made no difference at all to a 125 MHz problem; what should be checked first?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-024"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-087",
+      "query": "A harness runs alongside an unshielded seam; why does that make the failure worse?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-008"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-088",
+      "query": "Spurious low-frequency peaks appear that do not match the device emission profile; what should be suspected?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-007"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-089",
+      "query": "A motor drive inverter is suspected of causing an emission failure; what signature confirms it?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-090",
+      "query": "The switching supply output cable is radiating on a new unit; which earlier units showed the same mode?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-091",
+      "query": "Gasketing a bezel seam fixed a failure that cable shielding did not; what does that establish?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-092",
+      "query": "A measured level changes by more than 10 dB when the antenna height changes; what is happening?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-020"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-093",
+      "query": "A choke helped at the fundamental harmonic but the next harmonic rose; what does that suggest?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-094",
+      "query": "An exceedance is smaller than the measurement uncertainty; how should it be treated?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-019"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-095",
+      "query": "A quarter-wavelength internal harness is suspected of radiating; what confirms the mechanism?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-008"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-096",
+      "query": "Adding turns to a ferrite core stopped improving the result; why?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-023"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-097",
+      "query": "A compliance claim was made from a scan run at the wrong resolution bandwidth; is it valid?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-015"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-098",
+      "query": "A device passes in one chamber and fails in another; what chamber difference could explain it?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": [
+        "DOC-RE-011"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-099",
+      "query": "Is there evidence that the EUT-44 flexible flat cable is the dominant radiator?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-100",
+      "query": "Does any document contradict the cable-dominant finding on EUT-44?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-101",
+      "query": "Was the three-turn ferrite clamp on EUT-51 more effective than the single-turn one?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-024"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-102",
+      "query": "Does the EUT-51 ferrite study support the material guidance in the selection notes?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-024"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-103",
+      "query": "Is the EUT-31 emission consistent with a switching supply signature?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-104",
+      "query": "Did the EUT-63 emission exceed the threshold that requires a hardware design review?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-105",
+      "query": "Is there evidence that removing the Ethernet cable eliminates the EUT-51 emission?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-016"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-106",
+      "query": "Does chamber CH-2 site attenuation meet the CISPR 16-1-4 acceptance criterion?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-022"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-107",
+      "query": "Is a conductive foam tape gasket sufficient where finger stock is specified?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-017"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-108",
+      "query": "Do the CISPR 25 limits apply to information technology equipment?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-012"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-109",
+      "query": "Is measurement uncertainty subtracted from the reading before a compliance decision?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-019"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-110",
+      "query": "Is a prescan point above the limit already a compliance failure?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-025"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-111",
+      "query": "Was the EUT-12 mitigation effective at the fundamental switching harmonic?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-112",
+      "query": "Is the EUT-63 failure of the same kind as the EUT-31 failure?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-113",
+      "query": "Does the wiring harness guideline document address the EUT-24 failure mode?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": [
+        "DOC-RE-009"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-114",
+      "query": "Which ferrite material should be trialled first for a 150 MHz cable problem?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-023"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-115",
+      "query": "What must be scanned before a final quasi-peak reading is recorded?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-020"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-116",
+      "query": "What correction must be applied before comparing a reading to a limit line?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-013"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-117",
+      "query": "What is required before rework is authorized on a 9 dB exceedance?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-021"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-118",
+      "query": "Which gasket stock should be specified where the highest shielding effectiveness is needed?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-017"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-119",
+      "query": "How should a device be prepared before measurement so clock frequencies are stable?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-007"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-120",
+      "query": "What should be done when an exceedance is 2 dB and cable-level treatment is proposed?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-021"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-121",
+      "query": "Which detector and sweep should be used to find candidate frequencies?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-025"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-122",
+      "query": "What antenna set should be used for a 30 MHz to 3 GHz scan in the fully-anechoic chamber?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-011"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-123",
+      "query": "How should a suspected ground loop be ruled out during a scan?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-007"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-124",
+      "query": "What should be re-validated after the chamber absorber layout is changed?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-022"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-125",
+      "query": "Which turn count on a nickel-zinc core gave the best result on the Ethernet cable?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-024"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-126",
+      "query": "How far from an enclosure seam should a harness be routed?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-009"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-127",
+      "query": "What confirms whether a device passes at both 3 and 10 meters?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-005"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-128",
+      "query": "Which mitigation should be attempted before any hardware redesign?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": [
+        "DOC-RE-006"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-129",
+      "query": "Summarize the EUT-63 motor drive emission failure and its severity.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-018"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-130",
+      "query": "Summarize what is known about the EUT-44 220 MHz exceedance.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-014"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-131",
+      "query": "Report the EUT-51 Ethernet emission result and the mitigation selected.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-024"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-132",
+      "query": "Report the outcome of the EUT-31 clock harmonic investigation.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-010"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-133",
+      "query": "Describe the qualification status of the fully-anechoic chamber.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-011"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-134",
+      "query": "Report the site attenuation validation status of the semi-anechoic chamber.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-022"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-135",
+      "query": "Summarize the escalation rules that apply to a radiated emission failure.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-021"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-136",
+      "query": "Report the laboratory measurement uncertainty and how it is applied.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-019"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-137",
+      "query": "Summarize the EUT-12 power supply failure and the mitigation outcome.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-004"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-138",
+      "query": "Describe the receiver settings a compliance measurement must use.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-015"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-139",
+      "query": "Summarize the shielding effectiveness options available in the lab.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-017"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-140",
+      "query": "Report how the prescan and the final measurement relate to each other.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-025"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-141",
+      "query": "Summarize the EUT-24 harness failure and the guideline written from it.",
+      "query_type": "engineering_report",
+      "expected_document_ids": [
+        "DOC-RE-008"
+      ],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-142",
+      "query": "What is the tensile strength of the chamber turntable bearing alloy?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "subject_outside_domain"
+    },
+    {
+      "case_id": "RE-BC-143",
+      "query": "What quarterly revenue did the test laboratory report?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "subject_outside_domain"
+    },
+    {
+      "case_id": "RE-BC-144",
+      "query": "Which programming language is the chamber control software written in?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "subject_outside_domain"
+    },
+    {
+      "case_id": "RE-BC-145",
+      "query": "What is the calibration interval for the laboratory pH meter?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "subject_outside_domain"
+    },
+    {
+      "case_id": "RE-BC-146",
+      "query": "What radiated emission level was measured on EUT-88 at 410 MHz?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "entity_absent_from_corpus"
+    },
+    {
+      "case_id": "RE-BC-147",
+      "query": "What is the antenna set for chamber CH-14?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "entity_absent_from_corpus"
+    },
+    {
+      "case_id": "RE-BC-148",
+      "query": "What was the outcome of the EUT-72 emission retest?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "entity_absent_from_corpus"
+    },
+    {
+      "case_id": "RE-BC-149",
+      "query": "Which mitigation was applied to EUT-105 at 640 MHz?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "entity_absent_from_corpus"
+    },
+    {
+      "case_id": "RE-BC-150",
+      "query": "What peak was recorded on EUT-19 at 2.4 GHz?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "entity_absent_from_corpus"
+    },
+    {
+      "case_id": "RE-BC-151",
+      "query": "What does revision REV-D of the EUT-7 report conclude?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "entity_absent_from_corpus"
+    },
+    {
+      "case_id": "RE-BC-152",
+      "query": "What is the conducted emission limit on the AC mains port for Class B equipment?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "near_miss_domain_subject"
+    },
+    {
+      "case_id": "RE-BC-153",
+      "query": "What field strength is applied during a radiated immunity test?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "near_miss_domain_subject"
+    },
+    {
+      "case_id": "RE-BC-154",
+      "query": "What contact discharge voltage is used for electrostatic discharge testing?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "near_miss_domain_subject"
+    },
+    {
+      "case_id": "RE-BC-155",
+      "query": "What are the MIL-STD-461 RE102 limits for a ground army installation?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "near_miss_domain_subject"
+    },
+    {
+      "case_id": "RE-BC-156",
+      "query": "What surge withstand level is required on the DC power port?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "near_miss_domain_subject"
+    },
+    {
+      "case_id": "RE-BC-157",
+      "query": "What is the harmonic current limit for a Class A device under IEC 61000-3-2?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "near_miss_domain_subject"
+    },
+    {
+      "case_id": "RE-BC-158",
+      "query": "How is a radiated emission measurement performed on an open area test site?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "near_miss_domain_subject"
+    },
+    {
+      "case_id": "RE-BC-159",
+      "query": "What is the reverberation chamber stirrer step count for an emission scan?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "min_recall": 1.0,
+      "abstention_band": "near_miss_domain_subject"
     }
-  ]
+  ],
+  "acceptance_targets": {
+    "evidence_recall_at_10": 0.9,
+    "abstention_decidable_bands": 1.0,
+    "note": "From docs/RE_POC.md. Recall and abstention are the two targets this benchmark can judge deterministically; Citation Accuracy, Critical Claim Unsupported Rate and Revision correctness need a claim-level judge that does not exist yet and are deliberately not claimed. Abstention is targeted per band rather than overall: the two decidable bands must be perfect, and near_miss_domain_subject is a measured open limitation (OPEN_DECISIONS D-11), not a target this retriever is expected to meet."
+  }
 }

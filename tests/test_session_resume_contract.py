@@ -87,6 +87,13 @@ def install_git(monkeypatch: pytest.MonkeyPatch, *, branch="p0/opro-baseline", h
         raise AssertionError(args)
 
     monkeypatch.setattr(resume, "run_git", fake_git)
+    # A fixture that dictates the branch must own the whole resolution path.
+    # AGENTFACTORY_TARGET_BRANCH (OPEN_DECISIONS D-02) outranks the git branch
+    # locally, so leaving it set would let whatever the developer exported
+    # replace `branch` above -- every one of these tests would then pass or
+    # fail on the ambient shell rather than on the fixture.
+    monkeypatch.delenv("AGENTFACTORY_TARGET_BRANCH", raising=False)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.setenv("CER_EXECUTION_IDENTITY_REQUIRED", "1")
     monkeypatch.setenv("CER_TARGET_SHA", head)
     real_run = resume.subprocess.run

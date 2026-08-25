@@ -6,9 +6,10 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01 through D-10 resolved 2026-08-25. Entries are kept as the
-record of why, not cleared; add new decisions here rather than starting a fresh
-register.
+**Status:** D-01 through D-10 resolved 2026-08-25. **D-11 is open** — raised by
+the M1 corpus scale-up, which is the first thing large enough to measure it.
+Entries are kept as the record of why, not cleared; add new decisions here
+rather than starting a fresh register.
 
 ---
 
@@ -575,3 +576,80 @@ benchmark case's outcome differs across the fifteen shapes, if an abstention
 case stops abstaining at any shape, if a near-duplicate revision displaces the
 original, or if a contradicting document becomes unreachable alongside the
 document it contradicts. It is the D-10 defect's own probe, kept as a test.
+
+---
+
+## D-11 — A lexical retriever cannot abstain on a near-miss, and no threshold changes that
+
+Raised 2026-08-25 by the M1-3 corpus and benchmark scale-up (10 → 30 documents,
+15 → 159 cases). Not a regression: the scale-up is the first thing large enough
+to measure it. D-10's resolution named this exact gap — *"it has not been tested
+against a near-miss"* — and this is that test coming back.
+
+**What a near-miss is.** The 20 abstention cases now run in three bands:
+
+| Band | Example | Abstains |
+|---|---|---|
+| `subject_outside_domain` | *"What quarterly revenue did the test laboratory report?"* | **5/5** |
+| `entity_absent_from_corpus` | *"What was the outcome of the EUT-72 emission retest?"* | **7/7** |
+| `near_miss_domain_subject` | *"What field strength is applied during a radiated immunity test?"* | **3/8** |
+
+The first two are decidable from corpus statistics: the terms carrying the
+question are simply absent. The third is real RE subject matter — conducted
+emission, immunity, ESD, MIL-STD-461, IEC 61000-3-2, open area test sites — that
+this corpus happens not to cover. It shares almost all its vocabulary with the
+corpus. Only the one word that makes it a different question is missing.
+
+**This is not a tuning problem, and that was measured rather than assumed.**
+Every lexical statistic available to a dependency-free retriever was scored on
+its ability to separate the 139 answerable cases from the 20 abstention ones.
+The column that matters is the last: how many answerable questions must be
+sacrificed to catch every abstention case.
+
+| Statistic | Answerable lost for a full catch |
+|---|---|
+| Unseen share of query IDF mass (the D-10 rule) | 35 / 139 |
+| Best fragment coverage over seen weight | 139 / 139 |
+| Absolute seen IDF mass | 108 / 139 |
+| Most specific seen term | 139 / 139 |
+| Count of query terms rarer than 10% of fragments | 98 / 139 |
+| Best fragment coverage over all weight | 54 / 139 |
+| Clarity (best coverage over corpus mean) | 136 / 139 |
+| Gap between best and tenth-best fragment | 43 / 139 |
+
+A two-dimensional rule does no better: the best boundary over *unseen share ×
+best coverage* catches 20/20 only by losing 32–42 answerable cases, taking
+Recall@10 from 0.914 to roughly 0.70. There is no operating point on this
+frontier worth having.
+
+**Why it is structurally hard.** The corpus can report what it contains. It
+cannot report whether a word it lacks is question-framing scaffolding
+(*"summarize"*, *"status"*) or a missing subject (*"immunity"*). Both are simply
+absent, and absence carries no measured weight — which is also why the D-10 rule
+that assigned unseen terms the *maximum* IDF inverted the two classes outright
+once the corpus reached 108 fragments.
+
+**Options**
+
+| | Change | Consequence |
+|---|---|---|
+| A | Accept and record. Gate CI on the two decidable bands; report the third | Honest, costs nothing, leaves a real hole in `Negative-case Abstention >= 0.90` |
+| B | Second retrieval method with semantic similarity (embeddings) | RE_POC.md already requires "3 retrieval methods minimum", so this is scheduled work, not new scope; adds a model dependency the kernel currently does not have |
+| C | Decide sufficiency at claim-evidence verification instead of retrieval | Architecturally the right home — the CER gate owns evidence sufficiency, and "these fragments are about something else" is a verification question, not a ranking one; needs a claim-level verifier that does not exist yet |
+| D | Curate a domain lexicon of RE subject terms and treat an absent one as decisive | Would work, and is exactly the hand-fitted artifact D-10 spent its resolution removing |
+
+**Recommendation:** A now, C as the real fix, B when the third retrieval method
+lands. A is already implemented — `scripts/re_demo.py` gates on the two decidable
+bands and prints the third as a named limitation, and
+`tests/test_re_domain_pack.py` pins it at 3/8 so it cannot drift in either
+direction without someone editing this entry. D is explicitly rejected: it buys
+the metric back by reintroducing exactly the kind of hand-curated list that
+D-10's resolution measured as worthless and deleted.
+
+**What it costs to be wrong.** Accepting A means the PoC ships knowing it will
+answer a question it should refuse roughly five times in eight of this class.
+In an evidence-governed system that is the failure mode that matters most — it
+produces a confident, cited answer drawn from documents about a different test.
+The mitigation until C lands is that those answers are still fully traced, so a
+reviewer sees the evidence is about radiated emission when the question was
+about immunity. That is a human catching it, not the system.

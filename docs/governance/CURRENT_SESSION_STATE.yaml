@@ -1,4 +1,4 @@
-state_version: 19
+state_version: 20
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -12,7 +12,7 @@ canonical_roadmap: docs/ROADMAP_WBS.md
 refactor_plan: docs/governance/ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md
 forensic_record: 11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md
 forensic_anchor: 41259e233e5273ad2fe1577e71935702956476b1
-current_task: M1 RE Hybrid RAG expansion is unblocked - M0.5 closed GREEN with observed CI evidence, the trunk consolidated on `main`, and the kernel-gated RE constraint discharged (OPEN_DECISIONS D-01)
+current_task: M1 RE Hybrid RAG at PoC corpus scale - 30 documents / 159 benchmark cases, Evidence Recall@10 0.914 against a 0.90 target, abstention perfect on both decidable bands and a measured open limitation on the third (OPEN_DECISIONS D-11)
 task_id: AGENTFACTORY-M1-RE-HYBRID-RAG-FIRST-SLICE
 last_completed:
   - confirmed_investment_context_contamination
@@ -55,17 +55,27 @@ last_completed:
   - m1_2_adversarial_corpus_added_distractors_near_duplicate_revisions_contradictions_notation_variants
   - m1_2_retrieval_stability_suite_pins_case_outcomes_across_fifteen_corpus_shapes
   - d10_resolved_literal_hit_gate_replaced_by_idf_mass_coverage_with_abstention_split_into_its_own_rule
+  - m1_3_corpus_scaled_to_30_documents_25_identifiers_meeting_the_re_poc_20_plus_document_target
+  - m1_3_benchmark_scaled_to_159_cases_covering_all_nine_query_taxonomy_categories
+  - m1_3_document_titles_indexed_they_were_carried_in_metadata_and_never_searched
+  - m1_3_stemmer_handles_past_tense_gerund_and_trailing_e_so_inflection_no_longer_reads_as_absence
+  - m1_3_abstention_rule_counts_absent_terms_instead_of_fabricating_maximum_idf_for_them
+  - m1_3_hand_curated_non_evidential_term_list_deleted_after_measuring_that_it_bought_nothing
+  - m1_3_benchmark_gated_on_re_poc_acceptance_targets_rather_than_per_case_perfection
+  - d02_second_half_resume_validator_now_honours_the_same_local_target_branch_override_as_the_context_guard
+  - d11_opened_near_miss_abstention_is_not_decidable_by_any_lexical_threshold_measured_over_eight_statistics
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target, now that retrieval no longer moves with corpus composition
   - hold the trunk on `main` now that the divergent default branch is folded in
 current_risk:
-  - the three retrieval constants (_COVERAGE_FLOOR, _UNSEEN_MASS_CEILING, _NON_EVIDENTIAL_TERMS) are fitted to a 35-fragment corpus and 15 benchmark cases, not derived from corpus statistics; re-derive them with the stability sweep at PoC scale rather than carrying them forward (OPEN_DECISIONS D-10 resolution notes)
-  - abstention is decided by unseen IDF mass, which at 35 fragments mostly detects "the corpus is small" rather than "the subject is absent"; it has not been tested against a near-miss query
-  - M1 corpus/benchmark is a first slice (10 docs / 15 cases), not yet the RE_POC.md PoC target size
+  - near-miss abstention is 3/8 and no lexical threshold fixes it - eight candidate statistics were scored and the best costs 32-42 answerable cases to catch all 20 (OPEN_DECISIONS D-11); until a claim-evidence verifier or a semantic retrieval method lands, the pack will answer a question it should refuse roughly five times in eight of that class, with full trace but no automatic catch
+  - the two remaining retrieval constants are still corpus-scale dependent: _COVERAGE_FLOOR 0.12 and _UNSEEN_TERM_CEILING 0.35 were re-derived at 108 fragments / 159 cases, which is the right scale for now but not the PoC end state; re-run the sweeps in tests/test_re_retrieval_stability.py when the corpus changes materially
+  - the corpus is synthetic. D-08 keeps the repository public, so real RE reports and CISPR text cannot be committed; every acceptance number is measured against documents written for this repository
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
-  - M1 step 3 - scale the corpus to where Recall@k discriminates, then re-derive the three fitted retrieval constants from corpus statistics using the stability sweep
+  - settle OPEN_DECISIONS D-11 - option C (decide evidence sufficiency at claim-evidence verification rather than at retrieval) is the recommended fix and needs a claim-level verifier the kernel does not have
   - M1 step 4 - out-of-tree corpus source for real RE documents, required because the repository stays public (OPEN_DECISIONS D-08)
+  - RE_POC.md's remaining PoC requirements - 3 retrieval methods minimum and 2 model providers minimum; the second retrieval method is also option B for D-11
 blocked_until: []
 forbidden:
   - GEPA_implementation
@@ -150,4 +160,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-25T09:45:00+00:00
+updated_at_utc: 2026-08-25T10:40:00+00:00
