@@ -100,6 +100,17 @@ jobs:
           status=${PIPESTATUS[0]}
           printf 're_demo_exit_code=%s\n' "$status" >> ci-exit-codes.env
           exit "$status"
+      # Exercises the shared kernel across four synthetic Domain Packs, which is
+      # the AF-004 acceptance criterion: "kernel loads Domain Pack without code
+      # fork". Recovered to the trunk 2026-08-25 (OPEN_DECISIONS D-04); without
+      # this step the recovered demo would sit unexecuted.
+      - name: Domain Matrix E2E
+        run: |
+          set -o pipefail
+          python3 scripts/domain_matrix_demo.py --json 2>&1 | tee domain-matrix.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 'domain_matrix_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
       - name: Unit and Kernel Regression
         run: |
           set -o pipefail
@@ -121,4 +132,5 @@ jobs:
             factory-harness.stdout.json
             opro-baseline.stdout.json
             re-demo.stdout.json
+            domain-matrix.stdout.json
             pytest.stdout.txt
