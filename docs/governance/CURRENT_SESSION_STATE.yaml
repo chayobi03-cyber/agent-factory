@@ -12,7 +12,7 @@ canonical_roadmap: docs/ROADMAP_WBS.md
 refactor_plan: docs/governance/ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md
 forensic_record: 11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md
 forensic_anchor: 41259e233e5273ad2fe1577e71935702956476b1
-current_task: M1 RE Hybrid RAG first working slice (Domain Pack + synthetic corpus + hybrid retrieval + benchmark), building on a locally-verified-GREEN Factory Kernel
+current_task: M0.5 Factory Kernel closed GREEN with observed CI evidence and the trunk consolidated on `main`; M1 RE expansion past the delivered first slice is held behind the open decisions register
 task_id: AGENTFACTORY-M1-RE-HYBRID-RAG-FIRST-SLICE
 last_completed:
   - confirmed_investment_context_contamination
@@ -72,6 +72,7 @@ resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 hotl_rule: docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md
 context_guard: scripts/validate_project_context.py
+open_decisions: docs/governance/OPEN_DECISIONS_2026-08-25.md
 resume_status: RESUME_ALLOWED
 resume_checks:
   RC-01: PASS
@@ -134,4 +135,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-20T11:52:00+09:00
+updated_at_utc: 2026-08-25T03:55:00+00:00
