@@ -121,26 +121,35 @@ def test_headline_metrics_do_not_move_with_the_corpus(outcomes_by_size) -> None:
         )
 
 
-def test_no_case_flips_back_and_forth_as_the_corpus_grows(outcomes_by_size) -> None:
-    """The D-10 signature, pinned directly.
+def test_no_case_changes_outcome_as_unrelated_documents_are_added(outcomes_by_size) -> None:
+    """Adding documents that answer none of the benchmark queries must not
+    change whether a case passes.
 
-    That defect was not merely instability -- it was *non-monotonic*
-    instability: RE-BC-002 passed at baseline, failed at 40 distractors and
-    passed again at 100, because a term crossed a document-frequency threshold
-    and then the required-hit count crossed one too. A case that changes once
-    as the corpus grows is a boundary case. A case that changes twice is a
-    gate keyed to corpus statistics.
+    This asserted something weaker until an audit checked it: it required a
+    case to flip *twice* -- the pass/fail/pass oscillation D-10 produced at 10
+    documents -- and claimed in its own docstring to pin the D-10 signature.
+    Re-introducing that exact defect left it green. At 30 documents the same
+    gate produces a single flip, not an oscillation, so the test named after
+    the defect could not detect the defect.
+
+    Any difference across the volume series is now an offender. That is a real
+    bar rather than a decorative one: on the current retriever nothing differs
+    at all, and on the re-introduced D-10 gate one case does.
+
+    Only the distractor-volume shapes are checked here, not the
+    term-saturation ones. Saturation deliberately changes what the corpus is
+    *about*, and a marginal case moving under it is not the same defect --
+    that is what the metric-drift tolerance in
+    test_headline_metrics_do_not_move_with_the_corpus is for.
     """
     volumes = ["baseline"] + [f"distractors-{n}" for n in (10, 40, 100, 250)]
-    offenders = {}
-    for case in CASES:
-        cid = case["case_id"]
-        series = [outcomes_by_size[shape][cid] for shape in volumes]
-        flips = sum(1 for a, b in zip(series, series[1:]) if a != b)
-        if flips > 1:
-            offenders[cid] = dict(zip(volumes, series))
+    offenders = {
+        case["case_id"]: {shape: outcomes_by_size[shape][case["case_id"]] for shape in volumes}
+        for case in CASES
+        if len({outcomes_by_size[shape][case["case_id"]] for shape in volumes}) > 1
+    }
     assert not offenders, (
-        "outcome oscillates as unrelated documents are added:\n"
+        "outcome depends on which unrelated documents are present:\n"
         + "\n".join(f"  {cid}: {series}" for cid, series in offenders.items())
     )
 

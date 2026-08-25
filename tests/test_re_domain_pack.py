@@ -242,10 +242,34 @@ def _bands() -> dict[str, dict[str, int]]:
 
 
 def test_evidence_recall_meets_the_acceptance_target() -> None:
+    """Scored on what the retriever earns, not on the headline.
+
+    11 of the 139 answerable cases have queries whose every informative term
+    already appears in the document the benchmark expects back. They cannot
+    really fail, they pass at 100%, and they lift the headline by 0.008.
+    Gating on the headline would let a regression hide behind them.
+    """
     acceptance = _acceptance()
     target = acceptance["evidence_recall_target"]
-    recall = acceptance["evidence_recall_at_10"]
-    assert recall >= target, f"Evidence Recall@10 {recall:.3f} < target {target}"
+    earned = acceptance["evidence_recall_excluding_verbatim"]
+    assert acceptance["evidence_recall_gated_on"] == "evidence_recall_excluding_verbatim"
+    assert earned >= target, f"earned Evidence Recall@10 {earned:.3f} < target {target}"
+    # And the margin is thin. Recorded so nobody reads 0.914 as comfortable.
+    assert earned < acceptance["evidence_recall_at_10"], (
+        "the verbatim split stopped separating anything -- either the benchmark "
+        "changed or query_is_verbatim_in_its_answer regressed"
+    )
+
+
+def test_self_answering_cases_are_detected_rather_than_hand_labelled(pack: REDomainPack) -> None:
+    """A hand-labelled 'this one is easy' flag drifts the moment a document is
+    edited and nobody re-checks, so it is computed from the corpus instead."""
+    cases = {c["case_id"]: c for c in _load_benchmark_cases()}
+    # RE-BC-009 abstains; an abstention case has no expected document and can
+    # never be verbatim-contained.
+    assert not pack.query_is_verbatim_in_its_answer(cases["RE-BC-009"])
+    flagged = [cid for cid, c in cases.items() if pack.query_is_verbatim_in_its_answer(c)]
+    assert len(flagged) == _acceptance()["verbatim_case_count"] == 11, flagged
 
 
 def test_abstention_is_perfect_on_the_bands_that_are_decidable() -> None:

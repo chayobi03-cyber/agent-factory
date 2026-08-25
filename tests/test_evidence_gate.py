@@ -74,6 +74,8 @@ PAYLOADS = {
         # *passing* one with 17 failed cases -- that is the point.
         "acceptance": {
             "evidence_recall_at_10": 0.9137,
+            "evidence_recall_excluding_verbatim": 0.9062,
+            "verbatim_case_count": 11,
             "evidence_recall_target": 0.90,
             "evidence_recall_meets_target": True,
             "abstention_by_band": {
@@ -214,11 +216,43 @@ def _with_m1(records, **overrides):
     records["E-M1-RE-DEMO"]["stdout_sha256"] = sha(records["E-M1-RE-DEMO"]["stdout"])
 
 
+def test_m1_regression_hiding_behind_the_headline_recall_still_blocks(tmp_path):
+    """The reason the gate judges the earned figure. A run whose headline still
+    clears 0.90 because eleven self-answering cases cannot fail, while the
+    cases that can fail have dropped below it, must not pass."""
+    decision, errors = decide(write_pack(tmp_path, mutate=lambda r: _with_m1(
+        r, acceptance={"evidence_recall_at_10": 0.9137,
+                       "evidence_recall_excluding_verbatim": 0.83,
+                       "evidence_recall_meets_target": False,
+                       "meets_acceptance_targets": False})))
+    assert decision == "AMBER"
+    assert any("Recall@10" in e for e in errors)
+
+
 def test_m1_recall_below_target_blocks(tmp_path):
     """The acceptance target is the gate now, so it has to be able to fail."""
     decision, errors = decide(write_pack(tmp_path, mutate=lambda r: _with_m1(
-        r, acceptance={"evidence_recall_at_10": 0.81, "evidence_recall_meets_target": False,
+        r, acceptance={"evidence_recall_at_10": 0.81,
+                       "evidence_recall_excluding_verbatim": 0.81,
+                       "evidence_recall_meets_target": False,
                        "meets_acceptance_targets": False})))
+    assert decision == "AMBER"
+    assert any("Recall@10" in e for e in errors)
+
+
+def test_m1_evidence_predating_the_verbatim_split_falls_back_to_the_headline(tmp_path):
+    """Evidence captured before the split existed has no
+    evidence_recall_excluding_verbatim field. Such a run must still be judged
+    rather than skipped -- a missing field is not a pass."""
+    def mutate(records):
+        acceptance = dict(PAYLOADS["E-M1-RE-DEMO"]["acceptance"],
+                          evidence_recall_at_10=0.81, evidence_recall_meets_target=False,
+                          meets_acceptance_targets=False)
+        acceptance.pop("evidence_recall_excluding_verbatim")
+        payload = dict(PAYLOADS["E-M1-RE-DEMO"], acceptance=acceptance)
+        records["E-M1-RE-DEMO"]["stdout"] = json.dumps(payload)
+        records["E-M1-RE-DEMO"]["stdout_sha256"] = sha(records["E-M1-RE-DEMO"]["stdout"])
+    decision, errors = decide(write_pack(tmp_path, mutate=mutate))
     assert decision == "AMBER"
     assert any("Recall@10" in e for e in errors)
 

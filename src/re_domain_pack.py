@@ -537,25 +537,6 @@ class REDomainPack:
             return 0.0
         return sum(w for term, w in weights.items() if term in fragment_terms) / total
 
-    def _distinctive_terms(self, query_terms: list[str]) -> list[str]:
-        """Query terms that are not stopwords and are not near-ubiquitous in
-        the corpus (df > 0 and df <= 30% of fragments). Used to gate
-        abstention: a fragment must literally contain enough of these to
-        count as a genuine (not merely score-nonzero) match. This is what
-        makes retrieve() actually return [] for out-of-corpus questions
-        instead of always returning "closest" fragments with a deceptively
-        confident-looking normalized score.
-        """
-        n_fragments = max(len(self._fragments), 1)
-        terms = []
-        for term in dict.fromkeys(query_terms):  # dedupe, preserve order
-            if term in _STOPWORDS or term in _DOMAIN_GENERIC_TERMS:
-                continue
-            df = self._doc_freq.get(term, 0)
-            if 0 < df <= 0.3 * n_fragments:
-                terms.append(term)
-        return terms
-
     def retrieve(
         self, query: str, top_k: int = 5, *, mode: str | None = None, **kwargs: Any
     ) -> list[EvidenceCandidate]:
@@ -574,13 +555,28 @@ class REDomainPack:
         The table at RETRIEVAL_MODES records what each method is actually
         worth.
 
-        A candidate must also contain enough "distinctive" query terms
-        (see _distinctive_terms) to count as genuine evidence -- otherwise
-        retrieve() returns []. Without this, a purely relative (max-
-        normalized) score always looks confident for the single closest
-        fragment even when the query is genuinely out of corpus, which is
-        exactly the failure mode docs/RE_POC.md's "evidence sufficiency /
-        abstention" query category exists to catch.
+        Ranking is only half of it. Before anything is ranked, two rules can
+        return [] outright:
+
+        - a query naming a *specifier* -- a measurement or an identifier --
+          that the corpus has never seen (`_is_specifier`);
+        - a query too much of whose informative vocabulary is absent
+          (`_UNSEEN_TERM_CEILING`).
+
+        Then a fragment must cover at least `_COVERAGE_FLOOR` of the query's
+        IDF mass to be a candidate at all. Without those, a max-normalized
+        score always looks confident for the single closest fragment even when
+        the question is genuinely out of corpus -- the failure mode
+        docs/RE_POC.md's "evidence sufficiency / abstention" category exists to
+        catch.
+
+        This paragraph used to describe a `_distinctive_terms` gate: query
+        terms with df in (0, 30%] of fragments, of which a fragment had to
+        contain a literal minimum. That gate *was* OPEN_DECISIONS D-10 -- its
+        membership and its required-hit count both moved with the corpus -- and
+        it was replaced by the coverage floor above. The method outlived its
+        last caller and this docstring went on describing it, so anyone reading
+        the entry point was told the wrong mechanism.
         """
         # Resolved before anything else, including the early returns below. An
         # unimplemented mode must raise on every call, not only on calls that
@@ -600,13 +596,11 @@ class REDomainPack:
             return []
         query_terms = _tokenize(query)
 
-        # Evidence of absence. _distinctive_terms requires df > 0, so a token
-        # appearing nowhere in the corpus is discarded -- which silently
-        # disengages the gate exactly when the query is most clearly
-        # out-of-corpus. Before measurement-aware tokenization this was masked:
-        # "5.8 GHz" shattered into '5' and '8', which did occur in the corpus
-        # and gated by accident. With the frequency preserved as one token,
-        # the accident disappears and the real rule has to be stated: if the
+        # Evidence of absence, stated as its own rule rather than left to fall
+        # out of a scoring gate. Before measurement-aware tokenization this was
+        # masked: "5.8 GHz" shattered into '5' and '8', which did occur in the
+        # corpus, so an out-of-corpus question gated by accident. With the
+        # frequency preserved as one token the accident disappears -- if the
         # query names a specifier the corpus has never seen, abstain.
         if any(_is_specifier(t) and self._doc_freq.get(t, 0) == 0
                for t in dict.fromkeys(query_terms)):
@@ -707,6 +701,34 @@ class REDomainPack:
         """
         report = self.claim_verifier.verify(claims, evidence)
         return {"domain": DOMAIN_ID, **report.as_dict()}
+
+    def query_is_verbatim_in_its_answer(self, case: dict[str, Any]) -> bool:
+        """Is every informative term of this query already present, word for
+        word, in the document the benchmark expects back?
+
+        Such a case is close to a lookup by copy: retrieval cannot really fail
+        it, and it inflates recall without demonstrating anything. Measured
+        rather than hand-labelled, because a hand-labelled "this one is easy"
+        flag drifts the moment a document is edited and nobody re-checks.
+
+        11 of the 139 answerable cases qualify. They pass at 100%, against
+        0.906 for the other 128 -- so the headline Evidence Recall@10 of 0.914
+        is 0.008 higher than what the retriever earns on questions that are
+        not restatements of their own answer. Both numbers are reported.
+        """
+        self._ensure_loaded()
+        expected = set(case.get("expected_document_ids") or [])
+        if not expected:
+            return False
+        terms = [t for t in dict.fromkeys(_tokenize(case.get("query", "")))
+                 if t not in _STOPWORDS and t not in _DOMAIN_GENERIC_TERMS]
+        if not terms:
+            return False
+        available: set[str] = set()
+        for document in self.ingest():
+            if document.document_id in expected:
+                available |= set(_tokenize(f"{document.title} {document.text}"))
+        return all(t in available for t in terms)
 
     def evaluate(self, case: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
         """Score one benchmark case against a produced result.

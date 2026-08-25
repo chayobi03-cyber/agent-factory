@@ -1,4 +1,4 @@
-state_version: 23
+state_version: 24
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -75,6 +75,9 @@ last_completed:
   - out_of_tree_corpus_source_added_as_a_kernel_capability_so_real_documents_can_be_read_from_outside_the_public_repository
   - every_run_now_records_the_origin_and_content_digest_of_the_corpus_that_produced_its_numbers
   - corpus_validation_caught_that_near_duplicate_revisions_reused_doc_re_001_rev_b_so_the_adversarial_corpus_held_two_documents_under_one_identity
+  - audit_found_the_headline_recall_was_inflated_by_eleven_self_answering_cases_and_the_target_is_now_gated_on_the_earned_figure
+  - audit_found_the_test_named_for_the_d10_signature_did_not_detect_d10_and_it_is_now_tightened_and_verified_against_the_reintroduced_defect
+  - audit_found_distinctive_terms_dead_and_still_described_as_live_in_the_retrieve_docstring_both_removed
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target, now that retrieval no longer moves with corpus composition
   - hold the trunk on `main` now that the divergent default branch is folded in
@@ -84,6 +87,7 @@ current_risk:
   - the corpus is synthetic. D-08 keeps the repository public, so real RE reports and CISPR text cannot be committed; every acceptance number is measured against documents written for this repository. An out-of-tree corpus can now be loaded, but a benchmark measured against one is not re-derivable from the commit SHA - the run records the corpus origin and digest so the gap is visible rather than silent
   - retrieval_policy.allowed_modes still lists vector, graph and agentic and names a cross_encoder reranker, none of which exist; selecting one now raises rather than silently returning the hybrid, but the declaration itself is unresolved (OPEN_DECISIONS D-12)
   - Evidence Recall@10 is the stated PoC acceptance target and is insensitive to the retrieval method - every blend from pure trigram to pure BM25 scores 0.914; R@1 and MRR are what actually discriminate, and the target may need restating against one of them
+  - the acceptance margin is thin. Gated on the earned figure (0.906 excluding 11 self-answering cases) the retriever clears the 0.90 target by 0.006, which is one case. The headline 0.914 reads more comfortable than the system is
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
   - OPEN_DECISIONS D-12 needs the owner - whether the kernel takes a model dependency at all. It gates D-11's remaining option, the cross_encoder reranker, and RE_POC's "2 model providers minimum", and it trades against the reproducible-from-a-SHA property the evidence contract rests on
@@ -173,4 +177,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-26T00:10:00+00:00
+updated_at_utc: 2026-08-26T01:05:00+00:00
