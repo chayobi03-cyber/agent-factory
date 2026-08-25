@@ -91,7 +91,12 @@ current_sha_execution:
   combined_status: NOT_OBSERVED
   classification: REVIEW_REQUIRED
 checkpoint:
-  mode: exact
+  # `exact` pins HEAD to checkpoint_sha, so RC-02 can only pass while no new
+  # commit exists -- any commit that advances HEAD past the checkpoint fails it
+  # by construction, including the commit that carries this file. `descendant`
+  # states the invariant actually intended: work must descend from the frozen
+  # handoff baseline. Matches the resume-contract test fixtures.
+  mode: descendant
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION

@@ -245,3 +245,44 @@ def test_validator_main_executes_without_runtime_typeerror(monkeypatch, tmp_path
     # chdir so this matches the fixture root instead of the real repository root.
     monkeypatch.chdir(root)
     assert resume.main() == 0
+
+
+def test_resolve_branch_uses_base_ref_for_pull_request_events(monkeypatch):
+    """Root-cause regression test: the resume validator carried the same
+    pull_request false negative as the Context Guard (LSN-0002). On a
+    pull_request event the checkout is detached and GITHUB_HEAD_REF is the
+    PR's *source* branch, so RC-01 compared it against state.working_branch
+    and blocked every PR regardless of content -- and RC-05 inherited the
+    wrong branch in its expected identity. Resolution must key off the base
+    ref, which is the branch the work would land in."""
+    monkeypatch.setenv("GITHUB_HEAD_REF", "claude/some-unrelated-branch-name")
+    monkeypatch.setenv("GITHUB_BASE_REF", "p0/opro-baseline")
+    monkeypatch.setenv("GITHUB_REF_NAME", "refs/pull/14/merge")
+
+    original = resume.run_git
+    monkeypatch.setattr(
+        resume,
+        "run_git",
+        lambda *args: "" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = resume.resolve_branch()
+    assert branch == "p0/opro-baseline"
+    assert source == "github.base_ref"
+
+
+def test_resolve_branch_uses_ref_name_for_push_events(monkeypatch):
+    """Regression guard: the push path must keep resolving via GITHUB_REF_NAME
+    once GITHUB_BASE_REF is absent (it is only set for pull_request events)."""
+    monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
+    monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
+    monkeypatch.setenv("GITHUB_REF_NAME", "p0/opro-baseline")
+
+    original = resume.run_git
+    monkeypatch.setattr(
+        resume,
+        "run_git",
+        lambda *args: "" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = resume.resolve_branch()
+    assert branch == "p0/opro-baseline"
+    assert source == "github.ref"

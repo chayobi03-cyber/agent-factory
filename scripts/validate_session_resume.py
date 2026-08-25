@@ -48,11 +48,23 @@ def run_git(*args: str) -> str:
 
 
 def resolve_branch() -> tuple[str, str]:
-    """Return branch plus source; CI refs are required for detached checkouts."""
+    """Return branch plus source; CI refs are required for detached checkouts.
+
+    Carries the same root-cause fix as validate_project_context.resolve_branch:
+    on a `pull_request` event the checkout is detached and `GITHUB_HEAD_REF` is
+    the PR's *source* branch, which will not equal state.working_branch, so
+    RC-01 (and the RC-05 identity expectation derived from it) failed for every
+    PR regardless of content. The governance boundary is which branch the work
+    would land in -- the *base* ref. `GITHUB_REF_NAME` remains the `push`-event
+    fallback. See 11_Audit/LSN-0002.
+    """
     branch = run_git("branch", "--show-current")
     if branch:
         return branch, "git.branch"
-    ci_branch = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME")
+    base_ref = os.environ.get("GITHUB_BASE_REF")
+    if base_ref:
+        return base_ref, "github.base_ref"
+    ci_branch = os.environ.get("GITHUB_REF_NAME")
     if ci_branch:
         return ci_branch, "github.ref"
     raise ResumeError("unable to resolve current branch from Git or GitHub Actions environment")
