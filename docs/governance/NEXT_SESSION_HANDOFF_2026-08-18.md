@@ -7,7 +7,10 @@ audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
 forbidden:
   - GEPA_implementation
   - OPRO_promotion
-  - RE_domain_implementation
+  # Time-bounded, and discharged as of 2026-08-25: the Factory Kernel gate
+  # this constraint was waiting on is GREEN, so M1 RE is now the permitted
+  # next milestone per ROADMAP_WBS.md. Retained as the record of the bound.
+  - RE_domain_implementation_until_kernel_gate
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
 ---
