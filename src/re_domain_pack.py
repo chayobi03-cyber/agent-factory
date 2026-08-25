@@ -31,6 +31,7 @@ import math
 import re
 from collections import Counter
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -61,6 +62,58 @@ _WORD_RE = re.compile(r"[a-z0-9]+")
 _FREQ_RE = re.compile(r"\b(\d+(?:\.\d+)?)\s*(mhz|ghz|khz)\b", re.IGNORECASE)
 _LEVEL_RE = re.compile(r"\b(\d+(?:\.\d+)?)\s*dbuv/m\b", re.IGNORECASE)
 
+# --- measurement-aware tokenization ------------------------------------------
+#
+# The RE domain's content *is* numbers with units. A bare `[a-z0-9]+` tokenizer
+# shatters every one of them: "5.8 GHz" becomes ['5','8','ghz'], which is
+# indistinguishable from "8.5 GHz", and "REV-A" becomes ['rev','a']. normalize()
+# below already lifts frequencies and levels into fragment metadata, so the pack
+# knew these mattered -- retrieval simply could not see them.
+#
+# The unit tables are mirrored declaratively in domains/re/domain_pack.yaml
+# under `measurement_policy`; tests/test_re_domain_pack.py asserts the two agree,
+# the same code<->YAML consistency check used for the ontology.
+
+# Multiplier to the canonical frequency unit (MHz), so "5.8 GHz" and "5800 MHz"
+# produce the same token instead of sharing nothing.
+_FREQ_TO_MHZ = {"hz": Decimal("0.000001"), "khz": Decimal("0.001"),
+                "mhz": Decimal(1), "ghz": Decimal(1000)}
+_LEVEL_UNITS = ("dbuv/m", "dbuv", "dbm", "dbi", "db")
+_ID_PREFIXES = ("rev", "eut", "dut", "doc", "ch", "ant", "cispr", "en", "fcc")
+
+_MEAS_FREQ_RE = re.compile(
+    r"(?<![\w.])(\d+(?:\.\d+)?)\s*(" + "|".join(_FREQ_TO_MHZ) + r")(?![\w])")
+_MEAS_LEVEL_RE = re.compile(
+    r"(?<![\w.])(\d+(?:\.\d+)?)\s*(" + "|".join(_LEVEL_UNITS) + r")(?![\w])")
+_IDENT_RE = re.compile(
+    r"(?<![\w-])((?:" + "|".join(_ID_PREFIXES) + r")(?:-[a-z0-9]+)+)(?![\w-])")
+_DECIMAL_RE = re.compile(r"(?<![\w.])(\d+\.\d+)(?![\w.])")
+
+
+def _is_specifier(token: str) -> str | bool:
+    """True for the high-specificity composite tokens _tokenize emits: a
+    normalized frequency, a level with its unit, or a hyphenated identifier
+    like REV-B or EUT-7.
+
+    These name a particular thing rather than describe one. A query naming a
+    specifier the corpus has never seen is asking about something that is not
+    there -- which is evidence of absence, not merely a weak match.
+    """
+    if token.startswith("f:"):
+        return True
+    if "-" in token and token.split("-", 1)[0] in _ID_PREFIXES:
+        return True
+    return any(token.endswith(unit) and any(c.isdigit() for c in token)
+               for unit in _LEVEL_UNITS)
+
+
+def _canonical_number(raw: str) -> str:
+    """Render a Decimal without exponent or trailing-zero noise, so 5.8 GHz and
+    5800 MHz agree on `5800` rather than differing by float representation."""
+    value = Decimal(raw).normalize()
+    text = format(value, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
 
 def _stem(token: str) -> str:
     """Minimal, dependency-free suffix stripping (not a real Porter
@@ -77,7 +130,40 @@ def _stem(token: str) -> str:
 
 
 def _tokenize(text: str) -> list[str]:
-    return [_stem(t) for t in _WORD_RE.findall(text.lower())]
+    """Measurement-aware tokenization.
+
+    Emits composite tokens for the things an RE question is actually about --
+    frequencies (normalized to MHz), field-strength levels, and hyphenated
+    identifiers like REV-B or EUT-7 -- and masks each matched span so its digits
+    do not also leak out as bare numbers that collide with everything.
+    Ordinary prose still tokenizes exactly as before.
+    """
+    lowered = text.lower().replace("\u00b5", "u").replace("\u03bc", "u")
+    tokens: list[str] = []
+
+    def _consume(pattern: re.Pattern[str], make: Any) -> None:
+        nonlocal lowered
+        pieces: list[str] = []
+        last = 0
+        for match in pattern.finditer(lowered):
+            token = make(match)
+            if token is None:
+                continue
+            tokens.append(token)
+            pieces.append(lowered[last : match.start()])
+            last = match.end()
+        if pieces:
+            pieces.append(lowered[last:])
+            lowered = " ".join(pieces)
+
+    _consume(_MEAS_FREQ_RE, lambda m: "f:" + _canonical_number(
+        str(Decimal(m.group(1)) * _FREQ_TO_MHZ[m.group(2)])) + "mhz")
+    _consume(_MEAS_LEVEL_RE, lambda m: _canonical_number(m.group(1)) + m.group(2))
+    _consume(_IDENT_RE, lambda m: m.group(1))
+    _consume(_DECIMAL_RE, lambda m: _canonical_number(m.group(1)))
+
+    tokens.extend(_stem(t) for t in _WORD_RE.findall(lowered))
+    return tokens
 
 
 def _trigrams(text: str) -> set[str]:
@@ -268,6 +354,20 @@ class REDomainPack:
         if not self._fragments:
             return []
         query_terms = _tokenize(query)
+
+        # Evidence of absence. _distinctive_terms requires df > 0, so a token
+        # appearing nowhere in the corpus is discarded -- which silently
+        # disengages the gate exactly when the query is most clearly
+        # out-of-corpus. Before measurement-aware tokenization this was masked:
+        # "5.8 GHz" shattered into '5' and '8', which did occur in the corpus
+        # and gated by accident. With the frequency preserved as one token,
+        # the accident disappears and the real rule has to be stated: if the
+        # query names a specifier the corpus has never seen, abstain.
+        unseen = [t for t in dict.fromkeys(query_terms)
+                  if _is_specifier(t) and self._doc_freq.get(t, 0) == 0]
+        if unseen:
+            return []
+
         query_trigrams = _trigrams(query)
         distinctive = self._distinctive_terms(query_terms)
         required_hits = min(2, len(distinctive)) if distinctive else 0

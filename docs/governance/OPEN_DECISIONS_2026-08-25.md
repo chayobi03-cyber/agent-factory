@@ -6,9 +6,9 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** all nine resolved 2026-08-25. Entries are kept as the record of why,
-not cleared. Add new decisions here rather than starting a fresh register — the
-point is that a session reads one file and knows what is settled.
+**Status:** D-01 through D-09 resolved 2026-08-25. **D-10 is open** — raised by
+the M1 tokenization work, which exposed it. Entries are kept as the record of
+why, not cleared; add new decisions here rather than starting a fresh register.
 
 ---
 
@@ -438,3 +438,58 @@ The workflow stays. It re-derives its set every run, so it is safe to dispatch
 again whenever branches accumulate — the condition `11_Audit/LSN-0001` identified
 as the cause of cross-branch plan divergence now has a one-tap remedy instead of
 a documented procedure nobody runs.
+
+---
+
+## D-10 — Retrieval gating depends on corpus term frequency, not on the query
+
+Raised 2026-08-25 by the M1-1 tokenization work (step 1 of the M1 corpus plan),
+which exposed it rather than caused it.
+
+`retrieve()` gates candidates on `_distinctive_terms` — query terms with
+`0 < df <= 30%` of fragments — and requires `min(2, len(distinctive))` of them
+to appear literally in a fragment. Both the membership of that set *and* the
+number of required hits therefore move as the corpus changes, so the same query
+against the same document behaves differently depending on what unrelated
+documents sit alongside it.
+
+Measured on `RE-BC-002` ("Which document describes the chamber CH-2 antenna
+setup and calibration?", expects `DOC-RE-003`) with same-vocabulary distractor
+documents added:
+
+| Corpus | `distinctive` | Required hits | `DOC-RE-003` returned |
+|---|---|---|---|
+| baseline | `ch-2`, `antenna`, `setup` | 2 | yes |
+| + 40 distractors | `ch-2`, `setup` | 2 | **no** |
+| + 100 distractors | `ch-2` | 1 | yes |
+
+`antenna` crosses the 30% ubiquity threshold first and drops out; at 40
+distractors two hits are still required but only two terms remain, so a fragment
+must contain *both* `ch-2` and `setup` and the right document misses. At 100 the
+set shrinks to one term, one hit is required, and it comes back. The failure is
+non-monotonic — more context makes it worse, then better.
+
+This is the same class as the abstention defect fixed in M1-1: behaviour keyed
+to corpus term statistics rather than to the query-document relationship. That
+one was fixable within tokenization because the tokenizer caused it. This one is
+a gating-heuristic design question and is deliberately **not** patched in
+passing.
+
+**Why it matters for the corpus expansion:** the PoC targets
+`Evidence Recall@10 >= 0.90`. A retriever whose recall moves with the number of
+unrelated documents cannot be measured against a fixed threshold — scaling to
+20+ documents and 150 cases before this is settled produces numbers that
+describe the corpus rather than the retriever.
+
+**Options**
+
+| | Change | Consequence |
+|---|---|---|
+| A | Fixed required-hit count, independent of how many terms survive the df filter | Simplest; removes the non-monotonicity but keeps ubiquity-based membership |
+| B | Rank by score and drop the literal-hit gate entirely, relying on the D-10 absence check plus a score floor for abstention | Removes the corpus dependence at its root; needs a defensible floor, which is a calibration question |
+| C | Weight terms by IDF instead of admitting/excluding them at a threshold | Standard, monotonic, and keeps rare terms influential without a cliff; largest change |
+
+**Recommendation:** C, verified against the distractor probe at several corpus
+sizes rather than at one. It is the only option where adding unrelated documents
+cannot flip a result, which is the property the PoC metrics need. Settle it as
+part of step 2 (adversarial corpus), before any scaling.

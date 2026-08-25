@@ -51,13 +51,16 @@ last_completed:
   - d07_resolved_superseded_resume_contract_header_corrected_and_retained_as_history
   - d05_and_d06_resolved_31_merged_branches_deleted_by_dispatch_remote_41_to_10_no_history_lost
   - d08_resolved_repository_stays_public_which_constrains_m1_real_documents_to_an_out_of_tree_source
+  - m1_1_tokenization_made_measurement_aware_and_absence_gating_added_to_retrieve
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
   - hold the trunk on `main` now that the divergent default branch is folded in
 current_risk:
+  - retrieval gating is corpus-term-frequency dependent and non-monotonic under added distractors (OPEN_DECISIONS D-10); settle before scaling the corpus, or Recall@10 measures the corpus rather than the retriever
   - M1 corpus/benchmark is a first slice (8 docs / 15 cases), not yet the RE_POC.md PoC target size
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
+  - M1 step 2 - make the corpus adversarial at current size (distractors, near-duplicate revisions, contradictions, unit and terminology drift) and settle OPEN_DECISIONS D-10 against it
   - expand M1 RE corpus/benchmark toward the RE_POC.md target (20+ documents / 150 cases)
 blocked_until: []
 forbidden:
@@ -143,4 +146,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-25T08:15:00+00:00
+updated_at_utc: 2026-08-25T08:45:00+00:00
