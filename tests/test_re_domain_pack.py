@@ -445,3 +445,55 @@ def test_verification_names_what_the_evidence_did_not_supply(pack: REDomainPack)
     claim = Claim("C-NM", query, "answer", [evidence[0].evidence_id], 0.5)
     report = pack.verify([claim], evidence)
     assert "immunity" in report["claims"]["C-NM"]["unsupported_terms"]
+
+
+# --- retrieval methods (docs/RE_POC.md: "3 retrieval methods minimum") -------
+
+def test_the_three_declared_modes_are_all_selectable(pack: REDomainPack) -> None:
+    from re_domain_pack import RETRIEVAL_MODES
+
+    assert set(RETRIEVAL_MODES) == {"bm25", "trigram", "hybrid"}
+    for mode in RETRIEVAL_MODES:
+        assert pack.retrieve("What caused the 375 MHz exceedance on EUT-31?",
+                             top_k=3, mode=mode)
+
+
+def test_the_modes_actually_rank_differently(pack: REDomainPack) -> None:
+    """Three names over one behaviour would satisfy the letter of the PoC
+    requirement and none of its point."""
+    query = "What caused the 375 MHz exceedance on EUT-31?"
+    ordering = {m: [e.fragment_id for e in pack.retrieve(query, top_k=5, mode=m)]
+                for m in ("bm25", "trigram", "hybrid")}
+    assert ordering["bm25"] != ordering["trigram"], ordering
+
+
+def test_an_unimplemented_mode_raises_on_every_call(pack: REDomainPack) -> None:
+    """`retrieval_policy.allowed_modes` also lists vector, graph and agentic,
+    and none exists (OPEN_DECISIONS D-12). Selecting one must raise -- including
+    for a query that abstains early, where returning [] would read as "vector
+    retrieval found nothing" rather than "there is no vector retrieval"."""
+    for query in ("What caused the EUT-31 exceedance?",          # answerable
+                  "What quarterly revenue did the lab report?"):  # abstains early
+        with pytest.raises(ValueError, match="unknown retrieval mode"):
+            pack.retrieve(query, mode="vector")
+
+
+def test_recall_at_10_cannot_separate_the_methods_and_the_rank_metrics_can() -> None:
+    """The measurement finding that forced R@1 and MRR into the demo.
+
+    Every blend from pure trigram to pure BM25 scores the same Recall@10,
+    because the coverage floor and the abstention rules decide the result set
+    rather than the ranking. Reported as an assertion so that if a future
+    change makes Recall@10 discriminating again, someone notices and revisits
+    which metric the PoC target should be stated against.
+    """
+    from scripts import re_demo
+
+    scores = {}
+    for mode in ("bm25", "trigram", "hybrid"):
+        summary = re_demo.run(mode=mode)["acceptance"]
+        scores[mode] = (summary["evidence_recall_at_10"], summary["mean_reciprocal_rank"])
+
+    recalls = {v[0] for v in scores.values()}
+    assert len(recalls) == 1, f"Recall@10 now separates the methods: {scores}"
+    assert scores["trigram"][1] < scores["bm25"][1], scores

@@ -6,8 +6,9 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01 through D-10 resolved 2026-08-25. **D-11 is open** — raised by
-the M1 corpus scale-up, which is the first thing large enough to measure it.
+**Status:** D-01 through D-10 resolved 2026-08-25. **D-11 and D-12 are open** —
+both raised by the M1 work itself, and both about the same wall: what a
+dependency-free lexical retriever cannot do.
 Entries are kept as the record of why, not cleared; add new decisions here
 rather than starting a fresh register.
 
@@ -720,3 +721,82 @@ own merits, and struck as a fix for this band. **B — a second retrieval method
 with semantic similarity — is the only remaining option that can close it**,
 and `RE_POC.md` already requires three retrieval methods, so it is scheduled
 work rather than new scope. D stays rejected.
+
+---
+
+## D-12 — The kernel has no model dependency, and three of RE_POC's requirements need one
+
+Raised 2026-08-25 while implementing the three retrieval methods `RE_POC.md`
+requires. It is the decision D-11's revised recommendation runs into.
+
+**What is declared versus what exists.** `domains/re/domain_pack.yaml` has
+always said:
+
+```yaml
+retrieval_policy:
+  allowed_modes: [bm25, vector, hybrid, graph, agentic]
+  default_mode: hybrid
+  reranker: cross_encoder
+```
+
+Three of those five modes and the reranker do not exist and never have. Until
+this change `retrieve()` ignored the field entirely and hardcoded one blend, so
+nothing selected a mode and nothing noticed. Selecting `vector` now raises
+rather than silently returning the hybrid — a mode that resolves to something
+other than what was asked for is how a declared capability gets believed.
+
+**What was delivered without a dependency.** Three genuinely distinct,
+deterministic methods: `bm25`, `trigram`, and `hybrid`. Measuring them produced
+two findings that the previous code assumed the opposite of:
+
+| method | R@1 | R@3 | R@10 | MRR |
+|---|---|---|---|---|
+| trigram only | 0.799 | 0.885 | 0.914 | 0.842 |
+| hybrid 40/60 | 0.835 | 0.906 | 0.914 | 0.871 |
+| **hybrid 60/40** (shipped) | 0.827 | 0.906 | 0.914 | 0.868 |
+| BM25 only | 0.827 | 0.906 | 0.914 | 0.868 |
+
+1. **Recall@10 cannot separate the methods.** Every blend scores 0.914, because
+   the coverage floor and the abstention rules decide the result set and ranking
+   rarely moves a document across k=10. The PoC's headline acceptance target is
+   insensitive to the thing it asks for three of. The demo now reports R@1, R@3
+   and MRR alongside it.
+2. **At 60/40 the hybrid was BM25 with a decorative trigram term** — identical
+   R@1 and MRR to three decimals. The trigram leg is not useless (alone it is
+   measurably worse, so it carries real signal) — it was simply outvoted at the
+   weight that had been chosen without measuring.
+
+The weight was left at 0.6 rather than moved to the 0.4 that measured best:
+0.835 against 0.827 over 139 cases is one case, and refitting a shipped default
+to a one-case gain on the corpus it was measured against is exactly how the
+D-10 thresholds became corpus-dependent.
+
+**The decision.** Three `RE_POC.md` requirements cannot be met without a model:
+a semantic retrieval method, the `cross_encoder` reranker, and "2 model
+providers minimum". D-11's near-miss band needs the first of those. The kernel
+currently depends on `pytest` and `pyyaml` and nothing else — no numpy, no
+scipy, no torch — and every result in this repository is deterministic and
+reproducible from a commit SHA, which is what
+`AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1` is built on.
+
+| | Change | Consequence |
+|---|---|---|
+| A | Keep the kernel dependency-free; mark the vector/graph/agentic modes and the reranker as out of scope and remove them from `allowed_modes` | Honest and cheap. D-11's near-miss band stays open permanently, and three PoC requirements are formally dropped rather than pending |
+| B | Add a local embedding model (`sentence-transformers` + `torch`, ~2 GB) | Deterministic and offline, so the evidence chain survives. Enormous dependency for a kernel that is currently two packages, and CI install time goes from seconds to minutes |
+| C | Call a hosted model API for embeddings | Small dependency, and satisfies "2 model providers minimum" directly. Breaks determinism, needs network and a key in CI, and a historical run stops being reproducible — the evidence contract's central premise |
+| D | Corpus-derived distributional similarity (LSA / truncated SVD in pure Python) | No dependency, deterministic, a genuinely different third method. But it cannot help D-11's near-miss: a term the corpus has never seen has no vector, which is the same `df == 0` the current rule already uses |
+
+**Recommendation:** this one is genuinely the owner's, because it is a trade
+between the PoC's stated scope and the evidence-reproducibility property the
+whole governance design rests on. If pressed: **A for now, B when a domain
+actually needs semantic recall**, and never C while
+`AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1` requires that a historical run be
+reproducible from its SHA. D is worth building only if something other than
+D-11 wants it — it was measured against D-11's problem and does not solve it.
+
+**What it costs to be wrong.** Choosing A and being wrong means the PoC ships
+without semantic recall and a class of question stays unanswerable — visible,
+survivable, already recorded. Choosing C and being wrong is worse and quieter:
+the evidence chain keeps producing GREEN decisions that can no longer be
+re-derived from the commit they name, which is the failure the contract exists
+to prevent.

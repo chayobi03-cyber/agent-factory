@@ -287,6 +287,40 @@ _UNSEEN_TERM_CEILING = 0.35
 # source of truth; tests assert the two agree.
 _CLAIM_GROUNDING_FLOOR = 0.25
 
+# The three retrieval methods docs/RE_POC.md requires ("3 retrieval methods
+# minimum"), as the lexical weight each gives BM25 against character-trigram
+# Jaccard. Measured over the 159-case benchmark at 108 fragments:
+#
+#   method             R@1     R@3    R@10     MRR
+#   trigram only      0.799   0.885   0.914   0.842
+#   hybrid 40/60      0.835   0.906   0.914   0.871
+#   hybrid 60/40      0.827   0.906   0.914   0.868   <- what was shipped
+#   BM25 only         0.827   0.906   0.914   0.868
+#
+# Three things that table says and the previous code assumed the opposite of:
+#
+# 1. **Recall@10 cannot tell these methods apart.** Every weight from pure
+#    trigram to pure BM25 scores exactly 0.914, because the coverage floor and
+#    the abstention rules decide the result set and ranking rarely moves a
+#    document across k=10. The PoC's headline metric is insensitive to the
+#    thing RE_POC asks for three of, which is why the demo now also reports
+#    R@1, R@3 and MRR.
+# 2. **At 60/40 the hybrid was BM25 with a decorative trigram term** -- same
+#    R@1, same MRR, to three decimals.
+# 3. Trigram alone is genuinely worse (MRR 0.842), so the leg is not useless;
+#    it is just outvoted at the weight that was chosen.
+#
+# `hybrid` stays 0.6 rather than moving to the 0.4 that measured best: the
+# difference is 0.835 against 0.827 over 139 answerable cases, which is one
+# case, and refitting a shipped default to a one-case gain on the corpus it
+# was measured against is how the D-10 thresholds became corpus-dependent.
+# Changing it wants a corpus this result survives, not this corpus.
+RETRIEVAL_MODES: dict[str, float] = {
+    "bm25": 1.0,
+    "trigram": 0.0,
+    "hybrid": 0.6,
+}
+
 _DOMAIN_GENERIC_TERMS = {
     "radiated", "emission", "emissions", "test", "tested", "testing",
     "measurement", "measured", "measure", "device", "dut", "eut",
@@ -501,10 +535,23 @@ class REDomainPack:
                 terms.append(term)
         return terms
 
-    def retrieve(self, query: str, top_k: int = 5, **kwargs: Any) -> list[EvidenceCandidate]:
-        """Hybrid retrieval: normalized BM25 (lexical) + trigram Jaccard
-        (lightweight stand-in for a semantic/vector leg), combined 60/40.
-        Deterministic and dependency-free by design.
+    def retrieve(
+        self, query: str, top_k: int = 5, *, mode: str | None = None, **kwargs: Any
+    ) -> list[EvidenceCandidate]:
+        """Retrieve evidence, ranked by the selected method.
+
+        `mode` is one of RETRIEVAL_MODES: `bm25` (lexical only), `trigram`
+        (character-trigram Jaccard only), or `hybrid` (a weighted blend).
+        Defaults to `retrieval_policy.default_mode` in the Domain Pack. All
+        three are deterministic and dependency-free.
+
+        Three selectable methods exist because docs/RE_POC.md requires at
+        least three and because the blend weight had never been measured --
+        it was asserted at 60/40. Measured over the 159-case benchmark, at
+        that weight the hybrid is *indistinguishable from BM25 alone*
+        (R@1 0.827, MRR 0.868 for both): the trigram leg earns nothing there.
+        The table at RETRIEVAL_MODES records what each method is actually
+        worth.
 
         A candidate must also contain enough "distinctive" query terms
         (see _distinctive_terms) to count as genuine evidence -- otherwise
@@ -514,6 +561,19 @@ class REDomainPack:
         exactly the failure mode docs/RE_POC.md's "evidence sufficiency /
         abstention" query category exists to catch.
         """
+        # Resolved before anything else, including the early returns below. An
+        # unimplemented mode must raise on every call, not only on calls that
+        # happen to reach the ranking loop -- `retrieve(q, mode="vector")`
+        # returning [] for an out-of-corpus query reads as "vector retrieval
+        # found nothing", which is the opposite of the truth.
+        resolved = (mode or self.default_retrieval_mode).lower()
+        if resolved not in RETRIEVAL_MODES:
+            raise ValueError(
+                f"unknown retrieval mode {resolved!r}; "
+                f"domain_pack.yaml declares {sorted(RETRIEVAL_MODES)} as implemented"
+            )
+        lexical_weight = RETRIEVAL_MODES[resolved]
+
         self._ensure_loaded()
         if not self._fragments:
             return []
@@ -559,7 +619,7 @@ class REDomainPack:
             union = query_trigrams | frag_trigrams
             jaccard = len(query_trigrams & frag_trigrams) / len(union) if union else 0.0
             bm25_norm = bm25 / max_bm25
-            combined = 0.6 * bm25_norm + 0.4 * jaccard
+            combined = lexical_weight * bm25_norm + (1.0 - lexical_weight) * jaccard
             scored.append((combined, frag, bm25_norm, jaccard))
 
         scored.sort(key=lambda item: item[0], reverse=True)
@@ -575,10 +635,25 @@ class REDomainPack:
                     fragment_id=frag.fragment_id,
                     score=round(combined, 4),
                     text=frag.text,
-                    metadata={**frag.metadata, "bm25": round(bm25_norm, 4), "trigram": round(jaccard, 4)},
+                    metadata={**frag.metadata, "retrieval_mode": resolved,
+                              "bm25": round(bm25_norm, 4), "trigram": round(jaccard, 4)},
                 )
             )
         return results
+
+    @property
+    def default_retrieval_mode(self) -> str:
+        """From `retrieval_policy.default_mode`, if the Domain Pack declares an
+        implemented one. The policy also lists `vector`, `graph` and `agentic`
+        in `allowed_modes` and names a `cross_encoder` reranker; none of those
+        exists, and selecting one raises rather than silently falling back to
+        the hybrid -- a mode that resolves to something other than what was
+        asked for is how a declared capability gets believed. See
+        OPEN_DECISIONS D-12.
+        """
+        policy = (self.policy.get("retrieval_policy", {}) or {}) if self.policy else {}
+        declared = str(policy.get("default_mode", "hybrid")).lower()
+        return declared if declared in RETRIEVAL_MODES else "hybrid"
 
     @property
     def claim_verifier(self) -> ClaimVerifier:
@@ -622,12 +697,19 @@ class REDomainPack:
         Rate, Revision correctness) at this corpus size; those need the full
         150-case benchmark to be statistically meaningful.
         """
-        retrieved_docs = {e.document_id for e in result.get("evidence", [])}
+        evidence = list(result.get("evidence", []))
+        retrieved_docs = {e.document_id for e in evidence}
         expected_docs = set(case.get("expected_document_ids", []))
         if expected_docs:
             recall = len(retrieved_docs & expected_docs) / len(expected_docs)
         else:
             recall = None
+        # 1-based rank of the first correct document, or None. Recall alone is
+        # blind to ordering, and ordering is the only thing that separates the
+        # retrieval methods -- see RETRIEVAL_MODES.
+        first_rank = next(
+            (i + 1 for i, e in enumerate(evidence) if e.document_id in expected_docs), None
+        )
 
         abstained = result.get("cer_result") == "BLOCK"
         expect_abstain = bool(case.get("expect_abstain", False))
@@ -637,6 +719,7 @@ class REDomainPack:
             "case_id": case.get("case_id"),
             "query_type": case.get("query_type"),
             "evidence_recall": recall,
+            "first_relevant_rank": first_rank,
             "abstained": abstained,
             "expect_abstain": expect_abstain,
             "abstention_correct": abstention_correct,
