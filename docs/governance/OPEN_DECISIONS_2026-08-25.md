@@ -6,7 +6,7 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01 resolved 2026-08-25 (Option A). Seven items remain open.
+**Status:** D-01 and D-04 resolved 2026-08-25. Six items remain open.
 
 ---
 
@@ -141,6 +141,12 @@ Merging #11 as a branch would reintroduce paths listed in the guard's
 
 ## D-04 — Domain-matrix assets still stranded (AF-004 / M9)
 
+> **RESOLVED 2026-08-25 — recovered.** Eleven files taken individually from
+> `p1/domain-matrix-workflow-v0.1`, no branch merge, no quarantined artifact.
+> All eight recovered tests pass against the *current* kernel, and the demo
+> exercises four synthetic Domain Packs end to end. Recovery notes at the end
+> of this entry.
+
 `p1/domain-matrix-workflow-v0.1` holds work that maps directly onto the roadmap's
 *"kernel loads Domain Pack without code fork"* acceptance criterion:
 
@@ -163,6 +169,42 @@ the current kernel.
 **Recommendation:** recover. They are written against this kernel, and the
 alternative is rebuilding work that already exists — the exact failure LSN-0001
 was written about.
+
+### What was recovered
+
+Eleven files, each taken individually with `git show <branch>:<path>` — no
+branch merge, so none of the 12 quarantined investment artifacts came with them.
+Two dependencies the list above had missed turned up during the work:
+
+- `src/engineering_evidence.py` — the module implementing the contract, required
+  by `tests/test_engineering_evidence_contract.py`. Standard library only.
+- `tests/test_domain_matrix_workflow.py` and
+  `tests/test_engineering_evidence_contract.py` — recovering the code without
+  its tests would have imported unverified code into a repository whose whole
+  discipline is that a change without a matching test is not complete.
+
+Every recovered file was scanned for quarantined terms before placement, and the
+staged set was re-checked for any path matching the guard's
+`FORBIDDEN_CANONICAL_PATHS`. Both clean.
+
+**The recovered tests pass against the current kernel, not merely the branch
+they came from** — 8 passed, suite 100 passed. `synthetic_domain_matrix.py`
+imports only `factory_runtime` and `interfaces`, both already on the trunk, so
+nothing had to be back-ported to accommodate it.
+
+A `Domain Matrix E2E` step was added to the workflow. Without it the recovered
+demo would sit unexecuted, which is how these assets became strandable in the
+first place. The demo runs four synthetic Domain Packs
+(`ingest→parse→normalize→retrieve→verify→evaluate→cer_gate→execute→report→trace`),
+each reaching `cer_decision: PASS` under `fixture_only: true`.
+
+Deliberately left behind: `CER_SESSION_CLOSURE_2026-08-19_DOMAIN_MATRIX.md`,
+`NEXT_SESSION_HANDOFF_2026-08-20_DOMAIN_MATRIX.md`, and
+`CER_M2_LESSONS_2026-08-20.md`. These are that session's historical records
+rather than the assets, and the first two are the branch's *decontamination*
+narrative — their finance mentions are boundary statements ("financial-data
+ingestion is not part of the core roadmap"), permitted by scope §7 but adding
+no live contract to the trunk.
 
 ---
 

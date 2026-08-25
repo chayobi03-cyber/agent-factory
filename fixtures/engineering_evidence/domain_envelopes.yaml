@@ -1,0 +1,20 @@
+version: 1
+fixture_only: true
+contract: generic-engineering-evidence-v1
+domains:
+  - domain_id: RE
+    domain_pack_version: 0.1.0
+    scenario: engineering_qa
+    summary: "Synthetic RE evidence payload mapped through the generic envelope."
+  - domain_id: EMI
+    domain_pack_version: 0.1.0
+    scenario: engineering_qa
+    summary: "Synthetic EMI evidence payload mapped through the generic envelope."
+  - domain_id: CST
+    domain_pack_version: 0.1.0
+    scenario: engineering_qa
+    summary: "Synthetic CST evidence payload mapped through the generic envelope."
+  - domain_id: ESD
+    domain_pack_version: 0.1.0
+    scenario: engineering_qa
+    summary: "Synthetic ESD evidence payload mapped through the generic envelope."

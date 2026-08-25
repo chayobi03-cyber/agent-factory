@@ -42,6 +42,7 @@ last_completed:
   - thirty_fully_merged_branches_identified_and_cleanup_prepared_deletion_blocked_by_session_credentials
   - open_decisions_register_created
   - d01_resolved_kernel_gated_constraint_made_time_bounded_and_discharged_at_factory_kernel_green
+  - d04_resolved_domain_matrix_and_generic_engineering_evidence_assets_recovered_file_by_file
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
   - hold the trunk on `main` now that the divergent default branch is folded in
@@ -51,7 +52,6 @@ current_risk:
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
   - expand M1 RE corpus/benchmark toward the RE_POC.md target (20+ documents / 150 cases)
-  - recover the domain-matrix assets (AF-004/M9) still stranded on p1/domain-matrix-workflow-v0.1, taking files only and leaving the quarantined investment artifacts behind (OPEN_DECISIONS D-04)
   - close or rebase the three stale open pull requests (OPEN_DECISIONS D-03)
 blocked_until: []
 forbidden:
@@ -137,4 +137,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-25T04:20:00+00:00
+updated_at_utc: 2026-08-25T06:30:00+00:00
