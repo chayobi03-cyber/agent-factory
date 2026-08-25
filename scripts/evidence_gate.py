@@ -117,17 +117,45 @@ def validate_expected_results(records: dict[str, dict], errors: list[str]) -> di
 
     m1 = load_json_output(records["E-M1-RE-DEMO"], "E-M1-RE-DEMO", errors)
     if m1 is not None:
+        # Judged on docs/RE_POC.md's acceptance targets, not on every case
+        # passing. The benchmark grew from 15 cases to 159 and now contains
+        # questions the retriever is measurably not expected to answer -- the
+        # near-miss abstention band, OPEN_DECISIONS D-11. Demanding 159/159
+        # would not make this gate stricter; it would force the benchmark back
+        # down to cases that already pass, which is how a benchmark stops
+        # measuring anything.
+        #
+        # This still fails closed. The acceptance block must be present and
+        # must say the targets were met -- a run that omits it, or that
+        # reports a miss, is AMBER.
         total, passed, failed = m1.get("cases_total"), m1.get("cases_passed"), m1.get("cases_failed")
+        acceptance = m1.get("acceptance")
         observed["m1_re_demo"] = {
             "benchmark_id": m1.get("benchmark_id"),
             "cases_total": total,
             "cases_passed": passed,
             "cases_failed": failed,
+            "evidence_recall_at_10": (acceptance or {}).get("evidence_recall_at_10"),
+            "abstention_by_band": (acceptance or {}).get("abstention_by_band"),
         }
         if not isinstance(total, int) or total < 1:
             errors.append("E-M1-RE-DEMO: cases_total is not a positive integer")
-        elif passed != total or failed != 0:
-            errors.append(f"E-M1-RE-DEMO: benchmark is not fully passing ({passed}/{total}, {failed} failed)")
+        if not isinstance(acceptance, dict):
+            errors.append("E-M1-RE-DEMO: no acceptance block -- cannot judge the run against RE_POC targets")
+        else:
+            recall = acceptance.get("evidence_recall_at_10")
+            target = acceptance.get("evidence_recall_target")
+            if not isinstance(recall, (int, float)) or not isinstance(target, (int, float)):
+                errors.append("E-M1-RE-DEMO: evidence_recall_at_10/target not numeric")
+            elif recall < target:
+                errors.append(f"E-M1-RE-DEMO: Evidence Recall@10 {recall} is below target {target}")
+            if acceptance.get("abstention_decidable_bands_perfect") is not True:
+                errors.append(
+                    "E-M1-RE-DEMO: abstention is not perfect on the decidable bands "
+                    f"({acceptance.get('abstention_by_band')})"
+                )
+            if acceptance.get("meets_acceptance_targets") is not True:
+                errors.append("E-M1-RE-DEMO: run does not meet the RE_POC acceptance targets")
 
     matrix = load_json_output(records["E-DOMAIN-MATRIX"], "E-DOMAIN-MATRIX", errors)
     if matrix is not None:

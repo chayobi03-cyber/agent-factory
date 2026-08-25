@@ -64,10 +64,26 @@ PAYLOADS = {
         "promotion_status": "CANDIDATE",
     },
     "E-M1-RE-DEMO": {
-        "benchmark_id": "re-hybrid-rag-v0.1",
-        "cases_total": 15,
-        "cases_passed": 15,
-        "cases_failed": 0,
+        "benchmark_id": "re-hybrid-rag-v0.2",
+        "cases_total": 159,
+        "cases_passed": 142,
+        "cases_failed": 17,
+        # Judged on RE_POC acceptance targets, not on every case passing: the
+        # benchmark deliberately contains a band the retriever is measured as
+        # unable to answer (OPEN_DECISIONS D-11). Note this fixture is a
+        # *passing* one with 17 failed cases -- that is the point.
+        "acceptance": {
+            "evidence_recall_at_10": 0.9137,
+            "evidence_recall_target": 0.90,
+            "evidence_recall_meets_target": True,
+            "abstention_by_band": {
+                "subject_outside_domain": {"held": 5, "total": 5},
+                "entity_absent_from_corpus": {"held": 7, "total": 7},
+                "near_miss_domain_subject": {"held": 3, "total": 8},
+            },
+            "abstention_decidable_bands_perfect": True,
+            "meets_acceptance_targets": True,
+        },
     },
     "E-DOMAIN-MATRIX": {"domain_count": 4, "passed": True, "fixture_only": True},
 }
@@ -188,14 +204,51 @@ def test_opro_best_below_baseline_blocks(tmp_path):
     assert any("below baseline" in e for e in errors)
 
 
-def test_partial_m1_benchmark_blocks(tmp_path):
-    def mutate(records):
-        payload = dict(PAYLOADS["E-M1-RE-DEMO"], cases_passed=14, cases_failed=1)
-        records["E-M1-RE-DEMO"]["stdout"] = json.dumps(payload)
-        records["E-M1-RE-DEMO"]["stdout_sha256"] = sha(records["E-M1-RE-DEMO"]["stdout"])
-    decision, errors = decide(write_pack(tmp_path, mutate=mutate))
+def _with_m1(records, **overrides):
+    acceptance = dict(PAYLOADS["E-M1-RE-DEMO"]["acceptance"], **overrides.pop("acceptance", {}))
+    payload = dict(PAYLOADS["E-M1-RE-DEMO"], acceptance=acceptance, **overrides)
+    if overrides.get("acceptance_absent"):
+        payload.pop("acceptance", None)
+        payload.pop("acceptance_absent", None)
+    records["E-M1-RE-DEMO"]["stdout"] = json.dumps(payload)
+    records["E-M1-RE-DEMO"]["stdout_sha256"] = sha(records["E-M1-RE-DEMO"]["stdout"])
+
+
+def test_m1_recall_below_target_blocks(tmp_path):
+    """The acceptance target is the gate now, so it has to be able to fail."""
+    decision, errors = decide(write_pack(tmp_path, mutate=lambda r: _with_m1(
+        r, acceptance={"evidence_recall_at_10": 0.81, "evidence_recall_meets_target": False,
+                       "meets_acceptance_targets": False})))
     assert decision == "AMBER"
-    assert any("not fully passing" in e for e in errors)
+    assert any("Recall@10" in e for e in errors)
+
+
+def test_m1_missing_a_decidable_abstention_band_blocks(tmp_path):
+    """Near-miss abstention is allowed to be imperfect. The two bands that are
+    decidable from corpus statistics are not -- missing one of those is a
+    defect, not the known D-11 limitation."""
+    decision, errors = decide(write_pack(tmp_path, mutate=lambda r: _with_m1(
+        r, acceptance={"abstention_by_band": {"subject_outside_domain": {"held": 4, "total": 5}},
+                       "abstention_decidable_bands_perfect": False,
+                       "meets_acceptance_targets": False})))
+    assert decision == "AMBER"
+    assert any("decidable bands" in e for e in errors)
+
+
+def test_m1_evidence_without_an_acceptance_block_blocks(tmp_path):
+    """A run from before the demo reported acceptance metrics cannot be judged
+    against them, so it must not pass by silently skipping the check."""
+    decision, errors = decide(write_pack(tmp_path, mutate=lambda r: _with_m1(r, acceptance_absent=True)))
+    assert decision == "AMBER"
+    assert any("no acceptance block" in e for e in errors)
+
+
+def test_m1_run_that_meets_targets_with_failing_cases_is_green(tmp_path):
+    """The inverse guard: 17 of 159 cases fail in the default fixture and the
+    gate must still be GREEN, or the gate is back to demanding a benchmark
+    that only contains questions the retriever already answers."""
+    decision, errors = decide(write_pack(tmp_path))
+    assert decision == "GREEN", errors
 
 
 def test_single_domain_matrix_does_not_demonstrate_a_shared_kernel(tmp_path):
