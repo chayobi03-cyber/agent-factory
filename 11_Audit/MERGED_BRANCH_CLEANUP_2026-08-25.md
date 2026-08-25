@@ -1,14 +1,44 @@
-# Merged-Branch Cleanup — prepared 2026-08-25, NOT YET EXECUTED
+# Merged-Branch Cleanup — executed 2026-08-25
 
-> **Status: PREPARED, NOT EXECUTED.** Deletion was attempted from the session that
-> produced this record and refused with `HTTP 403` on every ref delete — that
-> session's credentials permit pushes but not deletions, and the GitHub MCP server
-> exposes no branch-deletion tool. The branches are still on the remote.
-> Run **Option A** below (one dispatch, works from a phone) or **Option B** from a
-> local clone, then change this heading.
+> **Status: EXECUTED 2026-08-25.** Run
+> [32823162740](https://github.com/chayobi03-cyber/agent-factory/actions/runs/32823162740)
+> deleted 31 branches via `workflow_dispatch` in `delete` mode. The remote went
+> from 41 branches to 10, matching the predicted keep-set exactly. Every deleted
+> SHA remains reachable from `main`, so nothing was lost and any of them can be
+> restored from the table at the end of this file.
 >
-> Since 2026-08-25 the trunk move folded `p0/opro-baseline` into `main`, so it now
-> classifies as safe too and this operation closes **D-06** along with D-05.
+> This closes **D-05** and, because the trunk move had folded
+> `p0/opro-baseline` into `main`, **D-06** with it.
+>
+> The dispatch path stays in place and is safe to re-run: it re-derives the safe
+> set every time, so a future run cleans up whatever has since become merged and
+> refuses everything else.
+
+## What was deleted
+
+| | |
+|---|---|
+| Before | 41 branches |
+| Deleted | 31 |
+| After | 10 |
+
+**Kept, and why** — the predicted set, matched exactly:
+
+| Branch | Why |
+|---|---|
+| `main` | canonical trunk (protected) |
+| `claude/handover-rxravc` | working branch (protected) |
+| `audit/evidence-chain-remediation` | 4 unmerged commits — PR #1, the branch D-09 depended on surviving |
+| `p1/domain-matrix-workflow-v0.1` | 53 unmerged commits |
+| `governance/ci-pr-execution-lessons-2026-08-20` | 47 unmerged commits |
+| `p0/re-domain-pack-v0.1` | 10 unmerged commits |
+| `p1/re-domain-pack-v0.1` | 9 unmerged commits |
+| `p0/opro-baseline-m1b-history-20260819` | 7 unmerged commits — the M1-B history branch the refactor plan requires be retained |
+| `p0/m1b-ingestion-v1b` | 4 unmerged commits |
+| `fix/rc-schema-drift-e11a663a` | 1 unmerged commit |
+
+Trunk verified unchanged after the deletion: `main` at `1939fb7`, Context Guard
+PASS, RC-01..08 PASS, pytest 120/120.
 
 ## What was verified
 

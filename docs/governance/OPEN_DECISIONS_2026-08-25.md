@@ -6,13 +6,11 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01, D-02, D-03, D-04, D-07 and D-09 resolved 2026-08-25. Resolved
-entries are kept as the record of why.
+**Status:** eight of nine resolved 2026-08-25 — D-01 through D-07 and D-09.
+Resolved entries are kept as the record of why.
 
-**Still open — and neither is a judgement call I can make:** D-05 and D-06 both
-require deleting remote refs, which returns `HTTP 403` from an agent session;
-they need one command from a local clone. D-08 is about this repository's public
-visibility and belongs to its owner.
+**One open:** D-08, this repository's public visibility, which belongs to its
+owner rather than to anyone acting on their behalf.
 
 ---
 
@@ -244,6 +242,12 @@ no live contract to the trunk.
 
 ## D-05 — Execute the prepared branch deletion
 
+> **RESOLVED 2026-08-25 — executed.** Run
+> [32823162740](https://github.com/chayobi03-cyber/agent-factory/actions/runs/32823162740)
+> deleted 31 branches. The remote went 41 → 10, matching the predicted keep-set
+> exactly. Every deleted SHA remains reachable from `main`; trunk verified
+> unchanged afterwards (Context Guard PASS, RC-01..08 PASS, pytest 120/120).
+
 30 remote branches were each verified to carry **zero** commits not already
 reachable from the trunk. Deleting them loses no history.
 
@@ -281,8 +285,10 @@ line and proposing to rebuild ~6,000 lines that already existed.
 
 ## D-06 — When to retire `p0/opro-baseline`
 
-> **Folded into D-05.** It is now fully merged into `main`, so the cleanup
-> classifies it as safe and removes it in the same dispatch. No separate step.
+> **RESOLVED 2026-08-25 — retired with D-05.** `p0/opro-baseline` was fully
+> merged into `main`, so the cleanup classified it as safe and removed it in the
+> same dispatch. The branch name that gave this project its trunk for 239
+> commits no longer exists; `main` is the only trunk.
 
 Kept as a transition pointer during the trunk move. It is now fully contained in
 `main`, and CI no longer triggers on it.
@@ -404,3 +410,25 @@ silence is not success.
 `verify_artifact_sha256.py` closes the contract's item 14 directly: it reports
 observed and expected digests and exits non-zero on mismatch, so
 `independently_verified_digest` can be produced by a tool instead of by hand.
+
+### How D-05 and D-06 were closed
+
+The blocker was never the decision — it was that deleting a remote ref returns
+`HTTP 403` from an agent session, so the work waited on someone opening a laptop
+while 41 branches accumulated.
+
+`.github/workflows/branch-cleanup.yml` removed that dependency: a
+`workflow_dispatch` job that re-derives the safe set, prints it with restore SHAs
+to the job summary, and deletes only on an explicit `delete` mode *plus* a typed
+`DELETE`. Run 1 was a dry run; run 2 executed. Both from a phone.
+
+The prediction held exactly — 31 deleted, 10 kept, no surprises in either
+direction. Two of the kept mattered specifically:
+`audit/evidence-chain-remediation`, which D-09 depended on surviving, and
+`p0/opro-baseline-m1b-history-20260819`, which `ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md`
+requires be retained.
+
+The workflow stays. It re-derives its set every run, so it is safe to dispatch
+again whenever branches accumulate — the condition `11_Audit/LSN-0001` identified
+as the cause of cross-branch plan divergence now has a one-tap remedy instead of
+a documented procedure nobody runs.
