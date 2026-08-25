@@ -252,7 +252,15 @@ returned `HTTP 403` — that session's credentials permit pushes but not ref
 deletions, and the GitHub MCP server exposes no branch-deletion tool. The
 repository owner has `admin`, so this succeeds from a normal local clone.
 
-**Step-by-step procedure:** `11_Audit/MERGED_BRANCH_CLEANUP_2026-08-25.md`. It
+**One dispatch, from anything with a browser including a phone:**
+`.github/workflows/branch-cleanup.yml` — *Actions → Merged Branch Cleanup → Run
+workflow*. Dry-run is the default and prints the full table with restore SHAs to
+the job summary; deleting requires both selecting `delete` and typing `DELETE`,
+so a stray tap cannot do it. `main` and the active working branch are refused
+regardless of what the merge check says. This exists because the 403 above is a
+credential limit, not a reason for the work to wait on a laptop.
+
+**Or from a local clone:** `11_Audit/MERGED_BRANCH_CLEANUP_2026-08-25.md`. It
 re-derives the safe set against *your* current `main` rather than trusting a
 hardcoded list, prints `SAFE` / `KEEP` per branch, and deletes only what it just
 proved safe. A branch that has gained commits since the snapshot shows `KEEP` and
@@ -260,7 +268,10 @@ is skipped automatically — including `audit/evidence-chain-remediation`, which
 must survive (D-09). Restore SHAs are in the same file; deletion is reversible
 with `git push origin <sha>:refs/heads/<name>`.
 
-The verifier was dry-run on 2026-08-25 and reproduces 30 `SAFE` / 8 `KEEP`.
+Both paths classify identically; the shared logic was dry-run on 2026-08-25.
+The set was 30 when this entry was written and is **31** now that the trunk move
+folded `p0/opro-baseline` into `main` — which is why nothing here acts on a
+stored list. **That also means this one operation closes D-06.**
 
 Rationale: LSN-0001 named the ambient condition — many stale branches, no single
 canonical trunk — as the cause of a session re-deriving its plan from the wrong
@@ -269,6 +280,9 @@ line and proposing to rebuild ~6,000 lines that already existed.
 ---
 
 ## D-06 — When to retire `p0/opro-baseline`
+
+> **Folded into D-05.** It is now fully merged into `main`, so the cleanup
+> classifies it as safe and removes it in the same dispatch. No separate step.
 
 Kept as a transition pointer during the trunk move. It is now fully contained in
 `main`, and CI no longer triggers on it.
