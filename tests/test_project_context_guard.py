@@ -16,7 +16,7 @@ from scripts.validate_project_context import (
 def test_project_context_constants_are_canonical():
     assert EXPECTED_PROJECT == "agent-factory"
     assert EXPECTED_REPOSITORY == "chayobi03-cyber/agent-factory"
-    assert EXPECTED_BRANCH == "p0/opro-baseline"
+    assert EXPECTED_BRANCH == "main"
     assert EXPECTED_GOVERNANCE_NAMESPACE == "AgentFactory"
 
 

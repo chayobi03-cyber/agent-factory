@@ -1,7 +1,7 @@
 ---
 project_id: agent-factory
 repository: chayobi03-cyber/agent-factory
-branch: p0/opro-baseline
+branch: main
 governance_namespace: AgentFactory
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
 forbidden:
@@ -16,7 +16,7 @@ forbidden:
 ## Canonical identity
 - project_id: `agent-factory`
 - repository: `chayobi03-cyber/agent-factory`
-- branch: `p0/opro-baseline`
+- branch: `main`
 - governance_namespace: `AgentFactory`
 - external_project_reference: `chayobi03-cyber/investment` (boundary reference only)
 

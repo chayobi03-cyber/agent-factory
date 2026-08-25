@@ -4,11 +4,12 @@ phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
 project_id: agent-factory
 repository: chayobi03-cyber/agent-factory
-working_branch: p0/opro-baseline
+working_branch: main
 governance_namespace: AgentFactory
 audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927
 canonical_scope: docs/governance/AGENT_FACTORY_SCOPE_V1.md
 canonical_roadmap: docs/ROADMAP_WBS.md
+refactor_plan: docs/governance/ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md
 forensic_record: 11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md
 forensic_anchor: 41259e233e5273ad2fe1577e71935702956476b1
 current_task: M1 RE Hybrid RAG first working slice (Domain Pack + synthetic corpus + hybrid retrieval + benchmark), building on a locally-verified-GREEN Factory Kernel
@@ -36,19 +37,20 @@ last_completed:
   - factory_kernel_green_confirmed_by_observed_github_actions_run_on_p0_opro_baseline
   - first_green_pull_request_triggered_run_restores_evidence_only_branch_pr_pattern
   - architecture_refactor_plan_and_ci_pr_execution_lessons_recovered_to_trunk
+  - divergent_default_branch_folded_into_trunk_main_now_fully_contained
+  - canonical_branch_moved_to_main_across_guard_state_handoff_and_ci_triggers
+  - thirty_fully_merged_branches_deleted_from_remote_with_restore_shas_recorded
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
-  - trunk reconciliation: retire the divergent default branch so a fresh clone starts on the canonical line
-  - branch hygiene: delete the 31 fully-merged branches that make cross-branch plan divergence likely
+  - hold the trunk on `main` now that the divergent default branch is folded in and the merged-branch backlog is cleared
 current_risk:
   - M1 corpus/benchmark is a first slice (8 docs / 15 cases), not yet the RE_POC.md PoC target size
-  - default branch `main` is not the trunk; a fresh clone lands on a 1-commit stale line whose state pointer would fail the Context Guard
-  - 31 fully-merged branches remain on the remote, the same ambient condition LSN-0001 identified as the cause of cross-branch plan divergence
   - governance contradiction - validator REQUIRED_HANDOFF_CONSTRAINTS pins `RE_domain_implementation` as absolutely forbidden, while ROADMAP_WBS makes M1 RE the next milestone after Factory Kernel GREEN; state wording (`..._until_kernel_gate`) is time-bounded but the handoff/validator token is not
+  - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI
 next_action:
-  - decide trunk reconciliation (main vs p0/opro-baseline) and delete the 31 merged branches
   - resolve the RE_domain_implementation constraint contradiction before expanding M1 beyond the first slice
   - expand M1 RE corpus/benchmark toward the RE_POC.md target (20+ documents / 150 cases)
+  - consider recovering the domain-matrix assets (AF-004/M9) still stranded on p1/domain-matrix-workflow-v0.1, taking files only and leaving the quarantined investment artifacts behind
 blocked_until:
   - RE_domain_implementation constraint is reconciled with the roadmap before M1 work beyond the delivered first slice
 forbidden:

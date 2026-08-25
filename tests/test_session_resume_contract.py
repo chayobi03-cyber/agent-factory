@@ -256,7 +256,7 @@ def test_resolve_branch_uses_base_ref_for_pull_request_events(monkeypatch):
     wrong branch in its expected identity. Resolution must key off the base
     ref, which is the branch the work would land in."""
     monkeypatch.setenv("GITHUB_HEAD_REF", "claude/some-unrelated-branch-name")
-    monkeypatch.setenv("GITHUB_BASE_REF", "p0/opro-baseline")
+    monkeypatch.setenv("GITHUB_BASE_REF", "main")
     monkeypatch.setenv("GITHUB_REF_NAME", "refs/pull/14/merge")
 
     original = resume.run_git
@@ -266,7 +266,7 @@ def test_resolve_branch_uses_base_ref_for_pull_request_events(monkeypatch):
         lambda *args: "" if args == ("branch", "--show-current") else original(*args),
     )
     branch, source = resume.resolve_branch()
-    assert branch == "p0/opro-baseline"
+    assert branch == "main"
     assert source == "github.base_ref"
 
 
@@ -275,7 +275,7 @@ def test_resolve_branch_uses_ref_name_for_push_events(monkeypatch):
     once GITHUB_BASE_REF is absent (it is only set for pull_request events)."""
     monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
     monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
-    monkeypatch.setenv("GITHUB_REF_NAME", "p0/opro-baseline")
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
 
     original = resume.run_git
     monkeypatch.setattr(
@@ -284,5 +284,5 @@ def test_resolve_branch_uses_ref_name_for_push_events(monkeypatch):
         lambda *args: "" if args == ("branch", "--show-current") else original(*args),
     )
     branch, source = resume.resolve_branch()
-    assert branch == "p0/opro-baseline"
+    assert branch == "main"
     assert source == "github.ref"

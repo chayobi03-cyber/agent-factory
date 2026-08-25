@@ -9,7 +9,7 @@ from pathlib import Path
 
 EXPECTED_PROJECT = "agent-factory"
 EXPECTED_REPOSITORY = "chayobi03-cyber/agent-factory"
-EXPECTED_BRANCH = "p0/opro-baseline"
+EXPECTED_BRANCH = "main"
 EXPECTED_GOVERNANCE_NAMESPACE = "AgentFactory"
 BOUNDARY_REFERENCE_FILES = {
     "docs/governance/AGENT_FACTORY_SCOPE_V1.md",

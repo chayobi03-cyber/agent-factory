@@ -1,10 +1,19 @@
 name: Factory Kernel Regression
 
 on:
+  # `main` is the canonical trunk (EXPECTED_BRANCH in
+  # scripts/validate_project_context.py). `p0/**` was dropped when the trunk
+  # moved: with the guard keyed to `main`, a push to a p0/* branch would
+  # trigger this workflow only to fail the Context Guard by definition.
+  # These filters name the *base* branch for pull_request, so the
+  # evidence-only-branch/PR pattern in
+  # docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md still triggers:
+  # an evidence branch opened against `main` matches here and resolves the
+  # guard through GITHUB_BASE_REF.
   push:
-    branches: [main, p0/**]
+    branches: [main]
   pull_request:
-    branches: [main, p0/**]
+    branches: [main]
 
 jobs:
   kernel-regression:
