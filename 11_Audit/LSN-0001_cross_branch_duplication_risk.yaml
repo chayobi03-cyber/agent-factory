@@ -1,0 +1,44 @@
+lesson_id: LSN-0001
+source_run_id: N/A (cross-session document review, not a workflow run)
+failure_type: process_divergence
+pattern: >
+  A separate session/agent produced a full "next steps" plan referencing
+  `main` HEAD `ded89e1`, proposing to (re)build FactoryRuntime, a Workflow
+  State Machine, CER Gate enforcement, idempotency, retry/loop limits, and
+  a Run Manifest from scratch -- all of which already existed, implemented
+  and tested, on `p0/opro-baseline` (`src/factory_runtime.py`,
+  `src/cer_runtime.py`). `main` and `p0/opro-baseline` diverged 236 commits
+  ago and were never reconciled; `main` sat at ~2,969 total LOC (2 files in
+  src/) while `p0/opro-baseline` had grown to ~9,135 LOC. Following the
+  document literally would have meant rebuilding ~6,000+ lines of existing,
+  working functionality in a third divergent line of effort, and would
+  have discarded the M1 RE Hybrid RAG first slice just completed on
+  `p0/opro-baseline`.
+root_cause: >
+  No single canonical branch was ever established as "the" AgentFactory
+  trunk after the two lines diverged. Each session/agent instance re-derives
+  its plan from whatever branch it happens to be pointed at, with no
+  branch-identity check as a mandatory first step.
+lesson_text: >
+  Before adopting *any* cross-session handoff document's plan, verify which
+  branch/commit it was written against and diff it against the branch you
+  are actually about to work on. A plan is only as good as its assumed
+  baseline. Specifically: check `git merge-base` divergence and top-level
+  file/LOC counts between the plan's stated branch and your working branch
+  before accepting any "build X from scratch" instruction -- X may already
+  exist elsewhere. Separately, verbatim-adopt the document's own good
+  discipline: "a doc-only change is not an implementation" and "a code
+  change without a matching contract/spec update is not complete" -- these
+  held up under independent review and were already this project's
+  practice.
+candidate_change:
+  component: governance
+  change_type: policy
+  details:
+    action: Establish p0/opro-baseline as canonical trunk (or merge into main); do not develop both in parallel without reconciliation.
+    mandatory_first_step: "Any new session must run `git merge-base --is-ancestor` + LOC/file-count diff between its assumed baseline branch and the actual target branch before proposing 'build X' work."
+validation_plan:
+  benchmark_cases: []
+  success_metric: "no future session re-implements functionality that already exists on another unmerged branch"
+  regression_guard: N/A (process lesson, not a code regression)
+status: candidate

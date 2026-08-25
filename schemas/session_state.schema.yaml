@@ -1,0 +1,104 @@
+schema_id: session_state
+schema_version: 1.2.0
+purpose: Canonical machine-readable session continuation pointer for CER-governed work sessions
+properties:
+  state_version:
+    type: integer
+    required: true
+  session_id:
+    type: string
+    required: true
+  phase:
+    type: string
+    required: true
+  gate:
+    type: string
+    required: true
+  project_id:
+    type: string
+    required: true
+    const: agent-factory
+  repository:
+    type: string
+    required: true
+    const: chayobi03-cyber/agent-factory
+  working_branch:
+    type: string
+    required: true
+  governance_namespace:
+    type: string
+    required: true
+    const: AgentFactory
+  audited_baseline_sha:
+    type: string|null
+    required: true
+  task_id:
+    type: string
+    required: true
+  current_task:
+    type: string
+    required: true
+  last_completed:
+    type: list[string]
+    required: true
+  current_focus:
+    type: list[string]
+    required: true
+  next_action:
+    type: list[string]
+    required: true
+  blocked_until:
+    type: list[string]
+    required: true
+  forbidden:
+    type: list[string]
+    required: true
+  handoff:
+    type: string
+    required: true
+  resume_contract:
+    type: string
+    required: true
+  resume_status:
+    type: enum[UNVERIFIED, RESUME_ALLOWED, RESUME_REVIEW_REQUIRED, RESUME_BLOCKED]
+    required: true
+  resume_checks:
+    type: list[string]
+    required: true
+    const:
+      - RC-01_state_vs_git_branch
+      - RC-02_state_vs_git_head_checkpoint
+      - RC-03_state_vs_audited_baseline
+      - RC-04_state_vs_handoff
+      - RC-05_handoff_vs_git
+      - RC-06_handoff_vs_audited_baseline
+      - RC-07_gate_vs_forbidden
+      - RC-08_required_context
+  checkpoint:
+    type: mapping
+    required: true
+    properties:
+      mode:
+        type: enum[exact, descendant]
+        required: true
+      checkpoint_sha:
+        type: sha1
+        required: true
+  updated_at_utc:
+    type: datetime
+    required: true
+rules:
+  - name: identity_explicit
+    description: project_id, repository, working_branch, and governance_namespace are explicit canonical identity fields.
+  - name: no_self_referential_head
+    description: Current Git HEAD is resolved from Git/CI context and is not stored as a self-referential field in the same state commit.
+  - name: baseline_immutable
+    description: audited_baseline_sha may not be silently replaced.
+  - name: checkpoint_relation_explicit
+    description: checkpoint.mode defines whether current HEAD must exactly equal or descend from checkpoint.checkpoint_sha.
+  - name: state_is_not_evidence
+    description: State values do not constitute execution evidence or audit verification.
+  - name: progressive_disclosure
+    description: Resume loads state first, then required handoff/evidence only.
+  - name: fail_closed_resume
+    description: Any RC-01..RC-08 identity contradiction blocks resume; required-context ambiguity yields REVIEW_REQUIRED.

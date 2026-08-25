@@ -1,0 +1,124 @@
+name: Factory Kernel Regression
+
+on:
+  # `main` is the canonical trunk (EXPECTED_BRANCH in
+  # scripts/validate_project_context.py). `p0/**` was dropped when the trunk
+  # moved: with the guard keyed to `main`, a push to a p0/* branch would
+  # trigger this workflow only to fail the Context Guard by definition.
+  # These filters name the *base* branch for pull_request, so the
+  # evidence-only-branch/PR pattern in
+  # docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md still triggers:
+  # an evidence branch opened against `main` matches here and resolves the
+  # guard through GITHUB_BASE_REF.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  kernel-regression:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
+      CER_TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      CER_EXECUTION_IDENTITY_REQUIRED: "1"
+    defaults:
+      run:
+        shell: bash --noprofile --norc -eo pipefail {0}
+    steps:
+      - name: Checkout exact execution target SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test runner
+        run: python -m pip install --upgrade pytest pyyaml
+      - name: Project / Repository / Context Guard
+        run: python3 scripts/validate_project_context.py
+      - name: Capture CI execution identity
+        run: |
+          set -o pipefail
+          checked_out_sha="$(git rev-parse HEAD)"
+          target_sha="${CER_TARGET_SHA}"
+          target_sha_match=false
+          if [[ "$checked_out_sha" == "$target_sha" ]]; then
+            target_sha_match=true
+          fi
+          cat > ci-execution-identity.json <<EOF
+          {
+            "repository": "${GITHUB_REPOSITORY}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "event": "${GITHUB_EVENT_NAME}",
+            "run_id": ${GITHUB_RUN_ID},
+            "run_attempt": ${GITHUB_RUN_ATTEMPT},
+            "github_sha": "${GITHUB_SHA}",
+            "target_sha": "${target_sha}",
+            "checked_out_sha": "${checked_out_sha}",
+            "target_sha_match": ${target_sha_match},
+            "head_ref": "${{ github.head_ref || github.ref_name }}",
+            "ref": "${GITHUB_REF}"
+          }
+          EOF
+          printf 'target_sha=%s\nchecked_out_sha=%s\ntarget_sha_match=%s\n' "$target_sha" "$checked_out_sha" "$target_sha_match" > execution-identity.txt
+          [[ "$target_sha_match" == "true" ]]
+      - name: CER Resume RC-01..RC-08
+        run: |
+          set -o pipefail
+          python3 scripts/validate_session_resume.py 2>&1 | tee resume.stdout.txt
+          status=${PIPESTATUS[0]}
+          printf 'resume_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
+      - name: Factory Demo E2E
+        run: |
+          set -o pipefail
+          python3 scripts/factory_demo.py --scenario all --json 2>&1 | tee factory-demo.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 'factory_demo_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
+      - name: Deterministic Kernel Harness
+        run: |
+          set -o pipefail
+          python3 scripts/run_harness.py --json 2>&1 | tee factory-harness.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 'harness_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
+      - name: OPRO Baseline E2E
+        run: |
+          set -o pipefail
+          python3 scripts/opro_baseline.py --json 2>&1 | tee opro-baseline.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 'opro_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
+      - name: M1 RE Hybrid RAG Benchmark
+        run: |
+          set -o pipefail
+          python3 scripts/re_demo.py --json 2>&1 | tee re-demo.stdout.json
+          status=${PIPESTATUS[0]}
+          printf 're_demo_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
+      - name: Unit and Kernel Regression
+        run: |
+          set -o pipefail
+          pytest -q 2>&1 | tee pytest.stdout.txt
+          status=${PIPESTATUS[0]}
+          printf 'pytest_exit_code=%s\n' "$status" >> ci-exit-codes.env
+          exit "$status"
+      - name: Publish machine evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factory-kernel-machine-evidence
+          path: |
+            ci-execution-identity.json
+            execution-identity.txt
+            ci-exit-codes.env
+            resume.stdout.txt
+            factory-demo.stdout.json
+            factory-harness.stdout.json
+            opro-baseline.stdout.json
+            re-demo.stdout.json
+            pytest.stdout.txt

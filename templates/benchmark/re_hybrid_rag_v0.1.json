@@ -1,0 +1,127 @@
+{
+  "benchmark_id": "re-hybrid-rag-v0.1",
+  "version": "0.1.0",
+  "judge": "deterministic-recall-and-abstention",
+  "llm_judge_is_ground_truth": false,
+  "note": "First working slice against docs/RE_POC.md's query taxonomy (9 categories). NOT the full 150-case PoC target -- 12 cases sized to be reviewable while giving real pass/fail signal on the M1 RE Domain Pack (src/re_domain_pack.py) against a small synthetic corpus (src/re_corpus.py).",
+  "cases": [
+    {
+      "case_id": "RE-BC-001",
+      "query": "What is the CISPR 32 Class B radiated emission limit at 3 meters for 30 to 230 MHz?",
+      "query_type": "definition_factual",
+      "expected_document_ids": ["DOC-RE-002"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-002",
+      "query": "Which document describes the chamber CH-2 antenna setup and calibration?",
+      "query_type": "document_location",
+      "expected_document_ids": ["DOC-RE-003"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-003",
+      "query": "How did the 132 MHz emission peak on EUT-7 change between the original test and the retest after mitigation?",
+      "query_type": "revision_comparison",
+      "expected_document_ids": ["DOC-RE-001"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-004",
+      "query": "What caused the radiated emission limit exceedance on EUT-12 at 340 MHz?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": ["DOC-RE-004"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-005",
+      "query": "A device shows a radiated emission peak from its switching power supply output cable; what failure mode is likely and has it been seen before?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": ["DOC-RE-004"],
+      "expect_abstain": false,
+      "min_recall": 0.5
+    },
+    {
+      "case_id": "RE-BC-006",
+      "query": "Does EUT-19 exceed the CISPR 32 Class B radiated emission limit anywhere from 30 MHz to 1 GHz?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": ["DOC-RE-005"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-007",
+      "query": "What mitigation techniques are typically recommended for a radiated emission exceedance, and in what order?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": ["DOC-RE-006"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-008",
+      "query": "How long should a DUT be powered up and warmed up before radiated emissions measurement begins?",
+      "query_type": "engineering_report",
+      "expected_document_ids": ["DOC-RE-007"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-009",
+      "query": "What is the radiated emissions performance of EUT-99 at 5.8 GHz?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true
+    },
+    {
+      "case_id": "RE-BC-010",
+      "query": "What ground loop precautions should be taken during radiated emissions testing?",
+      "query_type": "definition_factual",
+      "expected_document_ids": ["DOC-RE-007"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-011",
+      "query": "Was a ferrite choke used as mitigation for the EUT-7 132 MHz peak, and was it effective?",
+      "query_type": "evidence_for_or_against_hypothesis",
+      "expected_document_ids": ["DOC-RE-001"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-012",
+      "query": "What is the recommended lunar regolith shielding thickness for radiated emissions?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true
+    },
+    {
+      "case_id": "RE-BC-013",
+      "query": "What caused EUT-24 to fail radiated emissions at 185 MHz?",
+      "query_type": "condition_cause_analysis",
+      "expected_document_ids": ["DOC-RE-008"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-014",
+      "query": "What wiring harness routing guidelines reduce radiated emissions from common-mode current?",
+      "query_type": "recommended_additional_test",
+      "expected_document_ids": ["DOC-RE-009"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "RE-BC-015",
+      "query": "Why did the EUT-24 wiring harness act as an unintentional antenna at 185 MHz?",
+      "query_type": "re_failure_diagnosis",
+      "expected_document_ids": ["DOC-RE-008"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    }
+  ]
+}

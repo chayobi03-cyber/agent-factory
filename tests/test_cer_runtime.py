@@ -38,3 +38,12 @@ def test_blocked_state_is_terminal():
     except ValueError:
         return
     raise AssertionError("BLOCKED must not transition back into execution")
+
+
+def test_snapshot_is_immutable():
+    snapshot = CERSnapshot("CER", "1.0.0", "SNAP-1", "hash", "commit", ["RISK"])
+    try:
+        snapshot.policy_version = "2.0.0"
+    except (AttributeError, TypeError):
+        return
+    raise AssertionError("CER Snapshot must be immutable")

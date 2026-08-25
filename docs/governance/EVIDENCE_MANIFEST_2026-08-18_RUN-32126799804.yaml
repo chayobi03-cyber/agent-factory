@@ -1,0 +1,65 @@
+schema_version: 1
+target_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
+intended_head_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
+execution_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
+checkout_sha: 2adbf5304491cde04f02fb997f766b40460ccf60
+repository: chayobi03-cyber/agent-factory
+branch_or_ref: p0/opro-baseline
+workflow: Factory Kernel Regression
+workflow_id: null
+run_id: 32126799804
+run_attempt: 1
+event: pull_request
+execution_identity:
+  github_sha: 8d9390196a7017d92ba7644158413441b9a8b4b1
+  target_sha_match: true
+  workflow_ref: refs/pull/6/merge
+job:
+  job_id: 95679046613
+  name: kernel-regression
+  conclusion: success
+rc_verdicts:
+  RC-01: PASS
+  RC-02: PASS
+  RC-03: PASS
+  RC-04: PASS
+  RC-05: PASS
+  RC-06: PASS
+  RC-07: PASS
+  RC-08: PASS
+factory_kernel:
+  benchmark_id: factory-kernel-v0.1
+  passed: 10
+  failed: 0
+  green: true
+opro:
+  regression_result: PASS
+  promotion_status: CANDIDATE
+pytest:
+  passed: 44
+  failed: 0
+  exit_code: 0
+factory_demo:
+  exit_code: 0
+artifact:
+  id: 9320646477
+  name: factory-kernel-machine-evidence
+  size_bytes: 3775
+  github_digest: sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d
+  independently_verified_digest: sha256:11f629929a433945447af706662353885f1419c437017be938d5b18fafa1010d
+  digest_match: true
+evidence_files:
+  - ci-execution-identity.json
+  - ci-exit-codes.env
+  - execution-identity.txt
+  - resume.stdout.txt
+  - factory-demo.stdout.json
+  - factory-harness.stdout.json
+  - opro-baseline.stdout.json
+  - pytest.stdout.txt
+gate:
+  audit_evidence_chain: GREEN
+  resume_status: RESUME_ALLOWED
+  m1_b_status: NOW_ELIGIBLE
+classification: VERIFIED_PRIMARY_EXECUTION_EVIDENCE
+created_at_utc: 2026-08-18T19:27:06+09:00

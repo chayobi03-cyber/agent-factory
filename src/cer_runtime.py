@@ -1,9 +1,12 @@
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Sequence
+import uuid
 
 from interfaces import CERDecision, CERSnapshot, Claim, EvidenceCandidate
 
 DECISIONS = {"PASS", "REVIEW", "CHANGE", "BLOCK"}
+
 
 @dataclass(frozen=True)
 class WorkflowRunState:
@@ -15,6 +18,7 @@ class WorkflowRunState:
     checkpoint_ref: str | None = None
     parent_run_id: str | None = None
     history: tuple[str, ...] = field(default_factory=tuple)
+
 
 @dataclass(frozen=True)
 class HumanDecision:
@@ -28,8 +32,9 @@ class HumanDecision:
     resulting_state: str
     correction_ref: str | None = None
 
+
 class CERGateRuntime:
-    """Deterministic reference implementation of CER and HOTL gate semantics."""
+    """Deterministic CER/HOTL gate semantics; BLOCK is fail-closed."""
 
     def evaluate(
         self,
@@ -40,27 +45,50 @@ class CERGateRuntime:
         claims: Sequence[Claim],
         evidence: Sequence[EvidenceCandidate],
         risk_level: str = "low",
-        human_approved: bool = False,
     ) -> CERDecision:
-        evidence_ids = {item.evidence_id for item in evidence}
-        unsupported = [claim for claim in claims if not any(eid in evidence_ids for eid in claim.evidence_ids)]
+        evidence_by_id = {item.evidence_id: item for item in evidence}
+        claim_ids = tuple(claim.claim_id for claim in claims)
+        evidence_refs = tuple(sorted(evidence_by_id))
+        unsupported = [claim for claim in claims if not any(eid in evidence_by_id for eid in claim.evidence_ids)]
+        contradictory = [
+            claim for claim in claims
+            if len(claim.evidence_ids) >= 2
+            and len({evidence_by_id[eid].text.strip() for eid in claim.evidence_ids if eid in evidence_by_id}) >= 2
+        ]
 
         if unsupported:
             result = "BLOCK"
             human_required = False
-        elif risk_level in {"critical", "high"} and not human_approved:
+            findings = tuple(f"UNSUPPORTED_CLAIM:{claim.claim_id}" for claim in unsupported)
+            actions = ("REMEDIATE_EVIDENCE",)
+        elif contradictory:
             result = "REVIEW"
             human_required = True
+            findings = tuple(f"CONTRADICTORY_EVIDENCE:{claim.claim_id}" for claim in contradictory)
+            actions = ("HUMAN_REVIEW_REQUIRED", "RECONCILE_EVIDENCE")
+        elif risk_level in {"critical", "high"}:
+            result = "REVIEW"
+            human_required = True
+            findings = (f"HIGH_RISK:{risk_level}",)
+            actions = ("HUMAN_REVIEW_REQUIRED",)
         else:
             result = "PASS"
             human_required = False
+            findings = ()
+            actions = ()
 
         return CERDecision(
-            decision_id=f"CER-{snapshot.snapshot_id}-{gate_id}",
+            decision_id=f"CER-{snapshot.snapshot_id}-{gate_id}-{uuid.uuid4().hex[:8]}",
             result=result,
             gate_id=gate_id,
             run_id=run_id,
             human_required=human_required,
+            snapshot_id=snapshot.snapshot_id,
+            triggered_findings=findings,
+            evidence_ids=evidence_refs,
+            claim_ids=claim_ids,
+            required_actions=actions,
+            decided_at=datetime.now(timezone.utc).isoformat(),
         )
 
     @staticmethod
@@ -69,13 +97,29 @@ class CERGateRuntime:
             raise ValueError("Human decision is only applicable to REVIEW decisions")
         if human.run_id != decision.run_id or human.gate_id != decision.gate_id:
             raise ValueError("Human decision does not match CER decision context")
+        if human.snapshot_id != decision.snapshot_id:
+            raise ValueError("Human decision snapshot does not match CER decision snapshot")
         if human.decision == "APPROVE":
-            return CERDecision(decision.decision_id + "-H", "PASS", decision.gate_id, decision.run_id, False)
-        if human.decision in {"REJECT", "ESCALATE"}:
-            return CERDecision(decision.decision_id + "-H", "BLOCK", decision.gate_id, decision.run_id, False)
-        if human.decision in {"MODIFY", "REQUEST_RETRY"}:
-            return CERDecision(decision.decision_id + "-H", "CHANGE", decision.gate_id, decision.run_id, False)
-        raise ValueError(f"Unsupported human decision: {human.decision}")
+            result, actions = "PASS", ()
+        elif human.decision in {"REJECT", "ESCALATE"}:
+            result, actions = "BLOCK", ("STOP_GOVERNED_PATH",)
+        elif human.decision in {"MODIFY", "REQUEST_RETRY"}:
+            result, actions = "CHANGE", ("CREATE_CORRECTION_LINEAGE",)
+        else:
+            raise ValueError(f"Unsupported human decision: {human.decision}")
+        return CERDecision(
+            decision_id=decision.decision_id + "-H-" + human.decision,
+            result=result,
+            gate_id=decision.gate_id,
+            run_id=decision.run_id,
+            human_required=False,
+            snapshot_id=decision.snapshot_id,
+            triggered_findings=decision.triggered_findings,
+            evidence_ids=decision.evidence_ids,
+            claim_ids=decision.claim_ids,
+            required_actions=actions,
+            decided_at=datetime.now(timezone.utc).isoformat(),
+        )
 
     @staticmethod
     def assert_can_continue(decision: CERDecision) -> None:
@@ -91,7 +135,7 @@ def transition(state: WorkflowRunState, target: str) -> WorkflowRunState:
         "CREATED": {"RUNNING", "ABORTED"},
         "RUNNING": {"WAITING", "REVIEW_REQUIRED", "RETRYING", "BLOCKED", "COMPLETED", "FAILED", "ABORTED"},
         "WAITING": {"RUNNING", "REVIEW_REQUIRED", "BLOCKED", "ABORTED"},
-        "REVIEW_REQUIRED": {"RUNNING", "BLOCKED", "ABORTED"},
+        "REVIEW_REQUIRED": {"RUNNING", "WAITING", "BLOCKED", "ABORTED"},
         "RETRYING": {"RUNNING", "FAILED", "BLOCKED", "ABORTED"},
         "BLOCKED": set(),
         "COMPLETED": set(),
