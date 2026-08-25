@@ -6,8 +6,13 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01 and D-04 resolved, D-03 partly (2 of 3 PRs closed). D-09 opened
-by the check D-03 asked for. Six items open.
+**Status:** D-01, D-02, D-03, D-04, D-07 and D-09 resolved 2026-08-25. Resolved
+entries are kept as the record of why.
+
+**Still open — and neither is a judgement call I can make:** D-05 and D-06 both
+require deleting remote refs, which returns `HTTP 403` from an agent session;
+they need one command from a local clone. D-08 is about this repository's public
+visibility and belongs to its owner.
 
 ---
 
@@ -94,6 +99,11 @@ against over-correction. Suite: 92 passed.
 ---
 
 ## D-02 — Context Guard rejects any local feature-branch checkout
+
+> **RESOLVED 2026-08-25 — Option B.** `AGENTFACTORY_TARGET_BRANCH` declares the
+> landing target for a local checkout, and is ignored outright whenever
+> `GITHUB_ACTIONS` is set, so it cannot weaken CI. Three regression tests cover
+> the override, the CI lockout, and unchanged behaviour when it is absent.
 
 `scripts/validate_project_context.py` resolves the branch as:
 
@@ -271,6 +281,11 @@ and is not.
 
 ## D-07 — `RESUME_CONTRACT_V1.md`
 
+> **RESOLVED 2026-08-25 — kept as history, and its header corrected.** The file
+> declared itself *"Active governance contract"* while nothing referenced it, so
+> two documents each claimed to be the live v1.1 resume contract. It now carries
+> a superseded banner naming what replaced it. Retained, not deleted.
+
 Indexed **SUPERSEDED** by `CER_SESSION_CONTINUITY_CONTRACT_V1.md`. Both are
 labelled "v1.1" with the same purpose; only the Continuity Contract is read by
 code. Keep as history, or delete. Low stakes either way — recorded so it stops
@@ -291,6 +306,10 @@ were internal.
 ---
 
 ## D-09 — The trunk declares an evidence-chain contract it cannot enforce
+
+> **RESOLVED 2026-08-25 — recovered and extended.** The gate tooling is on the
+> trunk, wired into a CI workflow, and covers all six gates rather than the four
+> it knew about. Recovery notes at the end of this entry.
 
 Found while confirming D-03's disposition for PR #1, and the reason that PR is
 still open.
@@ -340,3 +359,34 @@ gate, and every evidence claim citing this contract inherits that.
 Once D-01 is resolved: expand the M1 RE corpus and benchmark from the delivered
 first slice (8 documents / 15 cases) toward the `RE_POC.md` target (20+
 documents / 150 cases).
+
+### How D-09 was closed
+
+`evidence_gate.py`, `capture_execution.py`, `verify_artifact_sha256.py` and both
+schemas were recovered individually from `audit/evidence-chain-remediation` —
+all stdlib-only, no dependency on the branch they came from.
+
+Recovering them unchanged would have shipped a gate that certifies a subset:
+`EXPECTED_IDS` named four gates, and the workflow now runs six.
+`E-M1-RE-DEMO` and `E-DOMAIN-MATRIX` both postdate the 2026-08-18 branch, so a
+GREEN decision would have covered four of six while reading as complete. Both
+are now required, with checks matching what those gates actually emit — a
+partially-passing M1 benchmark blocks, and a matrix that drops below two domains
+or stops being `fixture_only` blocks.
+
+The workflow was adapted rather than copied: its `push` triggers named
+`audit/**` and `p0/**`, branches that are no longer the canonical line;
+`PYTHONPATH` lacked the repository root that `src.`-prefixed imports need; and
+`pyyaml` was missing from the install step.
+
+**The gate was verified to fail, not merely to pass.** A gate that cannot fail
+is the whole subject of this entry. Locally, against real captured evidence from
+all six gates: complete evidence returns `GREEN` (exit 0), while tampered stdout
+(digest mismatch), a missing gate record, evidence from another commit, and a
+non-zero exit each return `AMBER` (exit 1). Seventeen tests encode these,
+including one that a pytest run producing no result line must not pass —
+silence is not success.
+
+`verify_artifact_sha256.py` closes the contract's item 14 directly: it reports
+observed and expected digests and exits non-zero on mismatch, so
+`independently_verified_digest` can be produced by a tool instead of by hand.

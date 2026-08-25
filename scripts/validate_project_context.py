@@ -88,6 +88,18 @@ def resolve_branch() -> tuple[str, str]:
     """
     branch = run_git("branch", "--show-current")
     if branch:
+        # Local-only escape hatch (2026-08-25, OPEN_DECISIONS D-02). The base-ref
+        # fix above taught CI to ask "where would this land"; locally the guard
+        # still asked "what is this checkout called", so it failed on every
+        # feature branch and the only way to verify anything was to name the
+        # checkout after the trunk. Teaching contributors to rename a branch to
+        # get past a guard is worse than the friction it removes.
+        #
+        # Ignored outright whenever GITHUB_ACTIONS is set, so it cannot weaken
+        # CI: there the resolution below is the only path, exactly as before.
+        override = os.environ.get("AGENTFACTORY_TARGET_BRANCH")
+        if override and not os.environ.get("GITHUB_ACTIONS"):
+            return override, "local.target_branch_override"
         return branch, "git.branch"
     base_ref = os.environ.get("GITHUB_BASE_REF")
     if base_ref:

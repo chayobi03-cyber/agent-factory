@@ -1,0 +1,189 @@
+name: Audit Evidence Chain
+
+on:
+  # `main` is the trunk. The `audit/**` and `p0/**` push triggers this file
+  # shipped with in 2026-08 named branches that are no longer the canonical
+  # line; a push to them would run this gate against a non-canonical tree.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  evidence-chain:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
+      EXPECTED_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Checkout audited source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test runner
+        run: python -m pip install --upgrade pytest pyyaml
+
+      - name: Prepare evidence directory
+        run: mkdir -p evidence/raw
+
+      - name: Factory Demo E2E evidence
+        continue-on-error: true
+        run: |
+          python3 scripts/capture_execution.py \
+            --evidence-id E-FACTORY-DEMO \
+            --output evidence/raw/factory-demo.json \
+            -- python3 scripts/factory_demo.py --scenario all --json
+
+      - name: Deterministic Harness evidence
+        continue-on-error: true
+        run: |
+          python3 scripts/capture_execution.py \
+            --evidence-id E-HARNESS \
+            --output evidence/raw/factory-harness.json \
+            -- python3 scripts/run_harness.py --json
+
+      - name: OPRO Baseline evidence
+        continue-on-error: true
+        run: |
+          python3 scripts/capture_execution.py \
+            --evidence-id E-OPRO-BASELINE \
+            --output evidence/raw/opro-baseline.json \
+            -- python3 scripts/opro_baseline.py --json
+
+      - name: M1 RE Hybrid RAG evidence
+        continue-on-error: true
+        run: |
+          python3 scripts/capture_execution.py \
+            --evidence-id E-M1-RE-DEMO \
+            --output evidence/raw/re-demo.json \
+            -- python3 scripts/re_demo.py --json
+
+      - name: Domain Matrix evidence
+        continue-on-error: true
+        run: |
+          python3 scripts/capture_execution.py \
+            --evidence-id E-DOMAIN-MATRIX \
+            --output evidence/raw/domain-matrix.json \
+            -- python3 scripts/domain_matrix_demo.py --json
+
+      - name: Pytest evidence
+        continue-on-error: true
+        run: |
+          python3 scripts/capture_execution.py \
+            --evidence-id E-PYTEST \
+            --output evidence/raw/pytest.json \
+            -- pytest -q
+
+      - name: Validate evidence records
+        continue-on-error: true
+        run: |
+          python3 scripts/evidence_gate.py evidence/raw \
+            --expected-commit "${EXPECTED_COMMIT}" \
+            --json | tee evidence/raw/evidence-gate.json
+
+      - name: Build expected/observed/verified/decision manifest
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          raw = {}
+          for p in sorted(Path('evidence/raw').glob('*.json')):
+              raw[p.name] = json.loads(p.read_text(encoding='utf-8'))
+          manifest = {
+              'manifest_version': '1.0.0',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
+              'expected_results': {
+                  'factory_demo': 'PASS',
+                  'harness_passed': 10,
+                  'harness_failed': 0,
+                  'harness_green': True,
+                  'opro_regression': 'PASS',
+                  'opro_promotion_status': 'CANDIDATE',
+                  'm1_re_benchmark_fully_passing': True,
+                  'domain_matrix_passed': True,
+                  'domain_matrix_fixture_only': True,
+                  'pytest_failed': 0,
+              },
+              'observed_results': raw,
+              'verified_results': {
+                  'commit_sha': os.environ['GITHUB_SHA'],
+                  'stdout_and_stderr_hashes_verified_by_evidence_gate': True,
+                  'artifact_digest_verified_by_GitHub_upload': False,
+                  'workflow_job_id_external_resolution_required': True,
+              },
+              'decision_results': {
+                  'evidence_gate': 'PENDING_ARTIFACT_AND_EXTERNAL_JOB_VERIFICATION',
+                  'opro_freeze': 'BLOCKED',
+                  'opro_promotion': 'BLOCKED',
+              },
+          }
+          Path('evidence/manifest.json').write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+      - name: Upload raw evidence pack
+        id: raw_artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-evidence-raw
+          path: evidence/
+          if-no-files-found: error
+
+      - name: Record raw artifact metadata
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          metadata = {
+              'artifact_name': 'audit-evidence-raw',
+              'artifact_id': int(os.environ['ARTIFACT_ID']),
+              'artifact_digest': os.environ['ARTIFACT_DIGEST'],
+              'artifact_url': os.environ['ARTIFACT_URL'],
+              'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
+              'head_sha': os.environ['GITHUB_SHA'],
+              'repository': os.environ['GITHUB_REPOSITORY'],
+          }
+          Path('artifact-metadata.json').write_text(
+              json.dumps(metadata, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+        env:
+          ARTIFACT_ID: ${{ steps.raw_artifact.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.raw_artifact.outputs.artifact-digest }}
+          ARTIFACT_URL: ${{ steps.raw_artifact.outputs.artifact-url }}
+
+      - name: Upload artifact metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-evidence-metadata
+          path: artifact-metadata.json
+          if-no-files-found: error
+
+      - name: Enforce evidence chain gate
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          gate = json.loads(Path('evidence/raw/evidence-gate.json').read_text(encoding='utf-8'))
+          if gate['decision'] != 'GREEN':
+              raise SystemExit('Audit Evidence Chain gate is not GREEN')
+          PY
