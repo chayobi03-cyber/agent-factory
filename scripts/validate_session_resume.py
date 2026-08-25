@@ -83,6 +83,17 @@ def resolve_branch() -> tuple[str, str]:
     """
     branch = run_git("branch", "--show-current")
     if branch:
+        # Same local-only escape hatch validate_project_context.resolve_branch
+        # already honours (OPEN_DECISIONS D-02). It was added there and not
+        # here, so the Context Guard passed on a feature checkout and RC-01
+        # then blocked on the same checkout for the same reason -- half a fix
+        # reads as a working one until you run both.
+        #
+        # Ignored outright whenever GITHUB_ACTIONS is set, so it cannot weaken
+        # CI: there the resolution below is the only path, exactly as before.
+        override = os.environ.get("AGENTFACTORY_TARGET_BRANCH")
+        if override and not os.environ.get("GITHUB_ACTIONS"):
+            return override, "local.target_branch_override"
         return branch, "git.branch"
     base_ref = os.environ.get("GITHUB_BASE_REF")
     if base_ref:

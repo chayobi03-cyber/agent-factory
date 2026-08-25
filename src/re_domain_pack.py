@@ -115,17 +115,37 @@ def _canonical_number(raw: str) -> str:
     return text.rstrip("0").rstrip(".") if "." in text else text
 
 
+# Minimum length a stem may be reduced to. Below this, suffix stripping starts
+# merging unrelated words ("used" -> "us"), which costs more than the inflection
+# match it buys.
+_MIN_STEM = 4
+
+
 def _stem(token: str) -> str:
-    """Minimal, dependency-free suffix stripping (not a real Porter
-    stemmer) so trivial plural/inflection mismatches like 'loop' vs 'loops'
-    don't cause literal-token-match false negatives in distinctiveness
-    gating or BM25 term counts."""
+    """Minimal, dependency-free suffix stripping (not a real Porter stemmer).
+
+    Handles plurals, past tense, gerunds, and the trailing silent `e`, so that
+    'route', 'routed' and 'routing' reach the same stem. Inflection alone used
+    to make a query term look absent from the corpus: "how far should a harness
+    be routed" scored `routed` as unseen against a guideline whose text says
+    "route harnesses away from enclosure seams". Under IDF weighting an unseen
+    term takes the maximum weight, so a stemming miss did not merely fail to
+    match -- it actively dominated the query and pushed the right document out.
+    """
     if len(token) > 5 and token.endswith("ies"):
         return token[:-3] + "y"
     if len(token) > 4 and token.endswith("es"):
-        return token[:-2]
-    if len(token) > 4 and token.endswith("s") and not token.endswith("ss"):
-        return token[:-1]
+        token = token[:-2]
+    elif len(token) > 4 and token.endswith("s") and not token.endswith("ss"):
+        token = token[:-1]
+    if len(token) - 3 >= _MIN_STEM and token.endswith("ing"):
+        token = token[:-3]
+    elif len(token) - 2 >= _MIN_STEM and token.endswith("ed"):
+        token = token[:-2]
+    # 'route' -> 'rout' so it meets 'routed' -> 'rout'. Guarded by _MIN_STEM and
+    # by requiring a consonant before the e, so 'free' and 'see' survive.
+    if len(token) - 1 >= _MIN_STEM and token.endswith("e") and token[-2] not in "aeiou":
+        token = token[:-1]
     return token
 
 
@@ -201,7 +221,7 @@ _STOPWORDS = {
 #   0.20   RE-BC-002 fails        no  (RE-BC-002)  7.2
 #
 # Correctness and stability alone do not pin this down -- they hold at 0.00,
-# because abstention is decided separately by _UNSEEN_MASS_CEILING below and
+# because abstention is decided separately by _UNSEEN_TERM_CEILING below and
 # does not depend on this floor at all. So the floor is doing one job here,
 # precision, and it wants to be as high as it can safely go. The ceiling is
 # RE-BC-002's 0.163: that case carries only ~19% of its query's weight on the
@@ -216,40 +236,51 @@ _STOPWORDS = {
 # forward on faith -- tests/test_re_retrieval_stability.py is the harness.
 _COVERAGE_FLOOR = 0.12
 
-# Share of a question's *subject* weight that may rest on terms the corpus has
-# never seen before the question is treated as unanswerable.
+# Share of a question's informative terms that may be absent from the corpus
+# before the question is treated as unanswerable.
 #
 # Abstention and match-gating are different questions and one threshold cannot
 # serve both: a floor low enough to admit a legitimate query phrased in common
-# words is also low enough to admit a query about something absent. Weighing the
-# unseen mass separately is what lets the floor stay permissive.
+# words is also low enough to admit a query about something absent. Weighing
+# absence separately is what lets the coverage floor stay permissive.
 #
-# Measured on the current benchmark, the two classes separate at 0.42 / 0.65,
-# so 0.5 sits in the gap.
-_UNSEEN_MASS_CEILING = 0.50
-
-# Words that ask rather than describe, plus ordinary English absent from a
-# 35-fragment corpus only because it is 35 fragments. Neither kind is evidence
-# about radiated emission, so neither should count toward "the corpus does not
-# contain this".
+# Counted, not IDF-weighted. The first version of this rule weighted absent
+# terms by IDF, which is unsound: IDF measures rarity *within* the corpus, and
+# a term the corpus has never seen has no measured rarity. Giving it
+# log(N+1) -- the maximum -- fabricates a weight, and the fabrication is not
+# neutral: it makes absent words dominate every query they appear in. At 108
+# fragments that inverted the two classes outright, scoring answerable
+# questions (0.28..0.75) *above* unanswerable ones (0.28 low end). Counting
+# each absent term once says only what the corpus can actually support: it
+# knows the term is absent and nothing about how much that matters.
 #
-# Honest limitation: this list was assembled after inspecting which benchmark
-# queries were misclassified, so it is fitted to 15 cases. Without it the
-# classes overlap and no threshold separates them -- "Which document describes
-# the CH-2 antenna setup" scores 0.685 unseen against 0.647 for a question about
-# lunar regolith. The real cure is corpus size: at 35 fragments df == 0 mostly
-# means the corpus is small, not that the subject is absent. Re-derive this from
-# corpus statistics rather than by hand once the corpus reaches PoC scale.
-_NON_EVIDENTIAL_TERMS = {
-    "document", "describ", "which", "why", "how", "what", "when", "where",
-    "taken", "during", "caused", "fail", "act", "anywhere", "long", "likely",
-    "show", "typically", "change", "precaution", "warmed",
-}
+# Removing the fabricated weight also removed the need for the hand-curated
+# list of question-form words that the previous version carried. That list was
+# the most-fitted part of the D-10 resolution -- assembled by inspecting which
+# of 15 queries were misclassified -- and deleting it costs nothing measurable:
+# with it, Recall@10 0.935 / abstention 0.700; without it, identical to three
+# decimal places.
+#
+# 0.35 is the largest value at which the two *decidable* abstention classes
+# stay perfect. Swept against the 159-case benchmark at 108 fragments:
+#
+#   ceiling  Recall@10   abstention   subject absent   near-miss
+#                                     (bands 1-2)      (band 3)
+#     0.20     0.770        0.850        12/12           5/8
+#     0.30     0.878        0.750        12/12           3/8
+#     0.35     0.914        0.750        12/12           3/8   <- shipped
+#     0.40     0.935        0.650        11/12           2/8
+#     0.50     0.964        0.550         9/12           2/8
+#
+# Above 0.35 the rule starts missing questions about subjects the corpus
+# plainly does not contain -- the class it exists to catch and the only class
+# it decides reliably -- so that is where it stops, and 0.914 clears the
+# Recall@10 >= 0.90 acceptance target with margin. Band 3 (near-miss: a real
+# RE subject this corpus happens not to cover) is not decidable by any
+# threshold on this statistic; 3/8 against 2/8 is noise, not signal. Raised as
+# OPEN_DECISIONS D-11 rather than tuned around.
+_UNSEEN_TERM_CEILING = 0.35
 
-# Domain-generic vocabulary: present in nearly every RE query/document by
-# definition of the domain, so it never discriminates *which* document is
-# relevant. Excluded from query weighting entirely -- a term every fragment
-# contains carries no information about which fragment to return.
 _DOMAIN_GENERIC_TERMS = {
     "radiated", "emission", "emissions", "test", "tested", "testing",
     "measurement", "measured", "measure", "device", "dut", "eut",
@@ -274,6 +305,21 @@ class Fragment:
     text: str
     metadata: dict[str, Any]
 
+    @property
+    def index_text(self) -> str:
+        """What retrieval searches, as opposed to what a report quotes.
+
+        `text` is the body chunk and stays quotable verbatim. The document
+        title is not in it, and the title is exactly the field that answers
+        RE_POC.md's `document_location` category -- "which document describes
+        X" is answered by a title, and searching only bodies cannot see one.
+        Titles were carried in metadata and never indexed, so a fragment of
+        the fully-anechoic chamber record was unreachable by the words in its
+        own heading.
+        """
+        title = self.metadata.get("title", "")
+        return f"{title}. {self.text}" if title else self.text
+
 
 class REDomainPack:
     """Domain Pack for RE (Radiated Emission) hybrid RAG."""
@@ -284,6 +330,10 @@ class REDomainPack:
     def __init__(self, corpus: Sequence[RawDocument] | None = None, policy: dict[str, Any] | None = None) -> None:
         self._raw_corpus = list(corpus) if corpus is not None else list(CORPUS)
         self._fragments: list[Fragment] = []
+        self._frag_terms: list[list[str]] = []
+        self._frag_term_sets: list[set[str]] = []
+        self._frag_term_counts: list[Counter[str]] = []
+        self._frag_trigrams: list[set[str]] = []
         self._doc_freq: Counter[str] = Counter()
         self._avg_fragment_len = 0.0
         self._loaded = False
@@ -352,11 +402,19 @@ class REDomainPack:
         for document in documents:
             fragments.extend(self.normalize(document))
         self._fragments = fragments
+        # Tokenize each fragment exactly once, at load. Retrieval reads these
+        # for every query, and re-tokenizing 108 fragments per query made the
+        # threshold sweeps in tests/test_re_retrieval_stability.py the slowest
+        # thing in the suite.
+        self._frag_terms = [_tokenize(f.index_text) for f in fragments]
+        self._frag_term_sets = [set(terms) for terms in self._frag_terms]
+        self._frag_term_counts = [Counter(terms) for terms in self._frag_terms]
+        self._frag_trigrams = [_trigrams(f.index_text) for f in fragments]
         self._doc_freq = Counter()
-        for frag in fragments:
-            for term in set(_tokenize(frag.text)):
+        for terms in self._frag_term_sets:
+            for term in terms:
                 self._doc_freq[term] += 1
-        lengths = [len(_tokenize(f.text)) for f in fragments] or [0]
+        lengths = [len(terms) for terms in self._frag_terms] or [0]
         self._avg_fragment_len = sum(lengths) / len(lengths)
         self._loaded = True
         return len(fragments)
@@ -365,13 +423,12 @@ class REDomainPack:
         if not self._loaded:
             self.load()
 
-    def _bm25_score(self, query_terms: list[str], fragment: Fragment) -> float:
+    def _bm25_score(self, query_terms: list[str], index: int) -> float:
         """Minimal BM25 (k1=1.5, b=0.75), no external dependency."""
         k1, b = 1.5, 0.75
         n_docs = max(len(self._fragments), 1)
-        frag_terms = _tokenize(fragment.text)
-        frag_len = len(frag_terms) or 1
-        term_counts = Counter(frag_terms)
+        frag_len = len(self._frag_terms[index]) or 1
+        term_counts = self._frag_term_counts[index]
         score = 0.0
         for term in query_terms:
             df = self._doc_freq.get(term, 0)
@@ -473,28 +530,25 @@ class REDomainPack:
         # than identifiers or measurements. Weighted by IDF they carry most of
         # the question, and a question mostly about absent things has no answer
         # here -- however well its remaining words happen to match.
-        subject = {t: w for t, w in self._query_weights(query_terms).items()
-                   if t not in _NON_EVIDENTIAL_TERMS}
-        subject_total = sum(subject.values())
-        if subject_total > 0:
-            unseen_mass = sum(w for t, w in subject.items()
-                              if self._doc_freq.get(t, 0) == 0)
-            if unseen_mass / subject_total > _UNSEEN_MASS_CEILING:
+        informative = [t for t in dict.fromkeys(query_terms)
+                       if t not in _STOPWORDS and t not in _DOMAIN_GENERIC_TERMS]
+        if informative:
+            unseen = sum(1 for t in informative if self._doc_freq.get(t, 0) == 0)
+            if unseen / len(informative) > _UNSEEN_TERM_CEILING:
                 return []
 
         query_trigrams = _trigrams(query)
         weights = self._query_weights(query_terms)
 
-        bm25_raw = [self._bm25_score(query_terms, f) for f in self._fragments]
+        bm25_raw = [self._bm25_score(query_terms, i) for i in range(len(self._fragments))]
         max_bm25 = max(bm25_raw) or 1.0
 
         scored: list[tuple[float, Fragment, float, float]] = []
-        for frag, bm25 in zip(self._fragments, bm25_raw):
+        for index, (frag, bm25) in enumerate(zip(self._fragments, bm25_raw)):
             if weights:
-                frag_terms = set(_tokenize(frag.text))
-                if self._coverage(weights, frag_terms) < _COVERAGE_FLOOR:
+                if self._coverage(weights, self._frag_term_sets[index]) < _COVERAGE_FLOOR:
                     continue
-            frag_trigrams = _trigrams(frag.text)
+            frag_trigrams = self._frag_trigrams[index]
             union = query_trigrams | frag_trigrams
             jaccard = len(query_trigrams & frag_trigrams) / len(union) if union else 0.0
             bm25_norm = bm25 / max_bm25

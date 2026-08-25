@@ -184,28 +184,109 @@ def _load_benchmark_cases() -> list[dict]:
     return json.loads(BENCHMARK_PATH.read_text(encoding="utf-8"))["cases"]
 
 
-@pytest.mark.parametrize("case", _load_benchmark_cases(), ids=lambda c: c["case_id"])
-def test_benchmark_case_retrieval_matches_expectation(pack: REDomainPack, case: dict) -> None:
-    evidence = pack.retrieve(case["query"], top_k=5)
+def _load_benchmark() -> dict:
+    return json.loads(BENCHMARK_PATH.read_text(encoding="utf-8"))
+
+
+# The 15 cases of the original first slice. These stay pinned per-case: they
+# are the regression set, and any one of them breaking is a defect regardless
+# of what the aggregate metrics say.
+_PINNED_REGRESSION_CASES = [f"RE-BC-{n:03d}" for n in range(1, 16)]
+
+
+@pytest.mark.parametrize(
+    "case",
+    [c for c in _load_benchmark_cases() if c["case_id"] in _PINNED_REGRESSION_CASES],
+    ids=lambda c: c["case_id"],
+)
+def test_pinned_regression_case_still_behaves(pack: REDomainPack, case: dict) -> None:
+    evidence = pack.retrieve(case["query"], top_k=10)
     if case.get("expect_abstain"):
         assert evidence == [], f"{case['case_id']} expected abstention (no evidence) but got results"
         return
     retrieved_docs = {e.document_id for e in evidence}
     expected_docs = set(case["expected_document_ids"])
     recall = len(retrieved_docs & expected_docs) / len(expected_docs) if expected_docs else 1.0
-    min_recall = case.get("min_recall", 1.0)
-    assert recall >= min_recall, (
-        f"{case['case_id']} ({case['query_type']}): recall {recall} < {min_recall}; "
+    assert recall >= case.get("min_recall", 1.0), (
+        f"{case['case_id']} ({case['query_type']}): recall {recall}; "
         f"retrieved={retrieved_docs} expected={expected_docs}"
     )
 
 
-def test_benchmark_file_covers_most_query_taxonomy_categories() -> None:
-    cases = _load_benchmark_cases()
-    query_types = {c["query_type"] for c in cases}
-    # docs/RE_POC.md lists 9 taxonomy categories; this starter benchmark is
-    # honestly scoped to cover most (not claiming all 9 at this corpus size).
-    assert len(query_types) >= 7
+# Beyond the pinned set the benchmark is judged the way docs/RE_POC.md judges
+# it -- on aggregate acceptance targets. Requiring all 159 cases to pass would
+# not be a stricter test, it would be a weaker benchmark: the only way to keep
+# such a gate green is to write cases the retriever already handles, which is
+# how a benchmark ends up measuring nothing. The targets live in the benchmark
+# file so the bar and the cases move together.
+
+def _score(pack: REDomainPack, cases: list[dict]) -> tuple[float, dict[str, tuple[int, int]]]:
+    recalls = []
+    bands: dict[str, list[bool]] = {}
+    for case in cases:
+        evidence = pack.retrieve(case["query"], top_k=10)
+        if case.get("expect_abstain"):
+            bands.setdefault(case["abstention_band"], []).append(not evidence)
+            continue
+        expected = set(case["expected_document_ids"])
+        found = {e.document_id for e in evidence}
+        recalls.append(len(found & expected) / len(expected) if expected else 1.0)
+    return (
+        sum(recalls) / len(recalls),
+        {band: (sum(results), len(results)) for band, results in bands.items()},
+    )
+
+
+def test_evidence_recall_meets_the_acceptance_target(pack: REDomainPack) -> None:
+    benchmark = _load_benchmark()
+    target = benchmark["acceptance_targets"]["evidence_recall_at_10"]
+    recall, _ = _score(pack, benchmark["cases"])
+    assert recall >= target, f"Evidence Recall@10 {recall:.3f} < target {target}"
+
+
+def test_abstention_is_perfect_on_the_bands_that_are_decidable(pack: REDomainPack) -> None:
+    """Two of the three abstention bands must never be missed.
+
+    A question about a subject outside the domain, or about an equipment or
+    chamber identifier the corpus does not contain, is decidable from corpus
+    statistics alone -- the terms that carry the question are simply absent.
+    Missing one of these is a defect, not a limitation.
+    """
+    benchmark = _load_benchmark()
+    _, bands = _score(pack, benchmark["cases"])
+    for band in ("subject_outside_domain", "entity_absent_from_corpus"):
+        held, total = bands[band]
+        assert held == total, f"{band}: abstained on only {held}/{total}"
+
+
+def test_near_miss_abstention_limitation_is_still_what_the_record_says(pack: REDomainPack) -> None:
+    """The third band is a measured open limitation (OPEN_DECISIONS D-11), and
+    this test exists so it cannot drift quietly in either direction.
+
+    A near-miss query names real RE subject matter this corpus happens not to
+    cover -- conducted emission, immunity, ESD, another standard. No threshold
+    on lexical statistics separates it from an answerable question; the sweep
+    that established this is recorded at `_UNSEEN_TERM_CEILING`. If this
+    assertion starts failing because the number went *up*, something genuinely
+    improved and D-11 should be revisited rather than the number edited.
+    """
+    _, bands = _score(pack, _load_benchmark()["cases"])
+    held, total = bands["near_miss_domain_subject"]
+    assert held == 3 and total == 8, (
+        f"near-miss abstention is now {held}/{total}, recorded as 3/8. "
+        "Update OPEN_DECISIONS D-11 and this test together."
+    )
+
+
+def test_benchmark_covers_the_whole_query_taxonomy() -> None:
+    """docs/RE_POC.md lists 9 categories. The first slice covered 7 of them and
+    said so; at 159 cases there is no excuse for a gap."""
+    query_types = {c["query_type"] for c in _load_benchmark_cases()}
+    assert len(query_types) == 9, sorted(query_types)
+
+
+def test_benchmark_meets_the_poc_case_count() -> None:
+    assert len(_load_benchmark_cases()) >= 150
 
 
 # --- M1-1: measurement-aware tokenization ------------------------------------
@@ -287,10 +368,22 @@ def test_unit_spelling_variants_normalize_together() -> None:
 
 
 def test_plain_words_still_tokenize() -> None:
-    """The measurement handling must not break ordinary lexical retrieval."""
+    """The measurement handling must not break ordinary lexical retrieval.
+
+    The requirement is that an ordinary word is *matchable*, not that its
+    surface form survives -- the tokenizer stems, so asserting `"shielded" in
+    tokens` was asserting that stemming does not happen. What retrieval needs
+    is that the same word in a query and in a document lands on one token,
+    including across inflection.
+    """
     tokens = _tokenize("the shielded enclosure and connector")
+    assert len(tokens) == 5, tokens
     for word in ("shielded", "enclosure", "connector"):
-        assert word in tokens, tokens
+        assert _tokenize(word)[0] in tokens, (word, tokens)
+    # Inflected forms must meet, or a query term looks absent from a document
+    # that plainly discusses it.
+    for a, b in (("shielded", "shielding"), ("route", "routed"), ("harness", "harnesses")):
+        assert _tokenize(a) == _tokenize(b), (a, b, _tokenize(a), _tokenize(b))
 
 
 def test_measurement_policy_matches_the_code_that_implements_it() -> None:

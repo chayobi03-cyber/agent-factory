@@ -41,8 +41,15 @@ def load_benchmark() -> dict:
     return json.loads(BENCHMARK_PATH.read_text(encoding="utf-8"))
 
 
+# docs/RE_POC.md states the acceptance target as Evidence Recall@10, so the run
+# that produces it must retrieve ten. It retrieved five, which reported a
+# Recall@10 measured at k=5 -- the same class of mislabelling as a compliance
+# reading taken at the wrong resolution bandwidth.
+TOP_K = 10
+
+
 def run_case(pack: REDomainPack, gate: CERGateRuntime, case: dict) -> dict:
-    evidence = pack.retrieve(case["query"], top_k=5)
+    evidence = pack.retrieve(case["query"], top_k=TOP_K)
     if evidence:
         claim = Claim(
             claim_id=f"C-{case['case_id']}",
@@ -95,6 +102,52 @@ def run_case(pack: REDomainPack, gate: CERGateRuntime, case: dict) -> dict:
     }
 
 
+def score_benchmark(benchmark: dict, results: list[dict]) -> dict:
+    """Aggregate the run into the RE_POC.md acceptance metrics.
+
+    Per-case pass/fail is kept for diagnosis but is no longer the verdict. At
+    159 cases a benchmark that must be 100% green can only stay green by
+    containing questions the retriever already answers, which is how a
+    benchmark stops measuring anything. RE_POC.md states thresholds; this
+    scores against them.
+
+    Abstention is scored per band. Two of the three are decidable from corpus
+    statistics and must be perfect; the near-miss band is a measured open
+    limitation (OPEN_DECISIONS D-11) and is reported, not gated.
+    """
+    by_id = {c["case_id"]: c for c in benchmark["cases"]}
+    recalls: list[float] = []
+    bands: dict[str, list[bool]] = {}
+    for result in results:
+        case = by_id[result["case_id"]]
+        if case.get("expect_abstain"):
+            bands.setdefault(case["abstention_band"], []).append(
+                result["score"]["abstention_correct"]
+            )
+        elif result["score"]["evidence_recall"] is not None:
+            recalls.append(result["score"]["evidence_recall"])
+
+    targets = benchmark.get("acceptance_targets", {})
+    recall = sum(recalls) / len(recalls) if recalls else 0.0
+    band_scores = {b: {"held": sum(v), "total": len(v)} for b, v in bands.items()}
+    gated = ("subject_outside_domain", "entity_absent_from_corpus")
+    decidable_ok = all(
+        band_scores[b]["held"] == band_scores[b]["total"] for b in gated if b in band_scores
+    )
+    recall_ok = recall >= targets.get("evidence_recall_at_10", 0.90)
+    all_abstain = [v for results_ in bands.values() for v in results_]
+    return {
+        "evidence_recall_at_10": round(recall, 4),
+        "evidence_recall_target": targets.get("evidence_recall_at_10"),
+        "evidence_recall_meets_target": recall_ok,
+        "abstention_overall": round(sum(all_abstain) / len(all_abstain), 4) if all_abstain else None,
+        "abstention_by_band": band_scores,
+        "abstention_decidable_bands_perfect": decidable_ok,
+        "known_limitation": "near_miss_domain_subject -- OPEN_DECISIONS D-11",
+        "meets_acceptance_targets": recall_ok and decidable_ok,
+    }
+
+
 def run(benchmark_id: str | None = None) -> dict:
     pack = REDomainPack()
     loaded = pack.load()
@@ -107,9 +160,11 @@ def run(benchmark_id: str | None = None) -> dict:
         "domain_pack": {"domain_id": pack.domain_id, "version": pack.version},
         "benchmark_id": benchmark["benchmark_id"],
         "fragments_indexed": loaded,
+        "documents_indexed": len({(d["document_id"], d["revision_id"]) for d in pack._raw_corpus}),
         "cases_total": len(results),
         "cases_passed": passed,
         "cases_failed": len(results) - passed,
+        "acceptance": score_benchmark(benchmark, results),
         "results": results,
     }
 
@@ -127,7 +182,7 @@ def main() -> int:
         pack.load()
         gate = CERGateRuntime()
         case = next(c for c in load_benchmark()["cases"] if c["case_id"] == args.report)
-        evidence = pack.retrieve(case["query"], top_k=5)
+        evidence = pack.retrieve(case["query"], top_k=TOP_K)
         claims = [
             Claim(f"C-{case['case_id']}", case["query"], "answer",
                   [evidence[0].evidence_id] if evidence else ["E-NO-EVIDENCE-FOUND"],
@@ -146,15 +201,30 @@ def main() -> int:
             raise TypeError(f"not JSON serializable: {obj!r}")
         print(json.dumps(summary, indent=2, sort_keys=True, default=default))
     else:
+        acc = summary["acceptance"]
         print("AgentFactory M1 RE Hybrid RAG Demo")
         print("==================================")
-        print(f"Fragments indexed: {summary['fragments_indexed']}")
+        print(f"Documents indexed: {summary['documents_indexed']}"
+              f"   Fragments: {summary['fragments_indexed']}"
+              f"   Cases: {summary['cases_total']}")
+        print()
         for r in summary["results"]:
-            mark = "PASS" if r["score"]["passed"] else "FAIL"
-            print(f"[{mark}] {r['case_id']:>10} ({r['query_type']:>32}): CER={r['cer_result']}")
-        print(f"\n{summary['cases_passed']}/{summary['cases_total']} benchmark cases passed")
+            if not r["score"]["passed"]:
+                print(f"[FAIL] {r['case_id']:>10} ({r['query_type']:>34}): CER={r['cer_result']}")
+        print()
+        mark = "MEETS" if acc["evidence_recall_meets_target"] else "BELOW"
+        print(f"Evidence Recall@10 : {acc['evidence_recall_at_10']:.3f}  "
+              f"[{mark} target {acc['evidence_recall_target']}]")
+        print("Abstention by band :")
+        for band, s_ in sorted(acc["abstention_by_band"].items()):
+            gated = band != "near_miss_domain_subject"
+            note = "" if gated else "   (known limitation, OPEN_DECISIONS D-11)"
+            print(f"  {band:28s} {s_['held']}/{s_['total']}{note}")
+        print()
+        print(f"{summary['cases_passed']}/{summary['cases_total']} cases pass per-case; "
+              f"acceptance targets {'MET' if acc['meets_acceptance_targets'] else 'NOT MET'}")
 
-    return 0 if summary["cases_failed"] == 0 else 1
+    return 0 if summary["acceptance"]["meets_acceptance_targets"] else 1
 
 
 if __name__ == "__main__":

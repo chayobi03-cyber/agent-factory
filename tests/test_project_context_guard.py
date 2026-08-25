@@ -1,5 +1,7 @@
+import importlib
 from pathlib import Path
 
+import pytest
 import yaml
 
 from scripts.validate_project_context import (
@@ -146,4 +148,54 @@ def test_absent_override_leaves_resolution_unchanged(monkeypatch):
     )
     branch, source = guard.resolve_branch()
     assert branch == "feature/some-local-work"
+    assert source == "git.branch"
+
+
+# --- D-02, second half: both validators must resolve the same way ------------
+#
+# The override was added to the Context Guard and not to the resume validator,
+# so on a feature checkout CONTEXT_GUARD=PASS sat directly above
+# RESUME_STATUS=RESUME_BLOCKED -- for the branch-name reason the override
+# exists to remove. These pin the two together rather than testing the second
+# copy in isolation, because the failure was the *disagreement*, not either
+# implementation on its own.
+
+
+@pytest.mark.parametrize(
+    "module_name",
+    ["scripts.validate_project_context", "scripts.validate_session_resume"],
+)
+def test_both_validators_honour_the_local_landing_target(monkeypatch, module_name):
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.setenv("AGENTFACTORY_TARGET_BRANCH", EXPECTED_BRANCH)
+
+    module = importlib.import_module(module_name)
+    original = module.run_git
+    monkeypatch.setattr(
+        module,
+        "run_git",
+        lambda *args: "feature/local" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = module.resolve_branch()
+    assert branch == EXPECTED_BRANCH
+    assert source == "local.target_branch_override"
+
+
+@pytest.mark.parametrize(
+    "module_name",
+    ["scripts.validate_project_context", "scripts.validate_session_resume"],
+)
+def test_neither_validator_honours_the_override_inside_ci(monkeypatch, module_name):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("AGENTFACTORY_TARGET_BRANCH", "anything-at-all")
+
+    module = importlib.import_module(module_name)
+    original = module.run_git
+    monkeypatch.setattr(
+        module,
+        "run_git",
+        lambda *args: "some-ci-checkout" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = module.resolve_branch()
+    assert branch == "some-ci-checkout"
     assert source == "git.branch"
