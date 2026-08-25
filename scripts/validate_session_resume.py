@@ -18,13 +18,36 @@ PROJECT = "agent-factory"
 GOVERNANCE_NAMESPACE = "AgentFactory"
 SUPPORTED_SCHEMA_VERSION = "1.2.0"
 FORWARD_BLOCK_GATES = {"NOT_GREEN", "BLOCKED", "HOLD", "INCONCLUSIVE"}
-REQUIRED_HANDOFF_CONSTRAINTS = {
+
+# Gates meaning the Factory Kernel gate has been cleared with observed primary
+# evidence. Reaching one discharges the kernel-gated constraint below.
+KERNEL_GATE_CLEARED_GATES = {"FACTORY_KERNEL_GREEN"}
+
+# Constraints that hold for the life of the project, independent of milestone.
+PERMANENT_HANDOFF_CONSTRAINTS = {
     "GEPA_implementation",
     "OPRO_promotion",
-    "RE_domain_implementation",
     "audited_baseline_redefinition",
     "PASS_without_primary_execution_evidence",
 }
+
+# Time-bounded constraint. RE domain work is held *behind* the Factory Kernel
+# gate, not forbidden outright: ROADMAP_WBS.md makes M1 RE Hybrid RAG the next
+# milestone after M0.5, and ARCHITECTURE_REFACTOR_PLAN_2026-08-19.md puts
+# `RE Domain Pack` immediately after `Factory Kernel GREEN`. Requiring it
+# unconditionally -- as this check did until 2026-08-25 -- made the validator
+# contradict the roadmap the moment the gate went GREEN, so the milestone it
+# gates could never be started without RC-07 failing. See
+# docs/governance/OPEN_DECISIONS_2026-08-25.md D-01.
+#
+# Both spellings are accepted: CURRENT_SESSION_STATE.yaml has always used the
+# `_until_kernel_gate` form, while the handoff front-matter and the older prose
+# wording used the bare one. They mean the same thing, and a handoff written
+# under either vocabulary still satisfies the check.
+KERNEL_GATED_CONSTRAINT_ALIASES = frozenset({
+    "RE_domain_implementation",
+    "RE_domain_implementation_until_kernel_gate",
+})
 
 
 @dataclass(frozen=True)
@@ -179,6 +202,26 @@ def resolve_target_sha(actual_head: str) -> tuple[str | None, bool, str]:
     return target_sha, actual_head == target_sha, "CER_TARGET_SHA + git.HEAD"
 
 
+def kernel_gate_cleared(gate: str) -> bool:
+    """True once the Factory Kernel gate has been cleared with observed evidence."""
+    return gate in KERNEL_GATE_CLEARED_GATES
+
+
+def constraints_satisfied(gate: str, declared: set[str]) -> bool:
+    """Check a declared constraint set against the gate it is evaluated under.
+
+    The permanent constraints are always required. The kernel-gated constraint
+    is required only while the gate it is bounded by is still closed -- once
+    cleared it is discharged, not deleted, so a document may keep declaring it
+    without failing and may drop it without failing either.
+    """
+    if not PERMANENT_HANDOFF_CONSTRAINTS.issubset(declared):
+        return False
+    if kernel_gate_cleared(gate):
+        return True
+    return bool(KERNEL_GATED_CONSTRAINT_ALIASES & declared)
+
+
 def _contains_any(text: str, phrases: tuple[str, ...]) -> bool:
     """Case-insensitive phrase matching with whitespace normalization."""
     normalized_text = re.sub(r"\s+", " ", text).strip().lower()
@@ -257,21 +300,34 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
     handoff_baseline_ok = handoff.get("baseline") == state["audited_baseline_sha"]
 
     forbidden = {str(item) for item in state.get("forbidden", [])}
+    gate = str(state["gate"])
+    # While the gate still blocks forward motion the state must itself carry the
+    # constraints holding optimizer promotion and RE domain work back. Once the
+    # kernel gate is cleared this whole branch short-circuits, so the kernel-gated
+    # token is only ever demanded while it is actually in force.
     gate_constraints_ok = (
-        state["gate"] not in FORWARD_BLOCK_GATES
-        or {"OPRO_promotion", "RE_domain_implementation"}.issubset(forbidden)
+        gate not in FORWARD_BLOCK_GATES
+        or (
+            "OPRO_promotion" in forbidden
+            and bool(KERNEL_GATED_CONSTRAINT_ALIASES & forbidden)
+        )
     )
     handoff_forbidden = handoff.get("forbidden")
     if isinstance(handoff_forbidden, set):
         # Structured front-matter path (root-cause fix): compare canonical
         # tokens directly instead of hunting for prose phrasing that drifts.
-        handoff_constraints_ok = REQUIRED_HANDOFF_CONSTRAINTS.issubset(handoff_forbidden)
+        handoff_constraints_ok = constraints_satisfied(gate, handoff_forbidden)
     else:
         handoff_normalized = re.sub(r"\s+", " ", handoff_text.lower())
         handoff_constraints_ok = (
             _contains_any(handoff_normalized, ("gepa implementation forbidden", "gepa implementation 금지"))
             and _contains_any(handoff_normalized, ("opro promotion forbidden", "opro promotion 금지"))
-            and _contains_any(handoff_normalized, ("re domain implementation forbidden", "re domain implementation 금지"))
+            # Same time bound as the structured path, so the two paths cannot
+            # disagree about whether RE work is still held back.
+            and (
+                kernel_gate_cleared(gate)
+                or _contains_any(handoff_normalized, ("re domain implementation forbidden", "re domain implementation 금지"))
+            )
             and _contains_any(
                 handoff_normalized,
                 (

@@ -3,14 +3,19 @@
 Everything below needs a person. Nothing here is blocked on analysis: each item
 states what was verified, what the options are, and what it costs to be wrong.
 
-Trunk at time of writing: `main` @ `cf8bf5f`, `gate: FACTORY_KERNEL_GREEN`,
+Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
+
+**Status:** D-01 resolved 2026-08-25 (Option A). Seven items remain open.
 
 ---
 
 ## D-01 — `RE_domain_implementation` forbidden vs. M1 being the next milestone
 
-**This is the one that blocks the roadmap.**
+> **RESOLVED 2026-08-25 — Option A.** The constraint is now time-bounded in the
+> validator and discharged once `gate` reaches `FACTORY_KERNEL_GREEN`. M1 RE
+> expansion is unblocked. Implementation notes at the end of this entry; the
+> analysis below is kept as the record of why.
 
 `scripts/validate_session_resume.py` hardcodes:
 
@@ -52,6 +57,38 @@ project already means.
 
 **Cost of getting it wrong:** RC-07 is fail-closed. A malformed change blocks
 every session's resume until fixed.
+
+### How Option A was implemented
+
+`REQUIRED_HANDOFF_CONSTRAINTS` was split in `scripts/validate_session_resume.py`:
+
+- `PERMANENT_HANDOFF_CONSTRAINTS` — GEPA implementation, OPRO promotion, audited
+  baseline redefinition, and PASS-without-primary-evidence. Always required, at
+  every gate.
+- `KERNEL_GATED_CONSTRAINT_ALIASES` — the RE constraint, accepting **both**
+  spellings, since the state file always used `_until_kernel_gate` while the
+  handoff and prose used the bare form.
+- `KERNEL_GATE_CLEARED_GATES = {"FACTORY_KERNEL_GREEN"}` and a
+  `constraints_satisfied(gate, declared)` helper: permanent constraints are
+  checked unconditionally, and the kernel-gated one only while the gate is still
+  closed.
+
+The prose fallback path carries the identical time bound, so the structured and
+prose paths cannot disagree about whether RE work is held back. The state-side
+`gate_constraints_ok` check was moved onto the same alias set — it had been
+demanding the bare token that the state file never used, a latent failure that
+would have fired the moment the gate returned to a blocking value.
+
+Discharged means discharged, not deleted: a document may keep declaring the
+constraint or drop it, and both satisfy RC-07. The handoff front-matter and
+`CURRENT_SESSION_STATE.forbidden` both retain it, annotated, as the record of
+the bound.
+
+Six regression tests were added. Five fail against the pre-fix validator,
+including the end-to-end witness that RC-07 passes on a GREEN-gate handoff
+omitting the RE constraint — a combination that was previously unreachable. The
+sixth asserts the constraint still bites while the gate is closed, guarding
+against over-correction. Suite: 92 passed.
 
 ---
 

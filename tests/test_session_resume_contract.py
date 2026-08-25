@@ -286,3 +286,107 @@ def test_resolve_branch_uses_ref_name_for_push_events(monkeypatch):
     branch, source = resume.resolve_branch()
     assert branch == "main"
     assert source == "github.ref"
+
+
+# --- D-01: the kernel-gated constraint is time-bounded, not permanent --------
+#
+# Until 2026-08-25 the validator demanded `RE_domain_implementation` in every
+# handoff unconditionally, while ROADMAP_WBS.md makes M1 RE the next milestone
+# *after* the Factory Kernel gate. The two could not both hold: clearing the
+# gate was exactly what should permit the work the constraint forbade.
+
+
+def test_kernel_gated_constraint_is_required_while_the_gate_is_closed():
+    declared = set(resume.PERMANENT_HANDOFF_CONSTRAINTS)
+    assert not resume.constraints_satisfied("NOT_GREEN", declared)
+    assert resume.constraints_satisfied("NOT_GREEN", declared | {"RE_domain_implementation"})
+
+
+def test_kernel_gated_constraint_is_discharged_once_the_gate_clears():
+    """The point of the fix: a handoff written after the gate went GREEN no
+    longer has to declare the milestone it gates as forbidden."""
+    declared = set(resume.PERMANENT_HANDOFF_CONSTRAINTS)
+    assert resume.constraints_satisfied("FACTORY_KERNEL_GREEN", declared)
+    # ...and keeping the token is still fine -- discharged, not banned.
+    assert resume.constraints_satisfied(
+        "FACTORY_KERNEL_GREEN", declared | {"RE_domain_implementation_until_kernel_gate"}
+    )
+
+
+def test_both_spellings_of_the_kernel_gated_constraint_are_accepted():
+    """CURRENT_SESSION_STATE.yaml has always used the `_until_kernel_gate` form
+    while the handoff front-matter used the bare one; they mean the same thing."""
+    base = set(resume.PERMANENT_HANDOFF_CONSTRAINTS)
+    for token in ("RE_domain_implementation", "RE_domain_implementation_until_kernel_gate"):
+        assert resume.constraints_satisfied("NOT_GREEN", base | {token}), token
+
+
+def test_permanent_constraints_survive_the_gate_clearing():
+    """Discharging the kernel-gated constraint must not discharge the others."""
+    full = set(resume.PERMANENT_HANDOFF_CONSTRAINTS)
+    for dropped in sorted(full):
+        weakened = full - {dropped}
+        assert not resume.constraints_satisfied("FACTORY_KERNEL_GREEN", weakened), dropped
+        assert not resume.constraints_satisfied("NOT_GREEN", weakened | {"RE_domain_implementation"}), dropped
+
+
+def test_rc07_passes_on_a_green_gate_handoff_that_omits_the_re_constraint(monkeypatch, tmp_path):
+    """End-to-end witness for D-01: with the kernel gate GREEN, a structured
+    handoff that does not mention RE domain implementation at all still
+    satisfies RC-07. Before the fix this combination was unreachable."""
+    state, root = make_fixture(tmp_path, gate="FACTORY_KERNEL_GREEN")
+    state["forbidden"] = ["OPRO_promotion"]
+    handoff_path = Path(state["handoff"])
+    handoff_path.write_text(
+        "\n".join(
+            [
+                "---",
+                "project_id: agent-factory",
+                "repository: chayobi03-cyber/agent-factory",
+                "branch: p0/opro-baseline",
+                "governance_namespace: AgentFactory",
+                f"audited_baseline_sha: {BASELINE}",
+                "forbidden:",
+                "  - GEPA_implementation",
+                "  - OPRO_promotion",
+                "  - audited_baseline_redefinition",
+                "  - PASS_without_primary_execution_evidence",
+                "---",
+                "# Handoff written after the Factory Kernel gate went GREEN",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    install_git(monkeypatch)
+    checks = {item.check_id: item for item in resume.validate(state, root)}
+    assert checks["RC-07"].result == "PASS"
+
+
+def test_rc07_still_blocks_a_closed_gate_handoff_that_omits_the_re_constraint(monkeypatch, tmp_path):
+    """Regression guard on the other side: the constraint must still bite while
+    the gate is closed, or the fix would have removed the protection entirely."""
+    state, root = make_fixture(tmp_path, gate="NOT_GREEN")
+    handoff_path = Path(state["handoff"])
+    handoff_path.write_text(
+        "\n".join(
+            [
+                "---",
+                "project_id: agent-factory",
+                "repository: chayobi03-cyber/agent-factory",
+                "branch: p0/opro-baseline",
+                "governance_namespace: AgentFactory",
+                f"audited_baseline_sha: {BASELINE}",
+                "forbidden:",
+                "  - GEPA_implementation",
+                "  - OPRO_promotion",
+                "  - audited_baseline_redefinition",
+                "  - PASS_without_primary_execution_evidence",
+                "---",
+                "# Handoff written while the gate is still closed",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    install_git(monkeypatch)
+    checks = {item.check_id: item for item in resume.validate(state, root)}
+    assert checks["RC-07"].result != "PASS"
