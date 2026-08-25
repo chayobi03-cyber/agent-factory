@@ -11,7 +11,8 @@ canonical_scope: docs/governance/AGENT_FACTORY_SCOPE_V1.md
 canonical_roadmap: docs/ROADMAP_WBS.md
 forensic_record: 11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md
 forensic_anchor: 41259e233e5273ad2fe1577e71935702956476b1
-current_task: validate post-remediation AgentFactory scope and obtain primary current-SHA CI evidence without executing M2
+current_task: M1 RE Hybrid RAG first working slice (Domain Pack + synthetic corpus + hybrid retrieval + benchmark), building on a locally-verified-GREEN Factory Kernel
+task_id: AGENTFACTORY-M1-RE-HYBRID-RAG-FIRST-SLICE
 last_completed:
   - confirmed_investment_context_contamination
   - controlled_quarantine_of_investment_specific_artifacts
@@ -24,11 +25,21 @@ last_completed:
   - remediation_rca_cycle_2_ownership_discrimination
   - remediation_rca_cycle_3_control_gap_closure
   - final_forensic_closeout_documentation
+  - rc_01_08_session_state_schema_drift_resolved
+  - rc_08_nested_yaml_schema_check_refactored
+  - handoff_identity_and_constraints_migrated_to_structured_frontmatter
+  - factory_kernel_verified_green_locally_context_guard_rc_demo_harness_opro_pytest
+  - m1_re_domain_pack_first_slice_implemented
 current_focus:
-  - current-SHA primary CI evidence retrieval
-  - final AgentFactory project alignment
+  - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
+  - real GitHub-Actions-confirmed GREEN for the Factory Kernel (currently locally-verified only)
 current_risk:
-  - current-SHA primary workflow run/job/log/artifact/digest remains unobserved through the available workflow-run query
+  - Factory Kernel GREEN is locally verified but not yet confirmed by an observed GitHub Actions run on p0/opro-baseline
+  - M1 corpus/benchmark is a first slice (8 docs / 15 cases), not yet the RE_POC.md PoC target size
+next_action:
+  - obtain current-SHA primary CI workflow/job/artifact/digest evidence
+  - resolve RC-01..RC-08 schema drift (missing task_id/next_action/handoff/checkpoint fields)
+  - resolve handoff-document baseline-SHA marker drift (RC-03/RC-06)
 blocked_until:
   - current-SHA primary CI evidence is independently retrievable before GREEN/REMEDIATED claim
 forbidden:
@@ -44,6 +55,7 @@ forbidden:
   - investment_strategy_optimization
   - stress
   - monte_carlo
+handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 hotl_rule: docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md
@@ -78,6 +90,14 @@ current_sha_execution:
   workflow_run: NOT_RETRIEVED
   combined_status: NOT_OBSERVED
   classification: REVIEW_REQUIRED
+checkpoint:
+  # `exact` pins HEAD to checkpoint_sha, so RC-02 can only pass while no new
+  # commit exists -- any commit that advances HEAD past the checkpoint fails it
+  # by construction, including the commit that carries this file. `descendant`
+  # states the invariant actually intended: work must descend from the frozen
+  # handoff baseline. Matches the resume-contract test fixtures.
+  mode: descendant
+  checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
 updated_at_utc: 2026-08-20T11:52:00+09:00

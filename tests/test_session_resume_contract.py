@@ -21,7 +21,7 @@ def make_fixture(tmp_path: Path, *, gate: str = "NOT_GREEN", baseline: str = BAS
     schema_dir = tmp_path / "schemas"
     schema_dir.mkdir()
     (schema_dir / "session_state.schema.yaml").write_text(
-        "schema_id: session_state\nschema_version: 1.1.0\n",
+        "schema_id: session_state\nschema_version: 1.2.0\nproject_id: agent-factory\ngovernance_namespace: AgentFactory\n",
         encoding="utf-8",
     )
     target_contract = tmp_path / "docs" / "governance"
@@ -35,8 +35,10 @@ def make_fixture(tmp_path: Path, *, gate: str = "NOT_GREEN", baseline: str = BAS
         "\n".join(
             [
                 "# Handoff",
+                "- project_id: `agent-factory`",
                 "- repository: `chayobi03-cyber/agent-factory`",
                 "- branch: `p0/opro-baseline`",
+                "- governance_namespace: `AgentFactory`",
                 f"- audited OPRO baseline SHA: `{baseline}`",
                 "GEPA implementation forbidden.",
                 "RE Domain implementation forbidden.",
@@ -52,7 +54,9 @@ def make_fixture(tmp_path: Path, *, gate: str = "NOT_GREEN", baseline: str = BAS
         "session_id": "test-session",
         "phase": "TEST",
         "gate": gate,
+        "project_id": "agent-factory",
         "repository": "chayobi03-cyber/agent-factory",
+        "governance_namespace": "AgentFactory",
         "working_branch": "p0/opro-baseline",
         "audited_baseline_sha": baseline,
         "task_id": "TEST-RESUME",
@@ -197,10 +201,88 @@ def test_all_rc_checks_pass_for_consistent_resume(monkeypatch, tmp_path):
     assert all(item.result == "PASS" for item in checks)
 
 
+def test_structured_frontmatter_handoff_passes_without_prose_matching(monkeypatch, tmp_path):
+    """Root-cause regression witness: a handoff using ONLY the YAML front-matter
+    (no prose phrasing at all) must still satisfy RC-03..RC-07. This is what
+    repeatedly broke when handoff wording drifted; front-matter cannot drift
+    the same way because it is parsed structurally, not phrase-matched."""
+    state, root = make_fixture(tmp_path)
+    handoff_path = Path(state["handoff"])
+    handoff_path.write_text(
+        "\n".join(
+            [
+                "---",
+                "project_id: agent-factory",
+                "repository: chayobi03-cyber/agent-factory",
+                "branch: p0/opro-baseline",
+                "governance_namespace: AgentFactory",
+                f"audited_baseline_sha: {BASELINE}",
+                "forbidden:",
+                "  - GEPA_implementation",
+                "  - OPRO_promotion",
+                "  - RE_domain_implementation",
+                "  - audited_baseline_redefinition",
+                "  - PASS_without_primary_execution_evidence",
+                "---",
+                "# Handoff (structured, no prose constraint wording at all)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    install_git(monkeypatch)
+    checks = resume.validate(state, root)
+    assert {item.check_id for item in checks} == {f"RC-{i:02d}" for i in range(1, 9)}
+    assert all(item.result == "PASS" for item in checks)
+
+
 def test_validator_main_executes_without_runtime_typeerror(monkeypatch, tmp_path):
     """Regression witness for the prior RC-07 check() argument crash."""
     state, root = make_fixture(tmp_path)
     install_git(monkeypatch)
     monkeypatch.setattr(resume, "load_state", lambda path: state)
     monkeypatch.setattr(sys, "argv", ["validate_session_resume.py", "--state", str(root / "state.yaml")])
+    # main() resolves repo_root from cwd (as it does in real CI/local invocation);
+    # chdir so this matches the fixture root instead of the real repository root.
+    monkeypatch.chdir(root)
     assert resume.main() == 0
+
+
+def test_resolve_branch_uses_base_ref_for_pull_request_events(monkeypatch):
+    """Root-cause regression test: the resume validator carried the same
+    pull_request false negative as the Context Guard (LSN-0002). On a
+    pull_request event the checkout is detached and GITHUB_HEAD_REF is the
+    PR's *source* branch, so RC-01 compared it against state.working_branch
+    and blocked every PR regardless of content -- and RC-05 inherited the
+    wrong branch in its expected identity. Resolution must key off the base
+    ref, which is the branch the work would land in."""
+    monkeypatch.setenv("GITHUB_HEAD_REF", "claude/some-unrelated-branch-name")
+    monkeypatch.setenv("GITHUB_BASE_REF", "p0/opro-baseline")
+    monkeypatch.setenv("GITHUB_REF_NAME", "refs/pull/14/merge")
+
+    original = resume.run_git
+    monkeypatch.setattr(
+        resume,
+        "run_git",
+        lambda *args: "" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = resume.resolve_branch()
+    assert branch == "p0/opro-baseline"
+    assert source == "github.base_ref"
+
+
+def test_resolve_branch_uses_ref_name_for_push_events(monkeypatch):
+    """Regression guard: the push path must keep resolving via GITHUB_REF_NAME
+    once GITHUB_BASE_REF is absent (it is only set for pull_request events)."""
+    monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
+    monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
+    monkeypatch.setenv("GITHUB_REF_NAME", "p0/opro-baseline")
+
+    original = resume.run_git
+    monkeypatch.setattr(
+        resume,
+        "run_git",
+        lambda *args: "" if args == ("branch", "--show-current") else original(*args),
+    )
+    branch, source = resume.resolve_branch()
+    assert branch == "p0/opro-baseline"
+    assert source == "github.ref"

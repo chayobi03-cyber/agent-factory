@@ -1,0 +1,127 @@
+domain_id: RE
+version: 0.1.0
+name: Radiated Emission
+scope: EMC radiated-emission engineering knowledge and evidence-grounded workflows
+
+ontology:
+  entities:
+    - equipment
+    - DUT
+    - chamber
+    - antenna
+    - cable
+    - connector
+    - enclosure
+    - frequency
+    - limit
+    - test_setup
+    - measurement
+    - peak
+    - mitigation
+    - failure_mode
+  relations:
+    - tested_with
+    - connected_to
+    - measured_at
+    - exceeds
+    - mitigated_by
+    - correlates_with
+    - reproduced_by
+
+terminology:
+  canonical_terms:
+    - radiated emission
+    - radiated emissions
+    - RE
+    - DUT
+    - test setup
+    - peak
+    - limit
+    - chamber
+    - antenna factor
+    - cable loss
+  synonyms:
+    radiated emission: [radiated emissions, RE]
+    device under test: [DUT, equipment under test, EUT]
+    test setup: [measurement setup, test configuration]
+    peak: [emission peak, spectral peak]
+  abbreviations:
+    RE: radiated emission
+    DUT: device under test
+    EUT: equipment under test
+    AF: antenna factor
+    CL: cable loss
+
+source_policy:
+  authorities:
+    - standards_document
+    - accredited_lab_report
+    - manufacturer_test_report
+    - engineering_measurement_log
+    - internal_engineering_wiki
+  revision_rules:
+    prefer_latest_authoritative_revision: true
+    preserve_superseded_revisions: true
+    standards_effective_date_is_material: true
+
+retrieval_policy:
+  allowed_modes: [bm25, vector, hybrid, graph, agentic]
+  default_mode: hybrid
+  reranker: cross_encoder
+  max_k: 20
+  identifier_first_for: [standard clause, equipment model, frequency, test method, report id]
+  parent_context_required: true
+
+reasoning_policy:
+  diagnosis: hypothesis_competition
+  comparison: evidence_matrix
+  causal_claims_require: [measurement, setup_context, supporting_evidence]
+  recommendation_requires: [evidence, risk_check]
+
+verification_policy:
+  require_evidence_for_claims: true
+  require_stable_locator: true
+  require_revision_validity: true
+  domain_rules:
+    - frequency and unit consistency
+    - limit comparison uses compatible units
+    - measurement context must include test_setup when available
+    - peak claims require frequency/value evidence
+    - mitigation claims require before_after or reproduction evidence when available
+  cross_method_for_high_risk: true
+  abstain_when_evidence_insufficient: true
+
+report_policy:
+  template_id: engineering_report_v1
+  required_sections:
+    - scope
+    - evidence_summary
+    - observed_measurements
+    - hypotheses
+    - verification
+    - conclusion
+    - recommended_next_test
+    - provenance
+
+tools: []
+
+benchmark_catalog:
+  query_classes:
+    - definition
+    - document_location
+    - revision_comparison
+    - condition_cause_analysis
+    - re_failure_diagnosis
+    - supporting_or_contradicting_evidence
+    - recommended_additional_test
+    - engineering_report
+    - evidence_sufficiency
+
+risk_policy:
+  thresholds:
+    low: 0.30
+    medium: 0.55
+    high: 0.75
+    critical: 0.90
+  high_risk_requires_human_review: true
+  critical_requires_human_decision: true

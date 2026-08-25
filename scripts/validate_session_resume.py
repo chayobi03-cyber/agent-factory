@@ -18,6 +18,13 @@ PROJECT = "agent-factory"
 GOVERNANCE_NAMESPACE = "AgentFactory"
 SUPPORTED_SCHEMA_VERSION = "1.2.0"
 FORWARD_BLOCK_GATES = {"NOT_GREEN", "BLOCKED", "HOLD", "INCONCLUSIVE"}
+REQUIRED_HANDOFF_CONSTRAINTS = {
+    "GEPA_implementation",
+    "OPRO_promotion",
+    "RE_domain_implementation",
+    "audited_baseline_redefinition",
+    "PASS_without_primary_execution_evidence",
+}
 
 
 @dataclass(frozen=True)
@@ -41,11 +48,23 @@ def run_git(*args: str) -> str:
 
 
 def resolve_branch() -> tuple[str, str]:
-    """Return branch plus source; CI refs are required for detached checkouts."""
+    """Return branch plus source; CI refs are required for detached checkouts.
+
+    Carries the same root-cause fix as validate_project_context.resolve_branch:
+    on a `pull_request` event the checkout is detached and `GITHUB_HEAD_REF` is
+    the PR's *source* branch, which will not equal state.working_branch, so
+    RC-01 (and the RC-05 identity expectation derived from it) failed for every
+    PR regardless of content. The governance boundary is which branch the work
+    would land in -- the *base* ref. `GITHUB_REF_NAME` remains the `push`-event
+    fallback. See 11_Audit/LSN-0002.
+    """
     branch = run_git("branch", "--show-current")
     if branch:
         return branch, "git.branch"
-    ci_branch = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME")
+    base_ref = os.environ.get("GITHUB_BASE_REF")
+    if base_ref:
+        return base_ref, "github.base_ref"
+    ci_branch = os.environ.get("GITHUB_REF_NAME")
     if ci_branch:
         return ci_branch, "github.ref"
     raise ResumeError("unable to resolve current branch from Git or GitHub Actions environment")
@@ -75,8 +94,54 @@ def read_optional(path: Path) -> str:
         return ""
 
 
-def parse_handoff(text: str) -> dict[str, str]:
-    """Parse identity fields from the handoff with markdown/format tolerance."""
+def parse_handoff(text: str) -> dict[str, Any]:
+    """Parse identity/constraint fields from the handoff document.
+
+    Primary path: a small fenced YAML front-matter block at the top of the
+    file (delimited by ``---`` lines). This is the root-cause fix for
+    repeated drift: every previous break in RC-03/RC-06/RC-07 was caused by
+    prose wording changing slightly and no longer matching a hand-tuned
+    regex/phrase list. Structured YAML cannot "drift out of wording" the
+    same way a `git grep`-able string can.
+
+    Fallback path: the original prose regex/phrase extraction, kept so
+    older handoff documents (or documents outside this remediation) that
+    were never migrated to front-matter still parse instead of hard-failing.
+    """
+    frontmatter = _parse_handoff_frontmatter(text)
+    if frontmatter is not None:
+        return frontmatter
+    return _parse_handoff_prose(text)
+
+
+def _parse_handoff_frontmatter(text: str) -> dict[str, Any] | None:
+    match = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, flags=re.DOTALL)
+    if not match:
+        return None
+    try:
+        data = yaml.safe_load(match.group(1))
+    except yaml.YAMLError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    values: dict[str, Any] = {}
+    if isinstance(data.get("repository"), str):
+        values["repository"] = data["repository"]
+    if isinstance(data.get("branch"), str):
+        values["branch"] = data["branch"]
+    if isinstance(data.get("project_id"), str):
+        values["project"] = data["project_id"]
+    if isinstance(data.get("governance_namespace"), str):
+        values["governance_namespace"] = data["governance_namespace"]
+    if isinstance(data.get("audited_baseline_sha"), str):
+        values["baseline"] = data["audited_baseline_sha"]
+    if isinstance(data.get("forbidden"), list):
+        values["forbidden"] = {str(item) for item in data["forbidden"]}
+    return values
+
+
+def _parse_handoff_prose(text: str) -> dict[str, str]:
+    """Legacy prose regex/phrase extraction. Kept only as a fallback."""
     values: dict[str, str] = {}
     normalized = text.replace("—", "-").replace("–", "-")
     patterns = {
@@ -196,36 +261,87 @@ def validate(state: dict[str, Any], repo_root: Path | None = None) -> list[Resum
         state["gate"] not in FORWARD_BLOCK_GATES
         or {"OPRO_promotion", "RE_domain_implementation"}.issubset(forbidden)
     )
-    handoff_normalized = re.sub(r"\s+", " ", handoff_text.lower())
-    handoff_constraints_ok = (
-        _contains_any(handoff_normalized, ("gepa implementation forbidden", "gepa implementation 금지"))
-        and _contains_any(handoff_normalized, ("opro promotion forbidden", "opro promotion 금지"))
-        and _contains_any(handoff_normalized, ("re domain implementation forbidden", "re domain implementation 금지"))
-        and _contains_any(
-            handoff_normalized,
-            (
-                "audited opro baseline sha must not change",
-                "audited opro baseline sha immutable",
-                "audited opro baseline sha - do not change",
-            ),
+    handoff_forbidden = handoff.get("forbidden")
+    if isinstance(handoff_forbidden, set):
+        # Structured front-matter path (root-cause fix): compare canonical
+        # tokens directly instead of hunting for prose phrasing that drifts.
+        handoff_constraints_ok = REQUIRED_HANDOFF_CONSTRAINTS.issubset(handoff_forbidden)
+    else:
+        handoff_normalized = re.sub(r"\s+", " ", handoff_text.lower())
+        handoff_constraints_ok = (
+            _contains_any(handoff_normalized, ("gepa implementation forbidden", "gepa implementation 금지"))
+            and _contains_any(handoff_normalized, ("opro promotion forbidden", "opro promotion 금지"))
+            and _contains_any(handoff_normalized, ("re domain implementation forbidden", "re domain implementation 금지"))
+            and _contains_any(
+                handoff_normalized,
+                (
+                    "audited opro baseline sha must not change",
+                    "audited opro baseline sha immutable",
+                    "audited opro baseline sha - do not change",
+                ),
+            )
+            and _contains_any(
+                handoff_normalized,
+                (
+                    "pass without primary execution evidence forbidden",
+                    "state/documentation never substitutes for primary evidence",
+                ),
+            )
         )
-        and _contains_any(
-            handoff_normalized,
-            (
-                "pass without primary execution evidence forbidden",
-                "state/documentation never substitutes for primary evidence",
-            ),
-        )
-    )
     forbidden_ok = gate_constraints_ok and handoff_constraints_ok
+
+    # Parse the schema structurally instead of substring-matching raw YAML text.
+    # session_state.schema.yaml declares project_id/governance_namespace as nested
+    # properties (`properties.project_id.const: agent-factory`), not flat
+    # `project_id: agent-factory` lines, so a raw-text `in` check on those two
+    # identity fields was structurally guaranteed to fail against the real schema
+    # even when the schema was fully compatible. Fall back to raw-text containment
+    # only for fixtures/older schema shapes that are flat key: value files.
+    schema_project_id: str | None = None
+    schema_governance_namespace: str | None = None
+    schema_version_value: str | None = None
+    if schema_text:
+        try:
+            parsed_schema = yaml.safe_load(schema_text)
+        except yaml.YAMLError:
+            parsed_schema = None
+        if isinstance(parsed_schema, dict):
+            schema_version_value = parsed_schema.get("schema_version")
+            properties = parsed_schema.get("properties")
+            if isinstance(properties, dict):
+                project_id_prop = properties.get("project_id")
+                if isinstance(project_id_prop, dict):
+                    schema_project_id = project_id_prop.get("const")
+                governance_prop = properties.get("governance_namespace")
+                if isinstance(governance_prop, dict):
+                    schema_governance_namespace = governance_prop.get("const")
+            # Flat-schema fixtures (e.g. test doubles) declare these at top level.
+            if schema_project_id is None and isinstance(parsed_schema.get("project_id"), str):
+                schema_project_id = parsed_schema["project_id"]
+            if schema_governance_namespace is None and isinstance(
+                parsed_schema.get("governance_namespace"), str
+            ):
+                schema_governance_namespace = parsed_schema["governance_namespace"]
+
+    schema_version_ok = (
+        schema_version_value == SUPPORTED_SCHEMA_VERSION
+        or f"schema_version: {SUPPORTED_SCHEMA_VERSION}" in schema_text
+    )
+    schema_project_id_ok = (
+        schema_project_id == PROJECT or f"project_id: {PROJECT}" in schema_text
+    )
+    schema_governance_ok = (
+        schema_governance_namespace == GOVERNANCE_NAMESPACE
+        or f"governance_namespace: {GOVERNANCE_NAMESPACE}" in schema_text
+    )
 
     context_ok = (
         bool(contract_text)
         and bool(schema_text)
         and bool(target_contract_text)
-        and f"schema_version: {SUPPORTED_SCHEMA_VERSION}" in schema_text
-        and f"project_id: {PROJECT}" in schema_text
-        and f"governance_namespace: {GOVERNANCE_NAMESPACE}" in schema_text
+        and schema_version_ok
+        and schema_project_id_ok
+        and schema_governance_ok
         and ("CER Session Continuity Contract" in contract_text or "CER Resume Contract" in contract_text)
         and "RC-08" in contract_text
         and "execution_sha == target_sha" in target_contract_text

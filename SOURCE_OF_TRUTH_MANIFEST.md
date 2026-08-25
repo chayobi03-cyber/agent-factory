@@ -24,6 +24,7 @@ The numbered package paths below describe the historical package layout only. Th
 - `schemas/` — canonical data contracts
 - `workflows/` — workflow definitions
 - `templates/` — benchmark, Domain Pack, lesson, and agent context templates
+- `domains/<domain_id>/` — declarative Domain Pack policy per domain (conforms to `schemas/domain_pack.schema.yaml`), e.g. `domains/re/domain_pack.yaml`. Paired with an executable Domain Pack module in `src/` (e.g. `src/re_domain_pack.py`) that loads and is tested against it. This is the canonical location for all future domain policy files (M2 EMI, M3 CST, ...).
 - `src/` — implementation interfaces/skeleton
 - `11_Audit/` — audit prompts and results
 - `scripts/` — executable validation and workflow support
