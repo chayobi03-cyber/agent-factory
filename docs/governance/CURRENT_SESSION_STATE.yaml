@@ -1,4 +1,4 @@
-state_version: 18
+state_version: 19
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -52,16 +52,20 @@ last_completed:
   - d05_and_d06_resolved_31_merged_branches_deleted_by_dispatch_remote_41_to_10_no_history_lost
   - d08_resolved_repository_stays_public_which_constrains_m1_real_documents_to_an_out_of_tree_source
   - m1_1_tokenization_made_measurement_aware_and_absence_gating_added_to_retrieve
+  - m1_2_adversarial_corpus_added_distractors_near_duplicate_revisions_contradictions_notation_variants
+  - m1_2_retrieval_stability_suite_pins_case_outcomes_across_fifteen_corpus_shapes
+  - d10_resolved_literal_hit_gate_replaced_by_idf_mass_coverage_with_abstention_split_into_its_own_rule
 current_focus:
-  - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
+  - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target, now that retrieval no longer moves with corpus composition
   - hold the trunk on `main` now that the divergent default branch is folded in
 current_risk:
-  - retrieval gating is corpus-term-frequency dependent and non-monotonic under added distractors (OPEN_DECISIONS D-10); settle before scaling the corpus, or Recall@10 measures the corpus rather than the retriever
-  - M1 corpus/benchmark is a first slice (8 docs / 15 cases), not yet the RE_POC.md PoC target size
+  - the three retrieval constants (_COVERAGE_FLOOR, _UNSEEN_MASS_CEILING, _NON_EVIDENTIAL_TERMS) are fitted to a 35-fragment corpus and 15 benchmark cases, not derived from corpus statistics; re-derive them with the stability sweep at PoC scale rather than carrying them forward (OPEN_DECISIONS D-10 resolution notes)
+  - abstention is decided by unseen IDF mass, which at 35 fragments mostly detects "the corpus is small" rather than "the subject is absent"; it has not been tested against a near-miss query
+  - M1 corpus/benchmark is a first slice (10 docs / 15 cases), not yet the RE_POC.md PoC target size
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
-  - M1 step 2 - make the corpus adversarial at current size (distractors, near-duplicate revisions, contradictions, unit and terminology drift) and settle OPEN_DECISIONS D-10 against it
-  - expand M1 RE corpus/benchmark toward the RE_POC.md target (20+ documents / 150 cases)
+  - M1 step 3 - scale the corpus to where Recall@k discriminates, then re-derive the three fitted retrieval constants from corpus statistics using the stability sweep
+  - M1 step 4 - out-of-tree corpus source for real RE documents, required because the repository stays public (OPEN_DECISIONS D-08)
 blocked_until: []
 forbidden:
   - GEPA_implementation
@@ -146,4 +150,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-25T08:45:00+00:00
+updated_at_utc: 2026-08-25T09:45:00+00:00
