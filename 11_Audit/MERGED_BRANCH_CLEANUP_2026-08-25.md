@@ -1,15 +1,24 @@
-# Merged-Branch Cleanup — 2026-08-25
+# Merged-Branch Cleanup — prepared 2026-08-25, NOT YET EXECUTED
 
-Deleted 30 remote branches, each verified to have **zero commits** not already
-reachable from the trunk at `fe13fa92b83615dcaff4278777206ea14fcbf439`. No history was lost: every
-commit these refs pointed at remains in the trunk's history.
+> **Status: PREPARED, NOT EXECUTED.** The deletion was attempted from the session
+> that produced this record and refused with `HTTP 403` on every ref delete —
+> that session's credentials permit pushes but not deletions, and the GitHub MCP
+> server exposes no branch-deletion tool. The branches below are still present on
+> the remote. Run the commands in **Execute** from a credential that permits ref
+> deletion, then change this heading.
+
+## What was verified
+
+Each of the 30 branches below was checked to have **zero commits** not already
+reachable from the trunk at `19294f25b2574de34cc1f9b3d30e8650cc7c93e2`. Deleting
+them loses no history: every commit they point at remains in the trunk.
 
 Rationale: `11_Audit/LSN-0001` identified the ambient condition — many stale
 branches, no single canonical trunk — as the cause of a session re-deriving its
 plan from the wrong line and proposing to rebuild ~6,000 lines that already
 existed. Removing fully-merged refs removes that condition.
 
-Retained deliberately:
+## Retained deliberately
 
 | Branch | Why |
 |---|---|
@@ -20,9 +29,45 @@ Retained deliberately:
 | `p1/domain-matrix-workflow-v0.1`, `governance/ci-pr-execution-lessons-2026-08-20`, `p0/m1b-ingestion-v1b` | carry unmerged commits **and** quarantined investment artifacts; salvage files individually, never merge |
 | `p0/re-domain-pack-v0.1`, `p1/re-domain-pack-v0.1`, `audit/evidence-chain-remediation`, `fix/rc-schema-drift-e11a663a` | carry unmerged commits; contamination-free, pending salvage review |
 
+## Execute
+
+```bash
+git push origin --delete \
+  audit-remediation/p0-evidence-chain \
+  evidence/base-16972e2f \
+  evidence/current-head-20260818 \
+  evidence/current-head-20260818-final \
+  evidence/current-head-20260818-final2 \
+  evidence/current-head-20260818-pr \
+  evidence/current-head-20260818-pr2 \
+  evidence/current-head-20260820 \
+  evidence/resume-0e0c6616 \
+  evidence/resume-9b097531 \
+  evidence/resume-current-head \
+  evidence/resume-e62f89d7 \
+  m1b/pit-reconciliation-remediation-20260820 \
+  p0/evidence-exec-e62f89d7 \
+  p0/evidence-execution-remediation-e62f89d7 \
+  p0/factory-kernel-green \
+  p0/m1b-financial-provenance \
+  p0/m1b-financial-provenance-clean \
+  p0/m1b-financial-provenance-tmp \
+  p0/m1b-financial-provenance-v2 \
+  p0/m1b-ingestion \
+  p0/m1b-ingestion-v1 \
+  p0/m1b-ingestion-v1c \
+  p0/m2-hotl-loop-20260820 \
+  tmp/cer-target-sha-fix \
+  tmp/m2-entry-review-20260820 \
+  tmp/pytest-import-path-fix \
+  tmp/rc-parser-robustness \
+  tmp/resume-test-hardening \
+  tmp/resume-validator-contract-align
+```
+
 ## Restore
 
-Any branch below is recreated with `git push origin <sha>:refs/heads/<name>`.
+Any branch is recreated with `git push origin <sha>:refs/heads/<name>`.
 
 ```
 20a54b92aad0857f75c6200d984b13098c6f4927 audit-remediation/p0-evidence-chain

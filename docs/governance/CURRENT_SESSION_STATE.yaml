@@ -39,10 +39,11 @@ last_completed:
   - architecture_refactor_plan_and_ci_pr_execution_lessons_recovered_to_trunk
   - divergent_default_branch_folded_into_trunk_main_now_fully_contained
   - canonical_branch_moved_to_main_across_guard_state_handoff_and_ci_triggers
-  - thirty_fully_merged_branches_deleted_from_remote_with_restore_shas_recorded
+  - thirty_fully_merged_branches_identified_and_cleanup_prepared_deletion_blocked_by_session_credentials
 current_focus:
   - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target
-  - hold the trunk on `main` now that the divergent default branch is folded in and the merged-branch backlog is cleared
+  - hold the trunk on `main` now that the divergent default branch is folded in
+  - execute the prepared merged-branch deletion (11_Audit/MERGED_BRANCH_CLEANUP_2026-08-25.md) from a credential that permits ref deletion
 current_risk:
   - M1 corpus/benchmark is a first slice (8 docs / 15 cases), not yet the RE_POC.md PoC target size
   - governance contradiction - validator REQUIRED_HANDOFF_CONSTRAINTS pins `RE_domain_implementation` as absolutely forbidden, while ROADMAP_WBS makes M1 RE the next milestone after Factory Kernel GREEN; state wording (`..._until_kernel_gate`) is time-bounded but the handoff/validator token is not
