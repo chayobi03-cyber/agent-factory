@@ -2,7 +2,7 @@
 Hybrid RAG Domain Pack.
 
 Per docs/RE_POC.md, the PoC target is "20+ representative legacy documents".
-This module ships a smaller, honestly-scoped starter corpus (8 documents,
+This module ships a smaller, honestly-scoped starter corpus (10 documents,
 2 of which are revisions of the same document to exercise revision-compare
 queries) covering the ontology entities named in RE_POC.md: equipment, DUT,
 chamber, antenna, cable, connector, enclosure, frequency, limit, test_setup,
@@ -195,3 +195,178 @@ CORPUS: list[RawDocument] = [
         ),
     },
 ]
+
+
+# --- adversarial corpus ------------------------------------------------------
+#
+# CORPUS above is written so the benchmark queries are answerable. That makes it
+# a harness, not a test of retrieval: there are no competing documents, no
+# revisions that differ by one number, no contradictions, and every fact is
+# spelled exactly one way.
+#
+# These generators add the difficulty a real legacy corpus has, at whatever size
+# a test asks for. They are deterministic -- no randomness -- so a failure is
+# reproducible and a stability test can compare results across corpus sizes and
+# attribute any difference to the retriever rather than to sampling.
+
+
+def distractor_documents(count: int) -> list[RawDocument]:
+    """Plausible RE documents that answer none of the benchmark queries.
+
+    Same vocabulary, same units, same chambers and antennas -- differing only
+    in the specifics. This is what a real archive looks like: mostly documents
+    that are *near* your question without being it.
+    """
+    docs: list[RawDocument] = []
+    for i in range(count):
+        # Deliberately NOT chambers CH-0..CH-3: those are the ones the baseline
+        # corpus and the benchmark queries name. A distractor that supplies the
+        # very identifier a query discriminates on stops being a distractor and
+        # starts masking defects -- an earlier draft of this generator put
+        # CH-{i % 4} in the body and hid OPEN_DECISIONS D-10 entirely.
+        chamber = f"CH-{7 + i % 3}"
+        docs.append({
+            "document_id": f"DOC-RE-AMB-{i:04d}",
+            "revision_id": "REV-A",
+            "title": f"Chamber {chamber} Ambient Scan {i:04d}",
+            "doc_type": "measurement_log",
+            "text": (
+                f"Ambient radiated emission scan {i:04d} recorded in semi-anechoic chamber "
+                f"{chamber} per CISPR 32 Class B with no equipment energised. Biconical "
+                f"antenna at 3 meters for the 30-1000 MHz sweep and a horn antenna above "
+                f"1 GHz. Highest ambient was {18 + i % 11}.{i % 10} dBuV/m at "
+                f"{101 + (i * 13) % 800} MHz, below the Class B limit line at that "
+                f"frequency. Cable routing and connector placement followed the standard "
+                f"test setup. No exceedance and no mitigation required."
+            ),
+        })
+    return docs
+
+
+def near_duplicate_revisions() -> list[RawDocument]:
+    """Later revisions of baseline documents differing by one measurement.
+
+    Revision-compare queries are only meaningfully tested when two revisions are
+    nearly identical -- if REV-B were obviously different, matching it would not
+    demonstrate revision discrimination.
+    """
+    return [
+        {
+            "document_id": "DOC-RE-001",
+            "revision_id": "REV-B",
+            "title": "EUT-7 Radiated Emissions Test Report",
+            "doc_type": "test_report",
+            "text": (
+                "Device under test EUT-7 was evaluated for radiated emissions in "
+                "semi-anechoic chamber CH-2 per CISPR 32 Class B limits. Test setup used "
+                "a biconical antenna at 3 meters for 30-1000 MHz and a horn antenna above "
+                "1 GHz. A peak emission of 41.7 dBuV/m was measured at 148 MHz, exceeding "
+                "the Class B limit of 35.6 dBuV/m by 6.1 dB at that frequency. No other "
+                "peaks exceeded the limit line. The exceedance was traced to the "
+                "unshielded power cable connecting EUT-7 to the enclosure fan connector."
+            ),
+        },
+    ]
+
+
+def contradicting_documents() -> list[RawDocument]:
+    """A document asserting the opposite of a baseline finding.
+
+    Retrieval that silently returns one side of a contradiction, with no signal
+    that the other exists, is not evidence handling. The RE_POC query category
+    "evidence supporting or contradicting a hypothesis" depends on both being
+    reachable.
+    """
+    return [
+        {
+            "document_id": "DOC-RE-CON-001",
+            "revision_id": "REV-A",
+            "title": "EUT-7 Re-test After Cable Replacement",
+            "doc_type": "test_report",
+            "text": (
+                "A re-test of EUT-7 in chamber CH-2 found no exceedance at 132 MHz. The "
+                "peak at that frequency measured 31.4 dBuV/m, below the CISPR 32 Class B "
+                "limit of 35.6 dBuV/m. The earlier attribution to the unshielded power "
+                "cable was not reproduced; the original exceedance is now believed to "
+                "have been an ambient artefact rather than an emission from the device "
+                "under test."
+            ),
+        },
+    ]
+
+
+def notation_variant_documents() -> list[RawDocument]:
+    """The same facts spelled the way different authors and eras spell them.
+
+    Legacy archives are inconsistent: the field-strength unit appears as dBuV/m
+    and dB(uV)/m, antennas are called biconical or bicon, and the device is the
+    DUT in one document and the EUT in the next.
+    """
+    return [
+        {
+            "document_id": "DOC-RE-VAR-001",
+            "revision_id": "REV-A",
+            "title": "Bicon Setup Note (legacy notation)",
+            "doc_type": "internal_wiki",
+            "text": (
+                "Legacy setup note. The bicon is positioned at 3 meters from the DUT for "
+                "the 30-1000 MHz sweep in chamber CH-2. Historical logs record the field "
+                "strength in dB(uV)/m rather than dBuV/m; the two are the same unit. A "
+                "measurement of 35.6 dB(uV)/m is the Class B limit at 3 m for this band."
+            ),
+        },
+    ]
+
+
+def adversarial_corpus(
+    distractors: int = 0,
+    *,
+    revisions: bool = True,
+    contradictions: bool = True,
+    variants: bool = True,
+) -> list[RawDocument]:
+    """CORPUS plus whichever kinds of difficulty the caller asks for."""
+    docs = list(CORPUS)
+    if revisions:
+        docs.extend(near_duplicate_revisions())
+    if contradictions:
+        docs.extend(contradicting_documents())
+    if variants:
+        docs.extend(notation_variant_documents())
+    docs.extend(distractor_documents(distractors))
+    return docs
+
+
+def term_saturating_documents(count: int, *, phrase: str = "antenna setup") -> list[RawDocument]:
+    """Documents that push a specific query term's document frequency upward.
+
+    `retrieve()` admits a query term as discriminating only while its document
+    frequency stays under a fraction of the corpus. Whether a term is under that
+    fraction is a property of the corpus, not of the query -- so a term can
+    cross the line purely because unrelated documents were added, changing which
+    terms gate retrieval and how many literal hits are required.
+
+    Generic distractors do not reliably reach that boundary: if they mention a
+    term in a constant fraction of their text, its ratio stays roughly constant
+    however many are added. Crossing it takes documents that mention the term
+    far more densely than the baseline corpus does, which is what this builds.
+
+    Deliberately never mentions a chamber or device identifier, so it saturates
+    the *descriptive* vocabulary without supplying anything a query
+    discriminates on.
+    """
+    docs: list[RawDocument] = []
+    for i in range(count):
+        docs.append({
+            "document_id": f"DOC-RE-SAT-{i:04d}",
+            "revision_id": "REV-A",
+            "title": f"Generic {phrase} reference note {i:04d}",
+            "doc_type": "internal_wiki",
+            "text": (
+                f"General {phrase} guidance. The {phrase} is described in the standard "
+                f"{phrase} reference. Review the {phrase} before each measurement; the "
+                f"{phrase} determines repeatability. Any {phrase} deviation is recorded "
+                f"in the {phrase} log alongside the {phrase} checklist."
+            ),
+        })
+    return docs

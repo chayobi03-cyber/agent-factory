@@ -6,9 +6,9 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01 through D-09 resolved 2026-08-25. **D-10 is open** — raised by
-the M1 tokenization work, which exposed it. Entries are kept as the record of
-why, not cleared; add new decisions here rather than starting a fresh register.
+**Status:** D-01 through D-10 resolved 2026-08-25. Entries are kept as the
+record of why, not cleared; add new decisions here rather than starting a fresh
+register.
 
 ---
 
@@ -443,6 +443,12 @@ a documented procedure nobody runs.
 
 ## D-10 — Retrieval gating depends on corpus term frequency, not on the query
 
+> **RESOLVED 2026-08-25 — Option C, with the abstention rule split out.** The
+> literal-hit gate is gone; candidates are gated on the share of a query's IDF
+> mass a fragment covers, and abstention is decided separately. Verified across
+> fifteen corpus shapes. Implementation notes, and what is still fitted rather
+> than derived, at the end of this entry.
+
 Raised 2026-08-25 by the M1-1 tokenization work (step 1 of the M1 corpus plan),
 which exposed it rather than caused it.
 
@@ -493,3 +499,79 @@ describe the corpus rather than the retriever.
 sizes rather than at one. It is the only option where adding unrelated documents
 cannot flip a result, which is the property the PoC metrics need. Settle it as
 part of step 2 (adversarial corpus), before any scaling.
+
+---
+
+### Resolution — 2026-08-25
+
+**Option C, plus a split the option list did not anticipate.**
+
+`_distinctive_terms` and the `min(2, len(distinctive))` literal-hit requirement
+are removed. In their place, `retrieve()` weights every non-stopword,
+non-domain-generic query term by IDF and admits a fragment only if it covers at
+least `_COVERAGE_FLOOR` of that weight. Nothing in the rule reads a document
+frequency as a *threshold* any more — df enters only through the smooth IDF
+term, so adding documents shifts a score instead of flipping a membership.
+
+The cliff is measurably gone. RE-BC-002's coverage of its correct document,
+across the fifteen shapes the new stability suite exercises:
+
+| Shape | Coverage | | Shape | Coverage |
+|---|---|---|---|---|
+| baseline | 0.194 | | saturate-antenna-3 | 0.184 |
+| + 10 distractors | 0.203 | | saturate-antenna-20 | 0.163 |
+| + 40 distractors | 0.210 | | saturate-setup-20 | 0.264 |
+| + 100 distractors | 0.215 | | saturate-calibration-20 | 0.294 |
+| + 250 distractors | 0.220 | | saturate-chamber-20 | 0.240 |
+
+Monotonic in distractor volume, and bounded — 0.163 to 0.294 — where the old
+gate went yes / **no** / yes over the same span.
+
+**The split.** One threshold could not serve both jobs. A floor low enough to
+admit a legitimate question phrased in common words is also low enough to admit
+a question about something the corpus does not contain. So abstention became its
+own rule: a query is unanswerable when more than `_UNSEEN_MASS_CEILING` (0.50)
+of its *subject* weight rests on terms with `df == 0`. The two classes separate
+at 0.42 and 0.65 on the current benchmark, so 0.5 sits in the gap.
+
+**Choosing the floor.** Correctness and stability do not pin it down — both hold
+at every value from 0.00 to 0.16, because abstention no longer depends on this
+floor at all. What the floor buys is precision, so it wants to be as high as it
+safely goes, and the ceiling is RE-BC-002's 0.163 minimum:
+
+| Floor | Benchmark on baseline | Stable across shapes | Candidates per answerable query at 250 distractors |
+|---|---|---|---|
+| 0.00 | all pass | yes | 50.0 (the `top_k` cap) |
+| 0.08 | all pass | yes | 19.1 |
+| **0.12** | all pass | yes | **13.6** |
+| 0.16 | all pass | yes | 8.7 |
+| 0.18 | all pass | **no** (RE-BC-002) | 7.4 |
+| 0.20 | **RE-BC-002 fails** | no | 7.2 |
+
+0.12 keeps about a quarter of the binding minimum as margin and cuts returned
+candidates by ~3.7x against no floor. 0.16 is better on precision but sits
+inside the noise of a minimum observed from only fifteen shapes.
+
+**What is fitted rather than derived — read this before trusting the numbers**
+
+1. `_NON_EVIDENTIAL_TERMS` (question-form vocabulary excluded from the
+   unseen-mass calculation) was assembled *after* inspecting which benchmark
+   queries were misclassified. It is fitted to 15 cases. Without it the classes overlap and no
+   threshold separates them: "Which document describes the CH-2 antenna setup"
+   scores 0.685 unseen against 0.647 for a question about lunar regolith.
+2. At 35 fragments, `df == 0` mostly means *the corpus is small*, not *the subject
+   is absent*. The unseen-mass rule works here because the abstention cases name
+   subjects far outside RE; it has not been tested against a near-miss.
+3. `_COVERAGE_FLOOR = 0.12` is fitted to a 35-fragment corpus and its upper edge
+   is set by one marginal case.
+
+All three are corpus-size artefacts and all three should be re-derived from
+corpus statistics at PoC scale. `tests/test_re_retrieval_stability.py` is the
+harness that does it — the sweep above is reproducible by varying
+`re_domain_pack._COVERAGE_FLOOR` against `CORPUS_SHAPES`.
+
+**Regression guard.** `tests/test_re_retrieval_stability.py` fails if any
+benchmark case's outcome differs across the fifteen shapes, if an abstention
+case stops abstaining at any shape, if a near-duplicate revision displaces the
+original, or if a contradicting document becomes unreachable alongside the
+document it contradicts. It is the D-10 defect's own probe, kept as a test.
