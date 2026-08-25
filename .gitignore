@@ -1,0 +1,24 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Evidence and gate output produced by running the CI steps locally.
+#
+# scripts/capture_execution.py and the workflows write these into the working
+# tree. They are run artifacts bound to one execution -- the canonical copies
+# are the uploaded CI artifacts, and AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md is
+# explicit that a historical run never satisfies the gate for a new target SHA.
+# Committing them would put stale evidence in the tree next to the contract
+# saying not to trust exactly that.
+evidence/
+artifact-metadata.json
+ci-execution-identity.json
+ci-exit-codes.env
+execution-identity.txt
+*.stdout.json
+*.stdout.txt
+
+# Local environments
+.venv/
+venv/
