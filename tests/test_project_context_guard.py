@@ -43,6 +43,12 @@ def test_current_session_state_declares_canonical_identity():
 
 
 def test_resolve_branch_uses_ci_ref_when_git_is_detached(monkeypatch):
+    # This asserts the `push`-event fallback, where GitHub does not set
+    # GITHUB_BASE_REF at all. It must be cleared explicitly rather than left
+    # to the ambient environment: under a pull_request-triggered CI run the
+    # real GITHUB_BASE_REF leaks in, base-ref resolution correctly wins, and
+    # the test fails on its source assertion even though the code is right.
+    monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
     monkeypatch.setenv("GITHUB_HEAD_REF", "")
     monkeypatch.setenv("GITHUB_REF_NAME", EXPECTED_BRANCH)
 
