@@ -52,6 +52,36 @@ terminology:
     AF: antenna factor
     CL: cable loss
 
+measurement_policy:
+  # The RE domain's content is numbers with units. src/re_domain_pack.py mirrors
+  # these tables and tests/test_re_domain_pack.py asserts the two agree, the same
+  # code<->YAML consistency check used for the ontology.
+  canonical_frequency_unit: MHz
+  frequency_units:
+    hz: 0.000001
+    khz: 0.001
+    mhz: 1
+    ghz: 1000
+  level_units:
+    - dbuv/m
+    - dbuv
+    - dbm
+    - dbi
+    - db
+  # Prefixes whose hyphenated form names one thing (REV-B, EUT-7, CH-2) and must
+  # survive tokenization as a single token rather than splitting into a word and
+  # a bare number that collides with every other number in the corpus.
+  identifier_prefixes:
+    - rev
+    - eut
+    - dut
+    - doc
+    - ch
+    - ant
+    - cispr
+    - en
+    - fcc
+
 source_policy:
   authorities:
     - standards_document

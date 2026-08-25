@@ -206,3 +206,103 @@ def test_benchmark_file_covers_most_query_taxonomy_categories() -> None:
     # docs/RE_POC.md lists 9 taxonomy categories; this starter benchmark is
     # honestly scoped to cover most (not claiming all 9 at this corpus size).
     assert len(query_types) >= 7
+
+
+# --- M1-1: measurement-aware tokenization ------------------------------------
+#
+# The RE domain's content *is* numbers with units -- frequencies, limit levels,
+# separation distances, revision ids. Before 2026-08-25 the tokenizer was
+# `[a-z0-9]+` over lowercased text, which shattered every one of them:
+# "5.8 GHz" became ['5','8','ghz'] and "REV-A"/"REV-B" became ['rev','a'] /
+# ['rev','b']. normalize() already extracted frequencies and levels into
+# fragment metadata, so the pack knew they mattered -- the retriever just could
+# not see them.
+
+from re_domain_pack import _tokenize  # noqa: E402
+
+
+def test_decimal_measurements_survive_tokenization() -> None:
+    """A decimal must not be split into two meaningless integers."""
+    tokens = _tokenize("peak of 38.2 dBuV/m")
+    # The requirement is that the measurement is not shattered -- not that a
+    # bare "38.2" appears. Keeping the value attached to its unit is stronger:
+    # "38.2 dBuV/m" and "38.2 MHz" are different facts.
+    assert "38" not in tokens and "2" not in tokens, tokens
+    assert any("38.2" in t for t in tokens), tokens
+
+
+def _numeric(tokens):
+    """Tokens carrying a digit -- the measurement-bearing ones."""
+    return {t for t in tokens if any(ch.isdigit() for ch in t)}
+
+
+def test_frequency_is_a_single_token_and_normalized_across_units() -> None:
+    """5.8 GHz and 5800 MHz are the same frequency. A retriever that cannot see
+    that cannot answer an RE question about a band. Compares only the
+    measurement-bearing tokens, so shared prose words cannot fake a pass."""
+    ghz = _numeric(_tokenize("interference at 5.8 GHz"))
+    mhz = _numeric(_tokenize("interference at 5800 MHz"))
+    assert ghz & mhz, f"no shared frequency token: {sorted(ghz)} vs {sorted(mhz)}"
+
+
+def test_distinct_measurements_do_not_collide() -> None:
+    """'38.2 dBuV/m at 132 MHz' and '32.8 dBuV/m at 138 MHz' are different
+    findings. Under bare-digit tokenization they shared every numeric token."""
+    # Digit-reversal is the sharpest case: under bare-digit tokenization
+    # "5.8 GHz" and "8.5 GHz" produce the identical token set {5, 8, ghz}.
+    a = _numeric(_tokenize("emission at 5.8 GHz"))
+    b = _numeric(_tokenize("emission at 8.5 GHz"))
+    assert a != b, f"5.8 GHz and 8.5 GHz tokenize identically: {sorted(a)}"
+    c = _numeric(_tokenize("peak 38.2 dBuV/m at 132 MHz"))
+    d = _numeric(_tokenize("peak 13.2 dBuV/m at 238 MHz"))
+    assert not (c & d), f"different findings collide on {sorted(c & d)}"
+
+
+def test_revision_identifiers_are_distinguishable() -> None:
+    """RC/benchmark revision_comparison depends on telling REV-A from REV-B."""
+    a = set(_tokenize("as recorded in REV-A"))
+    b = set(_tokenize("as recorded in REV-B"))
+    assert a != b
+    assert ("rev-a" in a) or ("reva" in a), sorted(a)
+
+
+def test_equipment_identifiers_are_distinguishable() -> None:
+    """EUT-7 and EUT-99 are different devices; the abstention benchmark case
+    turns on exactly this."""
+    a = set(_tokenize("device EUT-7 under test"))
+    assert ("eut-7" in a) or ("eut7" in a), sorted(a)
+    # EUT-7 must not read as the bare number 7, which collides with every
+    # unrelated "7" in the corpus -- distances, counts, channel numbers.
+    assert "7" not in a, sorted(a)
+
+
+def test_unit_spelling_variants_normalize_together() -> None:
+    """Legacy documents spell the field-strength unit inconsistently."""
+    variants = ["38.2 dBuV/m", "38.2 dBuV/M", "38.2 dbuv/m"]
+    token_sets = [set(_tokenize(v)) for v in variants]
+    assert token_sets[0] == token_sets[1] == token_sets[2], [sorted(s) for s in token_sets]
+    # And the level must be one token, not a number sitting next to a unit
+    # fragment -- "38.2 dBuV/m" and "38.2 dBuV" are different assertions.
+    assert any(("dbuv" in t and "38.2" in t) for t in token_sets[0]), sorted(token_sets[0])
+
+
+def test_plain_words_still_tokenize() -> None:
+    """The measurement handling must not break ordinary lexical retrieval."""
+    tokens = _tokenize("the shielded enclosure and connector")
+    for word in ("shielded", "enclosure", "connector"):
+        assert word in tokens, tokens
+
+
+def test_measurement_policy_matches_the_code_that_implements_it() -> None:
+    """Same code<->YAML consistency guarantee the ontology has: the declarative
+    Domain Pack policy and the tokenizer must not drift apart, or the policy
+    becomes documentation of something that is not happening."""
+    import yaml
+    from decimal import Decimal
+    from re_domain_pack import _FREQ_TO_MHZ, _LEVEL_UNITS, _ID_PREFIXES, POLICY_PATH
+
+    policy = yaml.safe_load(POLICY_PATH.read_text(encoding="utf-8"))["measurement_policy"]
+    assert policy["canonical_frequency_unit"].lower() == "mhz"
+    assert {k: Decimal(str(v)) for k, v in policy["frequency_units"].items()} == _FREQ_TO_MHZ
+    assert tuple(policy["level_units"]) == _LEVEL_UNITS
+    assert tuple(policy["identifier_prefixes"]) == _ID_PREFIXES
