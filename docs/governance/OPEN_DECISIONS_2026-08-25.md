@@ -6,9 +6,10 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01 through D-10 resolved 2026-08-25. **D-11 and D-12 are open** —
-both raised by the M1 work itself, and both about the same wall: what a
-dependency-free lexical retriever cannot do.
+**Status:** D-01 through D-10 resolved 2026-08-25. **D-11 and D-12 are open and
+deferred** — both raised by the M1 work itself, both about the same wall (what a
+dependency-free lexical retriever cannot do), and both now sequenced behind the
+arrival of the real RE corpus. See *Deferral* at the end of this register.
 Entries are kept as the record of why, not cleared; add new decisions here
 rather than starting a fresh register.
 
@@ -888,3 +889,77 @@ beyond rank 10, so the number is right and only the name is loose. And the
 `hybrid 40/60` row of D-12's table is not reproducible from the shipped code,
 because `RETRIEVAL_MODES` has no 0.4 entry — it is the measured basis for
 *not* changing the default, and a reader cannot re-derive it with `--mode`.
+
+---
+
+## Deferral — 2026-08-26: accuracy work waits for the real corpus
+
+Recorded as a decision rather than a gap, because it changes what the open
+entries are waiting on.
+
+**The owner's sequencing.** The real RE source documents will be supplied
+locally, after an internal handover. Accuracy work — retrieval tuning, the
+near-miss band, threshold selection — happens against those, not against the
+synthetic corpus. Nothing here is blocked on analysis; it is waiting on data.
+
+**Why that is the right order and not a delay.** Every threshold this system
+retrieves by is fitted to 30 synthetic documents written for this repository:
+
+| constant | where | fitted to |
+|---|---|---|
+| `_COVERAGE_FLOOR` = 0.12 | `src/re_domain_pack.py` | 108 fragments |
+| `_UNSEEN_TERM_CEILING` = 0.35 | `src/re_domain_pack.py` | 20 abstention cases in 3 bands |
+| `RETRIEVAL_MODES["hybrid"]` = 0.6 | `src/re_domain_pack.py` | 139 answerable cases |
+| `claim_grounding_floor` = 0.25 | `domains/re/domain_pack.yaml` | answerable minimum of 0.300 |
+
+Tuning any of them further against synthetic documents would be fitting to
+prose this repository wrote about itself. The measured `Recall@10` of 0.914 —
+0.906 excluding the eleven self-answering cases — is a number about that
+corpus, not about radiated emission engineering.
+
+**What was built so the resumption is a command, not an excavation.** Until
+now the sweeps that produced those four values lived in throwaway scripts, so
+the tables in this register cited numbers nobody else could re-derive.
+`scripts/calibrate_retrieval.py` now does all four against any corpus:
+
+```
+python3 scripts/calibrate_retrieval.py                      # in-tree
+python3 scripts/calibrate_retrieval.py --corpus /path/to/docs \
+                                       --benchmark cases.json
+```
+
+It changes nothing. It prints what each candidate value would buy and **exits
+non-zero when a shipped constant is no longer the right choice for the corpus
+it just measured** — so "our constants have gone stale" is a signal on the day
+the corpus changes, rather than something noticed a milestone later. Verified
+by deliberately staling two constants and watching it report them.
+
+Two guards matter on the day real documents arrive:
+
+- A benchmark whose expected documents are absent from the corpus is refused
+  before any sweep runs. Pointing the tool at real documents while still
+  holding the synthetic benchmark would otherwise report a catastrophic recall
+  that reads as a model regression.
+- The adversarial stability shapes are **not** applied to a real corpus. Those
+  generators fabricate documents; running them over real ones would inject
+  invented test reports into a measurement. The tool degrades to the corpus as
+  provided and says so, rather than reporting a stability result it did not
+  measure.
+
+**What this means for D-11 and D-12.** Both stay open, and neither should be
+forced now:
+
+- **D-11** (near-miss abstention is not decidable by any lexical statistic) was
+  measured over eight retrieval-side and five verification-side statistics on
+  the synthetic corpus. Whether the wall is the same height against real
+  documents — which have real vocabulary breadth, real near-misses, and real
+  contradictions — is itself a question only the real corpus can answer.
+- **D-12** (the kernel has no model dependency, and three PoC requirements need
+  one) is unchanged by the corpus, but its urgency is: if D-11 turns out
+  narrower against real documents, option A becomes more defensible; if wider,
+  B becomes harder to avoid. Deciding it before the data is deciding it blind.
+
+**The one thing that does not wait.** The evidence-reproducibility trade in
+D-12's option C is not a data question. A hosted-model dependency breaks
+`AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1` whatever the corpus contains, and that
+should be settled on its own terms rather than on how the accuracy numbers land.
