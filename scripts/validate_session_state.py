@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,24 @@ def run_git(*args: str) -> str:
     if result.returncode != 0:
         raise SessionStateError(result.stderr.strip() or f"git {' '.join(args)} failed")
     return result.stdout.strip()
+
+
+def resolve_branch() -> str:
+    """The checkout's branch, or the branch this checkout targets.
+
+    Third and last of the validators to get the D-02 escape hatch. The other
+    two took it on 2026-08-25 and this one was missed, so `validate_session_state`
+    alone still failed on every feature branch -- which meant the three
+    validators disagreed about what a valid local checkout was, and the
+    disagreement was invisible until someone ran all three.
+
+    Ignored outright inside GitHub Actions, exactly as in the other two, so it
+    cannot weaken CI.
+    """
+    override = os.environ.get("AGENTFACTORY_TARGET_BRANCH")
+    if override and not os.environ.get("GITHUB_ACTIONS"):
+        return override
+    return run_git("branch", "--show-current")
 
 
 def load_state(path: Path) -> dict[str, Any]:
@@ -60,7 +79,7 @@ def validate(state: dict[str, Any]) -> list[str]:
     if missing:
         raise SessionStateError(f"missing required fields: {', '.join(missing)}")
 
-    actual_branch = run_git("branch", "--show-current")
+    actual_branch = resolve_branch()
     if actual_branch != state["working_branch"]:
         raise SessionStateError(
             f"branch mismatch: state={state['working_branch']} actual={actual_branch}"

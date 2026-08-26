@@ -222,6 +222,23 @@ class RetrievalThresholds:
         )
 
 
+@dataclass(frozen=True)
+class VocabularyProfile:
+    """Three size-invariant readings of a corpus against one question.
+
+    `known_fraction` is the share of the question's informative terms the
+    corpus contains at all. `document_share` is the mean share of the corpus's
+    fragments that mention each of them -- how strongly the corpus is *about*
+    those terms rather than merely acquainted with them. `best_coverage` is the
+    IDF-weighted share of the question a single best fragment accounts for.
+    """
+
+    known_fraction: float
+    document_share: float
+    best_coverage: float
+    terms: int
+
+
 class RetrievalIndex:
     """BM25 + character-trigram similarity over a fragment set.
 
@@ -297,6 +314,30 @@ class RetrievalIndex:
         if total <= 0:
             return 0.0
         return sum(w for term, w in weights.items() if term in fragment_terms) / total
+
+    def profile(self, query_terms: Sequence[str]) -> "VocabularyProfile":
+        """What this corpus knows about a question, in numbers that mean the
+        same thing in a corpus of nine fragments and one of a hundred and eight.
+
+        Routing needs to compare domains, and the retrieval score cannot do it:
+        `rank` normalizes against each corpus's own maximum, so the top hit in
+        every corpus scores 1.0 and the number carries no cross-domain meaning.
+        These three do, and they are deliberately raw -- how they are weighed
+        against each other is a routing policy, and it lives in the router.
+        """
+        unique = [t for t in dict.fromkeys(query_terms) if t not in self._ignore]
+        if not unique:
+            return VocabularyProfile(0.0, 0.0, 0.0, 0)
+        n_fragments = max(self.size, 1)
+        known = sum(1 for t in unique if self._doc_freq.get(t, 0) > 0)
+        weights = self.query_weights(unique)
+        best = max((self.coverage(weights, s) for s in self._term_sets), default=0.0)
+        return VocabularyProfile(
+            known_fraction=known / len(unique),
+            document_share=sum(self._doc_freq.get(t, 0) / n_fragments for t in unique) / len(unique),
+            best_coverage=best,
+            terms=len(unique),
+        )
 
     def _bm25(self, query_terms: Sequence[str], index: int) -> float:
         k1, b = 1.5, 0.75

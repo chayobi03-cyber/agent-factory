@@ -1,4 +1,4 @@
-state_version: 28
+state_version: 29
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -89,12 +89,24 @@ last_completed:
   - five_more_domains_shipped_as_policy_plus_example_documents_thermal_structural_battery_manufacturing_firmware
   - d12_option_a_cleanup_re_policy_no_longer_declares_vector_graph_agentic_modes_or_a_cross_encoder_reranker_that_do_not_exist
   - identifier_tokens_may_carry_dotted_segments_so_a_release_note_domain_keeps_fw_4_2_0_whole
+  - d13_opened_and_closed_route_decision_was_declared_in_the_kernel_from_the_start_and_no_code_ever_constructed_one
+  - cross_domain_routing_built_and_measured_30_of_32_with_out_of_scope_refusal_perfect_at_6_of_6
+  - routing_on_vocabulary_coverage_found_biased_by_corpus_size_re_won_four_of_six_out_of_scope_questions_on_having_seen_more_words
+  - routing_on_vocabulary_coverage_found_to_reward_worse_tokenization_re_beat_firmware_on_fw_4_1_3_by_shattering_the_identifier
+  - concentration_replaces_vocabulary_as_the_scored_signal_because_it_has_neither_bias_and_ranks_better_23_of_24_in_scope
+  - vocabulary_profile_added_as_the_public_routing_surface_so_the_router_reaches_into_no_private_attribute_of_a_pack
+  - two_benchmark_cases_labelled_ambiguous_on_wording_were_measured_as_decisively_one_domain_and_relabelled_with_the_correction_recorded_in_the_file
+  - the_ambiguous_band_removed_because_the_six_example_corpora_are_subject_disjoint_and_the_requires_human_path_is_tested_over_constructed_overlap_instead
+  - run_domain_routes_when_domain_is_omitted_and_exits_3_when_no_loaded_domain_covers_the_question
 current_focus:
+  - routing works across all six domains at once - `scripts/run_domain.py --query "..."` with no --domain picks the domain, refuses, or refers to a person. 30/32 on the routing benchmark with out-of-scope refusal at 6/6
   - six domains ship ready for documents - re, thermal, structural, battery, manufacturing, firmware. Each has a policy and a small example corpus so `scripts/run_domain.py --domain <d> --corpus domains/<d>/examples` answers a real question on a fresh clone
   - ready for documents in any domain, not only RE: domains/<id>/domain_pack.yaml plus a folder of JSON, queried with scripts/run_domain.py. See docs/ADDING_A_DOMAIN.md
   - HOLDING for the real RE corpus. Every PoC corpus and benchmark target is met against synthetic documents; further accuracy tuning against them would be fitting to prose this repository wrote about itself
   - hold the trunk on `main` now that the divergent default branch is folded in
 current_risk:
+  - routing thresholds are fitted to the example corpora exactly as the retrieval thresholds are fitted to the synthetic RE corpus. MINIMUM_SCORE 0.15 sits between the highest out-of-scope score measured (0.102) and the lowest in-scope one (0.191), and a test asserts that band so the constant cannot drift out of its evidence - but both it and DECISIVE_MARGIN must be re-derived when real corpora of markedly different sizes are loaded together
+  - routing picks the corpus and says nothing about whether the answer from it is right. A question routed correctly to a domain whose corpus cannot answer it still reaches the claim verifier and the CER gate and is still refused there; the two mechanisms are independent and both run, but neither covers the other
   - near-miss abstention is 4/8 and no lexical statistic fixes it - eight retrieval-side and five verification-side statistics were scored, and the claim verifier that was expected to resolve it was built and measured as not the fix (OPEN_DECISIONS D-11); a semantic retrieval method is now the only remaining option, and until it lands the pack answers a question it should refuse half the time in that class. The verifier does name the unanswered part of the question in `unsupported_terms`, so the gap reaches a reviewer rather than passing silently
   - the two remaining retrieval constants are still corpus-scale dependent: _COVERAGE_FLOOR 0.12 and _UNSEEN_TERM_CEILING 0.35 were re-derived at 108 fragments / 159 cases, which is the right scale for now but not the PoC end state; re-run the sweeps in tests/test_re_retrieval_stability.py when the corpus changes materially
   - the corpus is synthetic. D-08 keeps the repository public, so real RE reports and CISPR text cannot be committed; every acceptance number is measured against documents written for this repository. An out-of-tree corpus can now be loaded, but a benchmark measured against one is not re-derivable from the commit SHA - the run records the corpus origin and digest so the gap is visible rather than silent
@@ -103,6 +115,7 @@ current_risk:
   - the acceptance margin is thin. Gated on the earned figure (0.906 excluding 11 self-answering cases) the retriever clears the 0.90 target by 0.006, which is one case. The headline 0.914 reads more comfortable than the system is
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
+  - when two real corpora of very different sizes are loaded together, re-derive MINIMUM_SCORE and DECISIVE_MARGIN with scripts/routing_benchmark.py against a routing benchmark written for them. The shipped values are fitted to corpora of 3 documents against RE's 30
   - for any domain - drop documents in a folder, copy domains/thermal/domain_pack.yaml, then run scripts/calibrate_retrieval.py before trusting an accuracy number. The four thresholds default to values fitted to synthetic RE documents and carry no authority over another corpus
   - on the day the real RE documents land - run `python3 scripts/calibrate_retrieval.py --corpus <DIR> --benchmark <CASES>`; it re-derives all four corpus-fitted constants and exits non-zero if any shipped value no longer fits. Do this BEFORE trusting any benchmark number measured against the new corpus
   - author a benchmark for the real corpus. The synthetic one names DOC-RE-* identifiers and the calibration tool refuses a benchmark whose expected documents are absent, which is the intended guard rather than an obstacle
@@ -200,4 +213,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-26T05:00:00+00:00
+updated_at_utc: 2026-08-26T09:56:30Z
