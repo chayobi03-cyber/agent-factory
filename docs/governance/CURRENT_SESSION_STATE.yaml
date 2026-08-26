@@ -1,4 +1,4 @@
-state_version: 24
+state_version: 25
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -78,8 +78,10 @@ last_completed:
   - audit_found_the_headline_recall_was_inflated_by_eleven_self_answering_cases_and_the_target_is_now_gated_on_the_earned_figure
   - audit_found_the_test_named_for_the_d10_signature_did_not_detect_d10_and_it_is_now_tightened_and_verified_against_the_reintroduced_defect
   - audit_found_distinctive_terms_dead_and_still_described_as_live_in_the_retrieve_docstring_both_removed
+  - calibrate_retrieval_script_added_so_all_four_corpus_fitted_constants_are_re_derivable_by_command_against_any_corpus
+  - accuracy_work_deferred_by_owner_decision_until_the_real_re_corpus_is_supplied_locally_after_internal_handover
 current_focus:
-  - M1 RE Hybrid RAG: expand corpus toward the 20+ document / 150 benchmark case PoC target, now that retrieval no longer moves with corpus composition
+  - HOLDING for the real RE corpus. Every PoC corpus and benchmark target is met against synthetic documents; further accuracy tuning against them would be fitting to prose this repository wrote about itself
   - hold the trunk on `main` now that the divergent default branch is folded in
 current_risk:
   - near-miss abstention is 4/8 and no lexical statistic fixes it - eight retrieval-side and five verification-side statistics were scored, and the claim verifier that was expected to resolve it was built and measured as not the fix (OPEN_DECISIONS D-11); a semantic retrieval method is now the only remaining option, and until it lands the pack answers a question it should refuse half the time in that class. The verifier does name the unanswered part of the question in `unsupported_terms`, so the gap reaches a reviewer rather than passing silently
@@ -90,9 +92,11 @@ current_risk:
   - the acceptance margin is thin. Gated on the earned figure (0.906 excluding 11 self-answering cases) the retriever clears the 0.90 target by 0.006, which is one case. The headline 0.914 reads more comfortable than the system is
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
-  - OPEN_DECISIONS D-12 needs the owner - whether the kernel takes a model dependency at all. It gates D-11's remaining option, the cross_encoder reranker, and RE_POC's "2 model providers minimum", and it trades against the reproducible-from-a-SHA property the evidence contract rests on
-  - M1 step 4 - out-of-tree corpus source for real RE documents, required because the repository stays public (OPEN_DECISIONS D-08)
-  - RE_POC.md's remaining PoC requirements - 3 retrieval methods minimum and 2 model providers minimum; the second retrieval method is also option B for D-11
+  - on the day the real RE documents land - run `python3 scripts/calibrate_retrieval.py --corpus <DIR> --benchmark <CASES>`; it re-derives all four corpus-fitted constants and exits non-zero if any shipped value no longer fits. Do this BEFORE trusting any benchmark number measured against the new corpus
+  - author a benchmark for the real corpus. The synthetic one names DOC-RE-* identifiers and the calibration tool refuses a benchmark whose expected documents are absent, which is the intended guard rather than an obstacle
+  - then revisit OPEN_DECISIONS D-11 with real vocabulary breadth, and D-12 with whatever D-11 turns out to cost
+  - D-12 option C (hosted model API) can be settled independently of the corpus - it breaks SHA-reproducibility whatever the documents contain
+
 blocked_until: []
 forbidden:
   - GEPA_implementation
@@ -177,4 +181,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-26T01:05:00+00:00
+updated_at_utc: 2026-08-26T02:00:00+00:00
