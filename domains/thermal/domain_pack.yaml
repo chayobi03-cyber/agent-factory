@@ -1,0 +1,113 @@
+domain_id: THERMAL
+version: 0.1.0
+name: Thermal Design
+scope: Electronics thermal-management engineering knowledge and evidence-grounded workflows
+
+# This domain exists to prove AF-004's acceptance criterion for real: "kernel
+# loads Domain Pack without code fork". There is no thermal_domain_pack.py and
+# there must never be one. Everything below is data; the mechanism is the
+# kernel's src/generic_domain_pack.py, shared with RE.
+#
+# What a domain actually has to say for itself turns out to be four things:
+# what it measures, what its identifiers look like, which of its words mean
+# nothing on their own, and where its thresholds sit.
+
+ontology:
+  entities:
+    - component
+    - die
+    - junction
+    - heatsink
+    - thermal_interface_material
+    - airflow
+    - ambient
+    - enclosure
+    - thermocouple
+    - power_dissipation
+    - thermal_resistance
+    - derating
+    - failure_mode
+  relations:
+    - mounted_on
+    - dissipates
+    - measured_at
+    - exceeds
+    - cooled_by
+    - correlates_with
+    - mitigated_by
+
+terminology:
+  # Ordinary English that carries no signal about which document is relevant.
+  stopwords:
+    [what, is, are, the, a, an, of, at, to, for, and, or, in, on, was, were,
+     does, did, how, has, have, had, with, this, that, it, its, as, be, by,
+     from, if, which, should, would, could, any]
+  # Present in nearly every thermal document by definition of the domain, so
+  # they never discriminate. RE's equivalent list is "radiated", "emission",
+  # "test" -- the shape is identical, the words are not.
+  generic_terms:
+    [thermal, temperature, heat, cooling, measured, measurement, test, tested,
+     component, design]
+
+measurement_policy:
+  # The kernel's MeasurementTokenizer builds itself from this. RE normalizes
+  # frequencies to MHz; this domain normalizes power to watts. Same mechanism,
+  # different table -- which is the whole point.
+  canonical_unit: w
+  quantity_metadata_key: power_dissipation
+  unit_multipliers:
+    uw: 0.000001
+    mw: 0.001
+    w: 1
+    kw: 1000
+  # Units that stay attached to their number rather than being scaled.
+  level_units: ["degc", "c/w", "k/w", "m/s", "cfm", "k"]
+  # Prefixes whose hyphenated form names one thing and must survive
+  # tokenization whole, like RE's EUT-7 or REV-B.
+  identifier_prefixes: [rev, dut, brd, hs, tim, tc, doc, jedec]
+
+source_policy:
+  authorities:
+    - standards_document
+    - thermal_simulation_report
+    - bench_measurement_log
+    - component_datasheet
+    - internal_engineering_wiki
+  revision_rules:
+    prefer_latest_authoritative_revision: true
+    preserve_superseded_revisions: true
+
+retrieval_policy:
+  # Only the three that exist. RE's file used to list vector/graph/agentic
+  # alongside them with nothing behind the names (OPEN_DECISIONS D-12).
+  allowed_modes: [bm25, trigram, hybrid]
+  default_mode: hybrid
+  max_k: 20
+  tuning:
+    # Inherited from RE as a starting point and NOT yet measured against a
+    # thermal corpus. Every one of these is corpus-fitted; run
+    # scripts/calibrate_retrieval.py against real documents before trusting
+    # any accuracy number from this domain.
+    coverage_floor: 0.12
+    unseen_term_ceiling: 0.35
+    lexical_weight: 0.6
+
+verification_policy:
+  require_evidence_for_claims: true
+  abstain_when_evidence_insufficient: true
+  claim_grounding_floor: 0.25
+  domain_rules:
+    - temperature and unit consistency
+    - thermal resistance claims require a stated reference point
+    - derating claims require an ambient condition
+    - junction temperature claims require the measurement method
+
+report_policy:
+  template_id: engineering_report_v1
+
+tools: []
+benchmark_catalog: []
+
+risk_policy:
+  thresholds:
+    junction_temperature_margin_c: 10.0

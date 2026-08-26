@@ -52,11 +52,28 @@ terminology:
     AF: antenna factor
     CL: cable loss
 
+  # Moved here from src/re_domain_pack.py, where they were hardcoded beside a
+  # policy file that already claimed to describe this domain. The kernel's
+  # generic pack reads them; nothing duplicates them any more.
+  stopwords:
+    [what, is, are, the, a, an, of, at, to, for, and, or, in, on, was, were,
+     does, did, how, has, have, had, with, this, that, it, its, as, be, by,
+     from, if, which, should, would, could, any]
+  # Present in nearly every RE query and document by definition of the domain,
+  # so they never discriminate *which* document is relevant.
+  generic_terms:
+    [radiated, emission, emissions, test, tested, testing, measurement,
+     measured, measure, device, dut, eut, chamber, performance,
+     "radiated emissions"]
+
 measurement_policy:
   # The RE domain's content is numbers with units. src/re_domain_pack.py mirrors
   # these tables and tests/test_re_domain_pack.py asserts the two agree, the same
   # code<->YAML consistency check used for the ontology.
   canonical_frequency_unit: MHz
+  # What a fragment's extracted quantities are called in its metadata. RE
+  # measures frequencies; another domain measures something else and says so.
+  quantity_metadata_key: frequencies
   frequency_units:
     hz: 0.000001
     khz: 0.001
@@ -101,6 +118,21 @@ retrieval_policy:
   max_k: 20
   identifier_first_for: [standard clause, equipment model, frequency, test method, report id]
   parent_context_required: true
+  tuning:
+    # The corpus-fitted thresholds, now declared where the rest of the domain
+    # is described rather than hardcoded in Python beside it. Every one is
+    # fitted to the 30 synthetic documents in src/re_corpus.py; re-derive them
+    # with scripts/calibrate_retrieval.py before trusting any accuracy number
+    # measured against a different corpus.
+    #
+    # coverage_floor        share of a question's IDF mass a fragment must
+    #                       cover to be a candidate (OPEN_DECISIONS D-10)
+    # unseen_term_ceiling   share of a question that may be absent before it is
+    #                       treated as unanswerable (D-11)
+    # lexical_weight        BM25's share of the hybrid against trigram (D-12)
+    coverage_floor: 0.12
+    unseen_term_ceiling: 0.35
+    lexical_weight: 0.6
 
 reasoning_policy:
   diagnosis: hypothesis_competition
