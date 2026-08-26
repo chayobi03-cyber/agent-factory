@@ -1,0 +1,86 @@
+domain_id: STRUCTURAL
+version: 0.1.0
+name: Structural Mechanics
+scope: Load-bearing structure analysis, test and failure investigation
+
+# Stresses the same mechanism as RE with an entirely different unit family:
+# pressures scale (kPa/MPa/GPa), dimensions and cycle counts stay attached.
+
+ontology:
+  entities:
+    - part
+    - joint
+    - weld
+    - fastener
+    - load_case
+    - stress
+    - strain
+    - deflection
+    - fatigue
+    - crack
+    - safety_factor
+    - failure_mode
+  relations:
+    - joined_to
+    - loaded_by
+    - measured_at
+    - exceeds
+    - reinforced_by
+    - correlates_with
+    - propagates_from
+
+terminology:
+  generic_terms:
+    [structural, structure, stress, load, loading, analysis, analysed, model,
+     design, part, component, test, tested, measured, measurement]
+
+measurement_policy:
+  canonical_unit: mpa
+  quantity_metadata_key: stresses
+  unit_multipliers:
+    pa: 0.000001
+    kpa: 0.001
+    mpa: 1
+    gpa: 1000
+  level_units: ["mm", "kn", "kg", "cycles", "hz", "degc"]
+  identifier_prefixes: [rev, part, wld, lc, jnt, fas, doc, iso]
+
+source_policy:
+  authorities:
+    - standards_document
+    - fea_analysis_report
+    - physical_test_report
+    - material_certificate
+    - internal_engineering_wiki
+  revision_rules:
+    prefer_latest_authoritative_revision: true
+    preserve_superseded_revisions: true
+
+retrieval_policy:
+  allowed_modes: [bm25, trigram, hybrid]
+  default_mode: hybrid
+  max_k: 20
+  tuning:
+    # Copied from RE and NOT measured against structural documents. Run
+    # scripts/calibrate_retrieval.py before trusting any accuracy figure.
+    coverage_floor: 0.12
+    unseen_term_ceiling: 0.35
+    lexical_weight: 0.6
+
+verification_policy:
+  require_evidence_for_claims: true
+  abstain_when_evidence_insufficient: true
+  claim_grounding_floor: 0.25
+  domain_rules:
+    - stress claims require the load case they were computed under
+    - fatigue life claims require the stress range and the R ratio
+    - safety factor claims require the allowable they were taken against
+    - test results require the specimen identifier
+
+report_policy:
+  template_id: engineering_report_v1
+tools: []
+benchmark_catalog: []
+risk_policy:
+  thresholds:
+    minimum_safety_factor: 1.5

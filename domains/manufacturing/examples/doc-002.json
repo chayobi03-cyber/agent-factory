@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-MF-003",
+ "revision_id": "REV-A",
+ "title": "Fixture FIX-5 Wear and Dimensional Drift",
+ "doc_type": "inspection_log",
+ "text": "Fixture FIX-5 showed progressive locating pin wear across 40000 units. Hole position drifted from 0.02 mm to 0.11 mm against a 0.08 mm tolerance, and cpk at OP-40 fell from 1.41 to 0.94 over the same period. Pin replacement restored capability."
+}

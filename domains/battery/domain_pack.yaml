@@ -1,0 +1,84 @@
+domain_id: BATTERY
+version: 0.1.0
+name: Battery Systems
+scope: Cell and pack characterisation, ageing and safety investigation
+
+# Energy scales; voltages, currents, capacities and temperatures stay attached.
+# Identifiers here name physical objects with serial traceability, which is why
+# CELL- and LOT- must survive tokenization whole.
+
+ontology:
+  entities:
+    - cell
+    - module
+    - pack
+    - electrode
+    - separator
+    - electrolyte
+    - state_of_charge
+    - capacity_fade
+    - internal_resistance
+    - thermal_runaway
+    - cycle_life
+    - failure_mode
+  relations:
+    - assembled_into
+    - cycled_at
+    - measured_at
+    - degrades_to
+    - exceeds
+    - correlates_with
+    - triggered_by
+
+terminology:
+  generic_terms:
+    [battery, cell, capacity, charge, charging, discharge, discharging,
+     cycle, cycling, test, tested, measured, measurement, performance]
+
+measurement_policy:
+  canonical_unit: wh
+  quantity_metadata_key: energies
+  unit_multipliers:
+    mwh: 0.001
+    wh: 1
+    kwh: 1000
+  level_units: ["mah", "ah", "mv", "v", "ma", "a", "degc", "mohm"]
+  identifier_prefixes: [rev, cell, mod, pack, bms, lot, doc, iec]
+
+source_policy:
+  authorities:
+    - standards_document
+    - cell_characterisation_report
+    - abuse_test_report
+    - supplier_datasheet
+    - internal_engineering_wiki
+  revision_rules:
+    prefer_latest_authoritative_revision: true
+    preserve_superseded_revisions: true
+
+retrieval_policy:
+  allowed_modes: [bm25, trigram, hybrid]
+  default_mode: hybrid
+  max_k: 20
+  tuning:
+    coverage_floor: 0.12
+    unseen_term_ceiling: 0.35
+    lexical_weight: 0.6
+
+verification_policy:
+  require_evidence_for_claims: true
+  abstain_when_evidence_insufficient: true
+  claim_grounding_floor: 0.25
+  domain_rules:
+    - capacity claims require the C-rate and temperature they were measured at
+    - cycle life claims require the depth of discharge
+    - resistance claims require the state of charge
+    - safety claims require the abuse condition tested
+
+report_policy:
+  template_id: engineering_report_v1
+tools: []
+benchmark_catalog: []
+risk_policy:
+  thresholds:
+    end_of_life_capacity_fraction: 0.8

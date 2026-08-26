@@ -141,9 +141,14 @@ class MeasurementTokenizer:
             if self.level_units else None
         )
         self._ident_re = (
+            # Segments may carry dots, so FW-4.2.0 survives whole rather than
+            # becoming 'fw-4' plus two bare numbers that collide with every
+            # other number in the corpus. Version strings are identifiers in
+            # exactly the way EUT-7 is, and a domain whose documents are mostly
+            # release notes has little else to discriminate on.
             re.compile(r"(?<![\w-])((?:" +
                        "|".join(re.escape(p) for p in self.identifier_prefixes) +
-                       r")(?:-[a-z0-9]+)+)(?![\w-])")
+                       r")(?:-[a-z0-9]+(?:\.[a-z0-9]+)*)+)(?![\w-])")
             if self.identifier_prefixes else None
         )
 

@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-TH-001",
+ "revision_id": "REV-A",
+ "title": "DUT-4 Junction Temperature Bench Measurement",
+ "doc_type": "bench_measurement_log",
+ "text": "Board BRD-12 carrying DUT-4 was run at 18 W dissipation in a 25 degC ambient with 1.2 m/s forced airflow. Junction temperature reached 108 degC against a 125 degC rating, leaving a 17 degC margin. Thermocouple TC-3 on the heatsink base read 71 degC."
+}

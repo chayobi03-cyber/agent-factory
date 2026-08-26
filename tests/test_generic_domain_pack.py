@@ -171,3 +171,101 @@ def test_an_unknown_domain_names_the_ones_that_exist():
 
     with pytest.raises(FileNotFoundError, match="available:"):
         run_domain.build_pack("nonexistent", None)
+
+
+# --- every shipped domain, exercised the same way ---------------------------
+#
+# Six domains, one engine. These run over whatever is in `domains/`, so a
+# seventh added tomorrow is covered without editing this file -- which is the
+# behaviour a factory should have and a per-domain test file would not.
+
+SHIPPED = sorted(d.name for d in DOMAINS.iterdir() if (d / "domain_pack.yaml").exists())
+
+#: One question per domain that its own example corpus answers, and the
+#: document that must come back. Not paraphrases of a sentence in the answer:
+#: a benchmark whose queries are lifted from their documents measures whoever
+#: wrote it.
+ANSWERABLE = {
+    "thermal": ("what caused the DUT-7 junction temperature excursion?", "DOC-TH-003"),
+    "structural": ("why did PART-118 crack in the field?", "DOC-ST-003"),
+    "battery": ("why did PACK-19 miss its cycle life requirement?", "DOC-BT-002"),
+    "manufacturing": ("what caused the LOT-2291 solder defects?", "DOC-MF-002"),
+    "firmware": ("why do SKU-31 units reset after a cold start?", "DOC-FW-002"),
+}
+
+
+def _with_examples(domain: str) -> GenericDomainPack:
+    from corpus_source import from_directory
+
+    pack = GenericDomainPack.from_directory(DOMAINS / domain)
+    pack.load(from_directory(DOMAINS / domain / "examples"))
+    return pack
+
+
+@pytest.mark.parametrize("domain", sorted(ANSWERABLE))
+def test_every_domain_answers_its_own_question_out_of_the_box(domain):
+    """`--corpus domains/<d>/examples` has to work the moment someone clones
+    the repository, or the examples are decoration."""
+    query, expected = ANSWERABLE[domain]
+    found = _with_examples(domain).retrieve(query, top_k=3)
+    assert expected in {e.document_id for e in found}, [e.document_id for e in found]
+
+
+@pytest.mark.parametrize("domain", sorted(ANSWERABLE))
+def test_every_domain_refuses_another_domains_question(domain):
+    """A pack asked about a field it does not cover must refuse rather than
+    return its nearest paragraph. This is the reliable half of abstention --
+    OPEN_DECISIONS D-11 records that the near-miss half is not."""
+    foreign = "What is the CISPR 32 Class B radiated emission limit at 3 meters?"
+    assert _with_examples(domain).retrieve(foreign) == []
+
+
+@pytest.mark.parametrize("domain", SHIPPED)
+def test_no_domain_ships_code(domain):
+    assert not list((DOMAINS / domain).rglob("*.py")), f"{domain} must be data only"
+
+
+@pytest.mark.parametrize("domain", SHIPPED)
+def test_every_domain_declares_the_vocabulary_the_kernel_cannot_guess(domain):
+    """`generic_terms` is the one piece of real domain knowledge required. The
+    kernel supplies English function words; it cannot know that "radiated" says
+    nothing in an RE archive or "thermal" nothing in a heat one."""
+    pack = GenericDomainPack.from_directory(DOMAINS / domain)
+    assert pack.generic_terms, f"{domain} declares no generic_terms"
+    assert pack.stopwords, f"{domain} resolved to no stopwords at all"
+
+
+@pytest.mark.parametrize("domain", SHIPPED)
+def test_every_domain_declares_only_retrieval_modes_that_exist(domain):
+    """RE's policy once listed vector, graph and agentic with nothing behind
+    the names (OPEN_DECISIONS D-12). A new domain must not reintroduce that."""
+    pack = GenericDomainPack.from_directory(DOMAINS / domain)
+    declared = set((pack.policy.get("retrieval_policy") or {}).get("allowed_modes") or [])
+    assert declared <= set(pack.modes), f"{domain} declares unimplemented modes: {declared - set(pack.modes)}"
+
+
+def test_a_domain_can_declare_identifiers_without_any_units():
+    """FIRMWARE ships with no unit tables at all -- prose plus build and ticket
+    identifiers. Not every engineering domain measures things, and that path
+    has to be exercised by something shipped rather than only by a fixture."""
+    pack = GenericDomainPack.from_directory(DOMAINS / "firmware")
+    assert not pack.tokenize.unit_multipliers
+    assert not pack.tokenize.level_units
+    assert pack.tokenize.identifier_prefixes
+    tokens = pack.tokenize("FW-4.2.0 supersedes FW-4.1.3 under TKT-4471")
+    assert "fw-4.2.0" in tokens and "tkt-4471" in tokens, tokens
+
+
+def test_domains_do_not_share_a_unit_vocabulary():
+    """Each domain's tokenizer is built from its own table. If these collided,
+    the tables would be decorative and the kernel would be carrying one
+    domain's units for everyone."""
+    units = {d: set(GenericDomainPack.from_directory(DOMAINS / d).tokenize.unit_multipliers)
+             for d in ("re", "thermal", "structural", "battery", "manufacturing")}
+    assert units["re"] & units["thermal"] == set(), units
+    assert units["structural"] != units["battery"]
+    # And a quantity tokenizes to its own domain's canonical unit.
+    thermal = GenericDomainPack.from_directory(DOMAINS / "thermal")
+    structural = GenericDomainPack.from_directory(DOMAINS / "structural")
+    assert "q:30w" in thermal.tokenize("a 30 W burst")
+    assert "q:214mpa" in structural.tokenize("214 MPa at the fillet")
