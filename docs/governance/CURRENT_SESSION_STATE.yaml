@@ -1,4 +1,4 @@
-state_version: 26
+state_version: 27
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -81,7 +81,13 @@ last_completed:
   - calibrate_retrieval_script_added_so_all_four_corpus_fitted_constants_are_re_derivable_by_command_against_any_corpus
   - accuracy_work_deferred_by_owner_decision_until_the_real_re_corpus_is_supplied_locally_after_internal_handover
   - d12_option_c_hosted_model_api_excluded_permanently_by_owner_decision_and_enforced_by_an_import_guard
+  - retrieval_engine_and_domain_pack_extracted_to_the_kernel_so_a_new_domain_is_a_yaml_file_plus_documents_with_no_python
+  - re_domain_pack_rebound_over_the_shared_engine_with_identical_measured_behaviour_and_its_vocabulary_and_thresholds_moved_into_its_policy_file
+  - second_domain_thermal_added_as_policy_data_only_proving_af_004_kernel_loads_domain_pack_without_code_fork_for_real
+  - run_domain_cli_added_so_a_local_document_folder_is_queryable_without_writing_code
+  - idf_smoothing_added_after_finding_a_small_corpus_gave_every_present_term_zero_weight_and_abstained_on_everything
 current_focus:
+  - ready for documents in any domain, not only RE: domains/<id>/domain_pack.yaml plus a folder of JSON, queried with scripts/run_domain.py. See docs/ADDING_A_DOMAIN.md
   - HOLDING for the real RE corpus. Every PoC corpus and benchmark target is met against synthetic documents; further accuracy tuning against them would be fitting to prose this repository wrote about itself
   - hold the trunk on `main` now that the divergent default branch is folded in
 current_risk:
@@ -93,6 +99,7 @@ current_risk:
   - the acceptance margin is thin. Gated on the earned figure (0.906 excluding 11 self-answering cases) the retriever clears the 0.90 target by 0.006, which is one case. The headline 0.914 reads more comfortable than the system is
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
+  - for any domain - drop documents in a folder, copy domains/thermal/domain_pack.yaml, then run scripts/calibrate_retrieval.py before trusting an accuracy number. The four thresholds default to values fitted to synthetic RE documents and carry no authority over another corpus
   - on the day the real RE documents land - run `python3 scripts/calibrate_retrieval.py --corpus <DIR> --benchmark <CASES>`; it re-derives all four corpus-fitted constants and exits non-zero if any shipped value no longer fits. Do this BEFORE trusting any benchmark number measured against the new corpus
   - author a benchmark for the real corpus. The synthetic one names DOC-RE-* identifiers and the calibration tool refuses a benchmark whose expected documents are absent, which is the intended guard rather than an obstacle
   - then revisit OPEN_DECISIONS D-11 with real vocabulary breadth, and D-12 with whatever D-11 turns out to cost
@@ -189,4 +196,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-26T02:45:00+00:00
+updated_at_utc: 2026-08-26T04:00:00+00:00
