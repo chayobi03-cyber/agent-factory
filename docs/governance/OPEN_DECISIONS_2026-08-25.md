@@ -1013,3 +1013,154 @@ would add a heavyweight dependency and cost CI minutes, but it touches
 reproducibility not at all — a local model produces the same output from the
 same commit. It needs none of the forbidden imports and is not obstructed by
 this test. If B is chosen after the trial, nothing here has to be reopened.
+
+---
+
+## D-13 — Routing existed as an interface and never as a capability
+
+**Raised 2026-08-26. Closed the same day.**
+
+Six Domain Packs now share one engine, and nothing chose between them.
+`interfaces.RouteDecision` has been in the kernel since it was written —
+carrying `domain`, `workflow_id`, `retrieval_modes` and a `requires_human` flag
+— and no code path ever constructed one. Every entry point took the domain as
+an argument. `scripts/run_domain.py` required `--domain`; the demos hardcoded
+theirs. The capability the kernel appeared to have was an argument the caller
+had to supply.
+
+That makes **four** declared-and-unimplemented items this register has now
+recorded: the audit evidence contract (D-09), three retrieval modes and a
+reranker (D-12), a gating mechanism still described in a docstring after its
+deletion (the 2026-08-26 audit note), and routing. The pattern is stable enough
+to state as a rule: **an interface is not a capability, and a dataclass nobody
+constructs is documentation.**
+
+### Why this was answerable with invented documents
+
+Retrieval accuracy and routing accuracy are different claims, and only one of
+them needs real files.
+
+Accuracy *within* a domain asks whether the right paragraph of a real report
+comes back. Invented documents cannot support that claim, which is why the
+2026-08-26 deferral holds RE tuning until the corpus arrives after handover.
+
+Discrimination *between* domains asks whether battery vocabulary looks like
+battery vocabulary and not like thermal vocabulary. That needs corpora about
+*different things*, which invented ones are. So routing was measured now rather
+than queued behind the handover — and it found two real defects that no
+single-domain retrieval score could have exposed.
+
+### Two biases, both found on invented corpora, both real
+
+**Corpus size.** The obvious routing signal is vocabulary coverage: what share
+of the question's informative terms does this corpus contain at all? It is
+biased by size, because a larger corpus contains more ordinary English by
+accident. RE, with 108 fragments against every other domain's nine, won **four
+of six out-of-scope questions** on vocabulary alone — boiler feedwater, fibre
+bend radius, concrete curing — for questions it had no documents about. The
+replacement, `document_share`, is the mean share of a corpus's *fragments*
+mentioning each query term: an incidental term in 1 of 108 fragments
+contributes 0.009 whatever the corpus size, and a term the corpus is genuinely
+about contributes far more.
+
+**Tokenization quality — the surprising one.** Vocabulary coverage rewards the
+pack that handles text *worst*. Asked "which build superseded FW-4.1.3", the
+firmware pack keeps `fw-4.1.3` as a single token, which is correct. RE shatters
+it into `fw`, `4`, `1`, `3`, and its corpus contains those bare numbers, so RE
+scored 0.57 against firmware's 0.33 and won a firmware question. **The domain
+that handled the identifier correctly lost precisely because it did.** Any
+measure counting term hits has this property; `document_share` does not, and on
+that same question firmware leads RE fourfold.
+
+### What was built
+
+- `RetrievalIndex.profile()` and `VocabularyProfile` in the kernel — three
+  size-invariant readings of a corpus against one question.
+- `GenericDomainPack.vocabulary_profile()` — the entire public surface routing
+  needs, so the router never reaches into an index whose shape it should not
+  know. An earlier draft declared a two-member `RoutablePack` protocol and then
+  reached through `pack._ignore` and `pack._index` anyway, which would have
+  made it the fifth interface here describing something other than the code.
+  `tests/test_domain_router.py` routes a stub object implementing nothing else,
+  so the protocol cannot quietly become a lie again.
+- `src/domain_router.py` — `score = 0.6 · concentration + 0.4 · coverage`, with
+  three outcomes: a domain, a refusal, or `requires_human`. The first code in
+  this repository to construct a `RouteDecision`, and the first to reach the
+  kernel's HOTL path.
+- `scripts/run_domain.py` routes when `--domain` is omitted; exit code 3 means
+  no loaded domain covers the question, which is a result and not an error.
+- `scripts/routing_benchmark.py` and `templates/benchmark/cross_domain_routing_v0.1.json`.
+
+### Measured
+
+**30 of 32 (0.938)**, over all six domains loaded at once:
+
+| band | result | target |
+| --- | --- | --- |
+| `clear` | 17/19 (0.895) | 0.85 |
+| `shared_vocabulary` | 7/7 (1.000) | 0.85 |
+| `out_of_scope` | 6/6 (1.000) | 1.00 |
+
+`out_of_scope` is held to 1.0 and the others are not, deliberately. Missing an
+in-scope question yields a refusal or a referral, which a reader sees. Naming a
+domain for a question no corpus covers yields a confident answer from the wrong
+documents, which nobody sees.
+
+Both remaining misses are recorded rather than tuned away:
+
+- **RT-006**, "which interface material tolerates the larger gap variation" — a
+  thermal question scoring 0.075, because it names nothing thermal-specific: no
+  unit, no identifier, no term the thermal corpus is about. No floor separates
+  it from a question about boiler feedwater and none is claimed to. It is
+  refused, which is the better of the two available errors.
+- **RT-017**, "which build superseded FW-4.1.3" — firmware 0.19, RE 0.15, so it
+  is referred to a person rather than answered on a 0.04 margin. Firmware is
+  still named first. Counted as a miss because a router that referred
+  everything would otherwise score perfectly.
+
+### The benchmark was wrong, and that is recorded rather than corrected quietly
+
+Two cases were labelled `ambiguous` — spanning two domains, where the right
+answer is a person. Neither survived contact with the corpora.
+
+RT-031 ("cell temperature rise … pack thermal runaway") *reads* as thermal and
+battery both. The thermal corpus contains no occurrence of cell, pack or
+runaway; only `temperature` is shared. It is a `shared_vocabulary` case and
+routes to BATTERY at 0.24 against THERMAL's 0.10. RT-032 ("fixture wear …
+dimensional capability") names four terms the manufacturing corpus has and
+nobody else does, and routes to MANUFACTURING at 0.50 against BATTERY's 0.00.
+
+The root cause is structural: **the six example corpora are subject-disjoint** —
+no two describe the same artefact or event — so no genuinely ambiguous question
+exists over them. The labels came from the wording, which is the same error as
+writing a benchmark query by paraphrasing its own answer, and it is the fourth
+time in this register that something was asserted without being measured.
+
+Both were relabelled to their measured domains, the `ambiguous` band was
+removed, and `removed_band` in the benchmark file records the cases, the
+reasoning and the date. **A label corrected silently is indistinguishable from a
+label tuned to make a score look better**, and this repository has no way to
+tell those apart after the fact except by having written it down.
+
+The `requires_human` path is covered instead by `tests/test_domain_router.py`,
+over two corpora built to overlap on purpose — one incident report filed under
+two document numbers, so the margin between them is exactly zero and cannot
+drift as prose is edited. An earlier version of that fixture wrote two *similar*
+corpora by hand and landed at 0.064, outside the 0.05 band: it asserted
+ambiguity on text that was not ambiguous. Testing a threshold with prose tuned
+by eye measures the prose.
+
+### What this does not settle
+
+Routing picks the corpus. It says nothing about whether the answer from that
+corpus is right, which is D-11 and D-12 territory and still waits on the real
+documents. A question routed correctly to a domain whose corpus cannot answer
+it still reaches the claim verifier and the CER gate, and is still refused
+there — the two mechanisms are independent and both run.
+
+The thresholds are fitted to the example corpora, exactly as the retrieval
+thresholds are fitted to the synthetic RE corpus. `MINIMUM_SCORE = 0.15` sits
+between the highest out-of-scope score measured (0.102) and the lowest in-scope
+one (0.191); a test asserts that band so the constant cannot drift out of the
+evidence that justifies it. Both constants must be re-derived when real corpora
+of markedly different sizes are loaded together.

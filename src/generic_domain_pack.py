@@ -38,6 +38,7 @@ from domain_retrieval import (
     MeasurementTokenizer,
     RetrievalIndex,
     RetrievalThresholds,
+    VocabularyProfile,
 )
 from interfaces import Claim, EvidenceCandidate
 
@@ -249,6 +250,17 @@ class GenericDomainPack:
     def _ensure_loaded(self) -> None:
         if not self._loaded:
             self.load()
+
+    def vocabulary_profile(self, query: str) -> VocabularyProfile:
+        """How much this domain's corpus knows about a question.
+
+        This is the whole surface `domain_router` needs, and it exists so the
+        router does not reach into an index it should not know the shape of.
+        Anything answering to `domain_id` and this method can be routed,
+        including a pack that is not a `GenericDomainPack` at all.
+        """
+        self._ensure_loaded()
+        return self._index.profile(self.tokenize(query))
 
     @property
     def default_retrieval_mode(self) -> str:

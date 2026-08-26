@@ -130,6 +130,33 @@ paraphrasing a sentence from the answer — a benchmark whose queries are lifted
 from their own documents measures the person who wrote it. The RE benchmark
 reports its own figure both ways for exactly this reason.
 
+## More than one domain at a time
+
+Omit `--domain` and the question is routed across every loaded domain:
+
+```bash
+python3 scripts/run_domain.py --examples --query "what caused the cell to vent?"
+```
+
+Three answers are possible and only one of them is a domain. It can refuse —
+"no loaded domain covers this question", exit code 3 — and it can refer, when
+two domains are too close to separate, which prints a REVIEW line and answers
+from the leading domain anyway so a person can check the choice.
+
+Routing compares how strongly each corpus is *about* the question's terms, not
+how many of them it has seen. That distinction is not cosmetic: on the term
+count, the largest corpus wins questions it has no documents for, and the pack
+that tokenizes an identifier *correctly* loses to one that shatters it into
+pieces its corpus happens to contain. Both were measured, and OPEN_DECISIONS
+D-13 records them.
+
+```bash
+python3 scripts/routing_benchmark.py     # 30/32 over the six example domains
+```
+
+The two routing thresholds are corpus-fitted like the other four. If you load
+corpora of very different sizes together, re-derive them.
+
 ## What you get, and what you should not expect
 
 Retrieval, claim-evidence verification and the CER gate all run, so a query
@@ -145,6 +172,11 @@ Two limits are measured rather than assumed, and both are recorded in
   not contain, are refused reliably. Near-misses are refused about half the
   time. The verifier names the unsupported part of the question so a reviewer
   can see the gap, which is a person catching it, not the system.
+- **D-13** — routing picks the corpus and says nothing about whether the
+  answer from it is right. A question routed correctly to a domain that cannot
+  answer it still reaches the claim verifier and the CER gate and is still
+  refused there; the two mechanisms are independent and neither covers the
+  other.
 - **D-12** — there is no semantic retrieval and no reranker. A hosted model API
   is permanently excluded, because a run that calls one cannot be re-derived
   from the commit it names, which is what the audit evidence contract is built

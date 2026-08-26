@@ -1,0 +1,209 @@
+{
+  "benchmark_id": "cross-domain-routing-v0.2",
+  "version": "0.2.0",
+  "judge": "deterministic-domain-selection",
+  "note": "Does the right Domain Pack get selected when several are loaded? Three bands. `clear` uses one domain's vocabulary and nobody else's. `shared_vocabulary` is the trap: another loaded domain uses the same words (temperature belongs to thermal and battery both), so only the discriminating terms decide. `out_of_scope` are real engineering questions no loaded domain covers, where naming any domain is wrong. Measured against the example corpora in domains/*/examples, which are invented -- this benchmark tests discrimination between domains, not accuracy within one.",
+  "cases": [
+    {
+      "case_id": "RT-001",
+      "query": "What caused the EUT-12 radiated emission exceedance at 340 MHz?",
+      "expected_domain": "RE",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-002",
+      "query": "Which document describes the chamber CH-2 antenna setup?",
+      "expected_domain": "RE",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-003",
+      "query": "What is the CISPR 32 Class B limit at 3 meters?",
+      "expected_domain": "RE",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-004",
+      "query": "What caused the DUT-7 junction temperature excursion?",
+      "expected_domain": "THERMAL",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-005",
+      "query": "What thermal resistance does heatsink HS-9 give at 1.2 m/s airflow?",
+      "expected_domain": "THERMAL",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-006",
+      "query": "Which interface material tolerates the larger gap variation?",
+      "expected_domain": "THERMAL",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-007",
+      "query": "Why did PART-118 crack in the field?",
+      "expected_domain": "STRUCTURAL",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-008",
+      "query": "What safety factor did the bracket show under load case LC-3?",
+      "expected_domain": "STRUCTURAL",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-009",
+      "query": "What fatigue life was predicted for weld WLD-22?",
+      "expected_domain": "STRUCTURAL",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-010",
+      "query": "Why did PACK-19 miss its cycle life requirement?",
+      "expected_domain": "BATTERY",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-011",
+      "query": "What capacity did CELL-A3 measure at a 0.2 C discharge?",
+      "expected_domain": "BATTERY",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-012",
+      "query": "At what surface temperature did thermal runaway begin on the cell?",
+      "expected_domain": "BATTERY",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-013",
+      "query": "What caused the LOT-2291 solder defects?",
+      "expected_domain": "MANUFACTURING",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-014",
+      "query": "What process capability did operation OP-40 achieve?",
+      "expected_domain": "MANUFACTURING",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-015",
+      "query": "How far did hole position drift as the fixture pins wore?",
+      "expected_domain": "MANUFACTURING",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-016",
+      "query": "Why do SKU-31 units reset after a cold start?",
+      "expected_domain": "FIRMWARE",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-017",
+      "query": "Which build superseded FW-4.1.3 and what did it change?",
+      "expected_domain": "FIRMWARE",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-018",
+      "query": "Which change request fixed the cold start reset loop?",
+      "expected_domain": "FIRMWARE",
+      "band": "clear"
+    },
+    {
+      "case_id": "RT-019",
+      "query": "What temperature did the cell reach before venting?",
+      "expected_domain": "BATTERY",
+      "band": "shared_vocabulary"
+    },
+    {
+      "case_id": "RT-020",
+      "query": "What ambient temperature was the junction margin measured at?",
+      "expected_domain": "THERMAL",
+      "band": "shared_vocabulary"
+    },
+    {
+      "case_id": "RT-021",
+      "query": "What torque specification applies at the assembly station?",
+      "expected_domain": "MANUFACTURING",
+      "band": "shared_vocabulary"
+    },
+    {
+      "case_id": "RT-022",
+      "query": "What stress did the fillet radius see under the vertical load?",
+      "expected_domain": "STRUCTURAL",
+      "band": "shared_vocabulary"
+    },
+    {
+      "case_id": "RT-023",
+      "query": "Which watchdog window does the current release use?",
+      "expected_domain": "FIRMWARE",
+      "band": "shared_vocabulary"
+    },
+    {
+      "case_id": "RT-024",
+      "query": "Which antenna was used for the 30 to 1000 MHz sweep?",
+      "expected_domain": "RE",
+      "band": "shared_vocabulary"
+    },
+    {
+      "case_id": "RT-025",
+      "query": "What is the recommended cure schedule for a two-part epoxy adhesive?",
+      "expected_domain": null,
+      "band": "out_of_scope"
+    },
+    {
+      "case_id": "RT-026",
+      "query": "How is a hydraulic accumulator pre-charge pressure set?",
+      "expected_domain": null,
+      "band": "out_of_scope"
+    },
+    {
+      "case_id": "RT-027",
+      "query": "What is the acceptable total dissolved solids level for boiler feedwater?",
+      "expected_domain": null,
+      "band": "out_of_scope"
+    },
+    {
+      "case_id": "RT-028",
+      "query": "Which lubricant viscosity grade suits a gearbox at high ambient?",
+      "expected_domain": null,
+      "band": "out_of_scope"
+    },
+    {
+      "case_id": "RT-029",
+      "query": "What is the minimum bend radius for a fibre optic patch cable?",
+      "expected_domain": null,
+      "band": "out_of_scope"
+    },
+    {
+      "case_id": "RT-030",
+      "query": "How long must concrete cure before formwork is struck?",
+      "expected_domain": null,
+      "band": "out_of_scope"
+    },
+    {
+      "case_id": "RT-031",
+      "query": "Did the cell temperature rise cause the pack thermal runaway?",
+      "expected_domain": "BATTERY",
+      "band": "shared_vocabulary"
+    },
+    {
+      "case_id": "RT-032",
+      "query": "Did the fixture wear affect the part dimensional capability?",
+      "expected_domain": "MANUFACTURING",
+      "band": "clear"
+    }
+  ],
+  "removed_band": {
+    "band": "ambiguous",
+    "removed_in": "0.2.0",
+    "cases": [
+      "RT-031",
+      "RT-032"
+    ],
+    "why": "Two cases were labelled `ambiguous` on the author's intuition that their wording spanned two fields, and neither survived checking against the corpora. RT-031 ('cell temperature rise ... pack thermal runaway') reads as thermal-and-battery, but the thermal corpus contains no occurrence of cell, pack or runaway; only `temperature` is shared, which makes it a shared_vocabulary case. RT-032 ('fixture wear ... dimensional capability') names four terms that appear in the manufacturing corpus and none of them anywhere else. The six example corpora are subject-disjoint -- no two describe the same artefact or event -- so no genuinely ambiguous question exists over them, and inventing one would have meant writing a document to create the overlap. The router's requires_human path is covered instead by tests/test_domain_router.py, which builds two packs over deliberately overlapping corpora. Recorded rather than deleted: the benchmark was wrong and the measurement was right, and a label corrected silently is indistinguishable from a label tuned to make a score look better."
+  }
+}

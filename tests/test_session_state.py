@@ -75,3 +75,68 @@ def test_session_state_branch_mismatch_is_fail_closed(monkeypatch: pytest.Monkey
 
     with pytest.raises(SessionStateError, match="branch mismatch"):
         validate(state)
+
+
+# --- D-02, third and last: this validator was missed on 2026-08-25 -----------
+
+
+def test_local_override_lets_a_feature_branch_resolve_its_landing_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The Context Guard and the resume validator both took this escape hatch
+    when D-02 was settled; this one did not, so the three disagreed about what
+    a valid local checkout was and nothing noticed until all three were run."""
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.setenv("AGENTFACTORY_TARGET_BRANCH", "main")
+
+    from scripts import validate_session_state as validator
+
+    monkeypatch.setattr(validator, "run_git", lambda *args: "feature/some-local-work")
+    assert validator.resolve_branch() == "main"
+
+
+def test_local_override_is_ignored_inside_github_actions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The override must never be able to weaken CI."""
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("AGENTFACTORY_TARGET_BRANCH", "anything-at-all")
+
+    from scripts import validate_session_state as validator
+
+    monkeypatch.setattr(validator, "run_git", lambda *args: "some-ci-checkout")
+    assert validator.resolve_branch() == "some-ci-checkout"
+
+
+def test_absent_override_leaves_resolution_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.delenv("AGENTFACTORY_TARGET_BRANCH", raising=False)
+
+    from scripts import validate_session_state as validator
+
+    monkeypatch.setattr(validator, "run_git", lambda *args: "feature/some-local-work")
+    assert validator.resolve_branch() == "feature/some-local-work"
+
+
+def test_all_three_validators_honour_the_same_variable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One definition of "which branch is this", not three.
+
+    D-02 was recorded as resolved "in both validators" when there were three.
+    This asserts the set rather than the pair, so adding a fourth that forgets
+    the hatch fails here rather than in someone's terminal.
+    """
+    import ast
+
+    root = Path(__file__).resolve().parents[1] / "scripts"
+    validators = [
+        "validate_project_context.py",
+        "validate_session_resume.py",
+        "validate_session_state.py",
+    ]
+    for name in validators:
+        source = (root / name).read_text(encoding="utf-8")
+        assert "AGENTFACTORY_TARGET_BRANCH" in source, f"{name} ignores the override"
+        assert "GITHUB_ACTIONS" in source, f"{name} would let the override weaken CI"
+        ast.parse(source)
