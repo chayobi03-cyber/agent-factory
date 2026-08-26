@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-ST-003",
+ "revision_id": "REV-A",
+ "title": "PART-118 Field Crack Investigation",
+ "doc_type": "physical_test_report",
+ "text": "Two returned units showed cracking at the PART-118 fillet radius. Sectioning showed crack initiation at the machined surface rather than the weld. Surface roughness measured 6.3 um against a 3.2 um drawing callout, which reduces the fatigue allowable and explains the shortfall against the WLD-22 assessment."
+}

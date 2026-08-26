@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-ST-001",
+ "revision_id": "REV-A",
+ "title": "PART-118 Bracket Static Analysis",
+ "doc_type": "fea_analysis_report",
+ "text": "PART-118 was analysed under load case LC-3, a 4.2 kN vertical load at the outboard hole. Peak von Mises stress was 214 MPa at the fillet radius against a 355 MPa yield, giving a safety factor of 1.66. Peak deflection was 1.8 mm at the free end."
+}

@@ -1,4 +1,4 @@
-state_version: 27
+state_version: 28
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -86,7 +86,11 @@ last_completed:
   - second_domain_thermal_added_as_policy_data_only_proving_af_004_kernel_loads_domain_pack_without_code_fork_for_real
   - run_domain_cli_added_so_a_local_document_folder_is_queryable_without_writing_code
   - idf_smoothing_added_after_finding_a_small_corpus_gave_every_present_term_zero_weight_and_abstained_on_everything
+  - five_more_domains_shipped_as_policy_plus_example_documents_thermal_structural_battery_manufacturing_firmware
+  - d12_option_a_cleanup_re_policy_no_longer_declares_vector_graph_agentic_modes_or_a_cross_encoder_reranker_that_do_not_exist
+  - identifier_tokens_may_carry_dotted_segments_so_a_release_note_domain_keeps_fw_4_2_0_whole
 current_focus:
+  - six domains ship ready for documents - re, thermal, structural, battery, manufacturing, firmware. Each has a policy and a small example corpus so `scripts/run_domain.py --domain <d> --corpus domains/<d>/examples` answers a real question on a fresh clone
   - ready for documents in any domain, not only RE: domains/<id>/domain_pack.yaml plus a folder of JSON, queried with scripts/run_domain.py. See docs/ADDING_A_DOMAIN.md
   - HOLDING for the real RE corpus. Every PoC corpus and benchmark target is met against synthetic documents; further accuracy tuning against them would be fitting to prose this repository wrote about itself
   - hold the trunk on `main` now that the divergent default branch is folded in
@@ -196,4 +200,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-26T04:00:00+00:00
+updated_at_utc: 2026-08-26T05:00:00+00:00

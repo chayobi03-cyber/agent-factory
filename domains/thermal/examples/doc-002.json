@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-TH-003",
+ "revision_id": "REV-A",
+ "title": "DUT-7 Thermal Excursion Failure Analysis",
+ "doc_type": "bench_measurement_log",
+ "text": "DUT-7 exceeded its junction rating during a 30 W burst, reaching 138 degC against a 125 degC limit. Root cause was TIM-2 pad compression below specification at the die corner, raising local thermal resistance. Replacing the pad with TIM-5 and correcting mounting torque returned the peak to 119 degC."
+}

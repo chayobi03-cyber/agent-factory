@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-MF-001",
+ "revision_id": "REV-A",
+ "title": "OP-40 Torque Process Capability Study",
+ "doc_type": "process_capability_study",
+ "text": "Operation OP-40 at station STA-3 was studied over 120 units. Torque measured a mean of 8.4 n-m against a 8.0 to 9.0 n-m specification, giving a cpk of 1.41. Tool TOOL-77 was recalibrated before the study."
+}

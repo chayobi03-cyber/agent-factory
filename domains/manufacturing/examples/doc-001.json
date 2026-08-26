@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-MF-002",
+ "revision_id": "REV-A",
+ "title": "LOT-2291 Solder Defect Investigation",
+ "doc_type": "defect_investigation_report",
+ "text": "LOT-2291 showed a solder void defect rate of 3400 ppm against a 500 ppm limit. The defect was traced to operation OP-20 where reflow zone 4 ran 11 degC below profile. Containment covered LOT-2288 through LOT-2294; 0.4 pct of the affected units were reworked."
+}

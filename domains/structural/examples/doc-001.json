@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-ST-002",
+ "revision_id": "REV-A",
+ "title": "WLD-22 Weld Fatigue Assessment",
+ "doc_type": "fea_analysis_report",
+ "text": "Weld WLD-22 joining PART-118 to the chassis rail was assessed for fatigue under the LC-7 duty cycle. The stress range at the weld toe is 78 MPa at an R ratio of 0.1, giving a predicted life of 2100000 cycles against a 1000000 cycle requirement. The toe was ground flush, which the assessment assumes."
+}

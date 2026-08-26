@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-FW-003",
+ "revision_id": "REV-A",
+ "title": "CR-905 Cold Start Settle Fix",
+ "doc_type": "change_request",
+ "text": "CR-905 restores the sensor settle delay on the fast-boot path when the measured die temperature is below zero, fixing the reset loop reported against FW-4.2.0 on SKU-31. Shipped in FW-4.2.1. Rollback to FW-4.1.3 remains supported for units already in the field."
+}

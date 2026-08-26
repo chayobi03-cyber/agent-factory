@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-TH-002",
+ "revision_id": "REV-A",
+ "title": "Heatsink HS-9 Characterisation",
+ "doc_type": "thermal_simulation_report",
+ "text": "Heatsink HS-9 measured 4.1 k/w at 0.5 m/s airflow, 2.8 k/w at 1.2 m/s and 2.2 k/w at 2.0 m/s. Below 0.5 m/s the fin array enters natural convection and resistance rises to 6.9 k/w. HS-9 is not suitable above 25 W dissipation without increasing airflow."
+}

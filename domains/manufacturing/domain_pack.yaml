@@ -1,0 +1,85 @@
+domain_id: MANUFACTURING
+version: 0.1.0
+name: Process Quality
+scope: Production process capability, defect investigation and lot traceability
+
+# The unit family here is a rate rather than a physical quantity, which is the
+# point of including it: the mechanism does not care what is being scaled.
+# Percent, ppm and ppb are one scale, and a defect rate quoted in one must land
+# on the same token as the same rate quoted in another.
+
+ontology:
+  entities:
+    - lot
+    - work_order
+    - operation
+    - station
+    - tool
+    - fixture
+    - defect
+    - process_capability
+    - control_limit
+    - rework
+    - scrap
+    - failure_mode
+  relations:
+    - produced_by
+    - measured_at
+    - exceeds
+    - traced_to
+    - correlates_with
+    - reworked_into
+    - contained_by
+
+terminology:
+  generic_terms:
+    [process, manufacturing, production, quality, line, station, measured,
+     measurement, test, tested, inspection, inspected, part, unit]
+
+measurement_policy:
+  canonical_unit: ppm
+  quantity_metadata_key: defect_rates
+  unit_multipliers:
+    ppb: 0.001
+    ppm: 1
+    pct: 10000
+  level_units: ["cpk", "cp", "sigma", "n-m", "mm", "um", "degc", "sec"]
+  identifier_prefixes: [rev, lot, wo, op, sta, tool, fix, doc, iso]
+
+source_policy:
+  authorities:
+    - standards_document
+    - process_capability_study
+    - defect_investigation_report
+    - inspection_log
+    - internal_engineering_wiki
+  revision_rules:
+    prefer_latest_authoritative_revision: true
+    preserve_superseded_revisions: true
+
+retrieval_policy:
+  allowed_modes: [bm25, trigram, hybrid]
+  default_mode: hybrid
+  max_k: 20
+  tuning:
+    coverage_floor: 0.12
+    unseen_term_ceiling: 0.35
+    lexical_weight: 0.6
+
+verification_policy:
+  require_evidence_for_claims: true
+  abstain_when_evidence_insufficient: true
+  claim_grounding_floor: 0.25
+  domain_rules:
+    - capability claims require the sample size and the specification limits
+    - defect rate claims require the lot or period they were measured over
+    - containment claims require the affected lot range
+    - root cause claims require the operation the defect was traced to
+
+report_policy:
+  template_id: engineering_report_v1
+tools: []
+benchmark_catalog: []
+risk_policy:
+  thresholds:
+    minimum_process_capability: 1.33

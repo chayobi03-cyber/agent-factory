@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-FW-001",
+ "revision_id": "REV-A",
+ "title": "FW-4.2.0 Release Note",
+ "doc_type": "release_note",
+ "text": "FW-4.2.0 supersedes FW-4.1.3 on hardware HW-B and HW-C. It introduces the fast-boot path under CR-882 and raises the watchdog window from 2 to 8 seconds under TKT-4471. Bootloader BL-1.4 is required; units on BL-1.3 must be staged through FW-4.1.3 first."
+}

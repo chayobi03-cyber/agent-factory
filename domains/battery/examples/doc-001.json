@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-BT-002",
+ "revision_id": "REV-A",
+ "title": "PACK-19 Cycle Life Ageing Study",
+ "doc_type": "cell_characterisation_report",
+ "text": "PACK-19 was cycled at 1 C charge and 1 C discharge to 80 percent depth of discharge at 35 degC. Capacity fade reached 20 percent after 780 cycles, short of the 1000 cycle requirement. Cells nearest the BMS-2 board aged fastest, tracking a 6 degC gradient across the module."
+}

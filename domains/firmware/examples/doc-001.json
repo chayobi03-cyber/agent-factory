@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-FW-002",
+ "revision_id": "REV-A",
+ "title": "Field Defect: Watchdog Reset Loop on SKU-31",
+ "doc_type": "field_defect_report",
+ "text": "Units of SKU-31 running FW-4.2.0 entered a reset loop after a cold start below freezing. The fast-boot path introduced in CR-882 skips a sensor settle delay, so the first read returns an out-of-range value and the watchdog fires. Last known good build is FW-4.1.3."
+}

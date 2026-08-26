@@ -1,0 +1,85 @@
+domain_id: FIRMWARE
+version: 0.1.0
+name: Firmware Release Engineering
+scope: Firmware release history, change traceability and field defect investigation
+
+# Deliberately declares NO unit scaling and no level units.
+#
+# Not every engineering domain measures things. This one is prose plus
+# identifiers -- build numbers, ticket references, part numbers -- and it is
+# shipped precisely to keep that path honest: a domain that omits the unit
+# tables must still tokenize, retrieve, verify and abstain correctly rather
+# than degrade. `identifier_prefixes` alone is a valid measurement policy.
+#
+# It also inherits the kernel's English stopwords by declaring none of its own,
+# which is the minimal viable policy: identity, generic terms, identifiers.
+
+ontology:
+  entities:
+    - release
+    - build
+    - branch
+    - change
+    - ticket
+    - regression
+    - rollback
+    - bootloader
+    - watchdog
+    - field_defect
+    - failure_mode
+  relations:
+    - supersedes
+    - introduced_in
+    - fixed_in
+    - reverted_by
+    - traced_to
+    - correlates_with
+    - reproduced_by
+
+terminology:
+  generic_terms:
+    [firmware, release, released, build, version, software, image, change,
+     changed, update, updated, device, unit]
+
+measurement_policy:
+  # No unit tables. Identifiers only.
+  quantity_metadata_key: identifiers
+  identifier_prefixes: [rev, fw, bl, tkt, hw, sku, cr, doc]
+
+source_policy:
+  authorities:
+    - release_note
+    - change_request
+    - field_defect_report
+    - regression_test_log
+    - internal_engineering_wiki
+  revision_rules:
+    prefer_latest_authoritative_revision: true
+    preserve_superseded_revisions: true
+
+retrieval_policy:
+  allowed_modes: [bm25, trigram, hybrid]
+  default_mode: hybrid
+  max_k: 20
+  tuning:
+    coverage_floor: 0.12
+    unseen_term_ceiling: 0.35
+    lexical_weight: 0.6
+
+verification_policy:
+  require_evidence_for_claims: true
+  abstain_when_evidence_insufficient: true
+  claim_grounding_floor: 0.25
+  domain_rules:
+    - defect claims require the build the defect was observed on
+    - fix claims require the change or ticket reference
+    - regression claims require the last known good build
+    - rollback claims require the build rolled back to
+
+report_policy:
+  template_id: engineering_report_v1
+tools: []
+benchmark_catalog: []
+risk_policy:
+  thresholds:
+    maximum_field_defect_rate_ppm: 500

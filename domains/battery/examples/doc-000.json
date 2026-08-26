@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-BT-001",
+ "revision_id": "REV-A",
+ "title": "CELL-A3 Capacity Characterisation",
+ "doc_type": "cell_characterisation_report",
+ "text": "CELL-A3 from LOT-7741 was characterised at 25 degC. Nominal capacity measured 4820 mah at a 0.2 C discharge and 4610 mah at 1 C, giving 17.8 wh at nominal 3.7 v. Internal resistance measured 24 mohm at 50 percent state of charge."
+}

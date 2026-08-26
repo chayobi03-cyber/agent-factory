@@ -112,9 +112,15 @@ source_policy:
     standards_effective_date_is_material: true
 
 retrieval_policy:
-  allowed_modes: [bm25, vector, hybrid, graph, agentic]
+  # Only what exists. This listed vector, graph and agentic with nothing behind
+  # the names, and a cross-domain test now fails any policy that does the same
+  # (OPEN_DECISIONS D-12). If a semantic method lands after the A/B/D trial, it
+  # gets added here when it is implemented, not before.
+  allowed_modes: [bm25, trigram, hybrid]
   default_mode: hybrid
-  reranker: cross_encoder
+  # reranker: no cross_encoder exists. Declared here until 2026-08-26,
+  # enforced by nothing -- the same pattern D-09 found in the audit
+  # evidence contract. It returns when something implements it.
   max_k: 20
   identifier_first_for: [standard clause, equipment model, frequency, test method, report id]
   parent_context_required: true

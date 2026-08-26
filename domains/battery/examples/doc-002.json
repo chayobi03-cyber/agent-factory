@@ -1,0 +1,7 @@
+{
+ "document_id": "DOC-BT-003",
+ "revision_id": "REV-A",
+ "title": "CELL-A3 Thermal Runaway Abuse Test",
+ "doc_type": "abuse_test_report",
+ "text": "CELL-A3 was subjected to nail penetration at 100 percent state of charge per IEC-62133. Onset of thermal runaway occurred at a surface temperature of 142 degC with peak venting at 610 degC. No propagation to adjacent cells was observed with the 2 mm mica barrier fitted."
+}
