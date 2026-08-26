@@ -751,6 +751,12 @@ work rather than new scope. D stays rejected.
 
 ## D-12 — The kernel has no model dependency, and three of RE_POC's requirements need one
 
+> **PARTIALLY DECIDED 2026-08-26 — option C is excluded, permanently.** Reaching
+> a hosted model API is ruled out and now enforced by
+> `tests/test_no_hosted_model_dependency.py`, not merely recorded. A, B and D
+> stay open and will be decided by comparative trial against the real corpus.
+> Notes at the end of this entry.
+
 Raised 2026-08-25 while implementing the three retrieval methods `RE_POC.md`
 requires. It is the decision D-11's revised recommendation runs into.
 
@@ -963,3 +969,47 @@ forced now:
 D-12's option C is not a data question. A hosted-model dependency breaks
 `AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1` whatever the corpus contains, and that
 should be settled on its own terms rather than on how the accuracy numbers land.
+
+---
+
+### Decision — 2026-08-26: option C excluded, the rest go to trial
+
+**C — a hosted model API — is excluded.** Not on cost or preference.
+`AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1` is built on a run being re-derivable from
+the commit it names, and a hosted model breaks that whatever the corpus
+contains: a GREEN decision citing a SHA stops being reproducible from that SHA,
+which is precisely the failure the contract exists to prevent. That property
+does not depend on how the accuracy numbers land, so it was settled without
+waiting for the corpus.
+
+**A, B and D stay open**, to be decided by comparative trial once the real RE
+documents arrive. That is the right shape for them: A (stay dependency-free), B
+(a local embedding model) and D (corpus-derived LSA) trade recall against
+weight, and the size of that trade is exactly what synthetic documents cannot
+tell us. `scripts/calibrate_retrieval.py` is the harness the comparison runs on.
+
+**The exclusion is enforced rather than declared.** A decision living only in a
+document is the pattern this register has caught three times now — D-09 found a
+canonical contract enforced by nothing, D-12 itself found three retrieval modes
+declared and absent, and the 2026-08-26 audit found a gating mechanism still
+described in a docstring after its deletion. So:
+
+- `tests/test_no_hosted_model_dependency.py` fails if anything under `src/` or
+  `scripts/` imports a hosted-model SDK or a network transport. It parses the
+  AST rather than grepping, so a mention in prose — of which these files have
+  many — does not trip it, and an unusually formatted import cannot hide from
+  it. A second test proves the guard can fail, against a synthetic file.
+- `hosted_model_api_dependency` is in `CURRENT_SESSION_STATE.forbidden`, and the
+  test asserts the two agree, so neither can go stale alone.
+
+The property is currently **true, not aspirational**: nothing in the tree
+performs any network access at all. `verify_artifact_sha256.py` takes a local
+path — the CI runner downloads the artifact, the script only hashes it. The
+guard therefore locks in something already achieved, so that changing it is a
+deliberate act with a visible failure rather than an incidental import.
+
+**What the guard deliberately does not block.** Option B is a *local* model. It
+would add a heavyweight dependency and cost CI minutes, but it touches
+reproducibility not at all — a local model produces the same output from the
+same commit. It needs none of the forbidden imports and is not obstructed by
+this test. If B is chosen after the trial, nothing here has to be reopened.

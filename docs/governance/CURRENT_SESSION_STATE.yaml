@@ -1,4 +1,4 @@
-state_version: 25
+state_version: 26
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -80,6 +80,7 @@ last_completed:
   - audit_found_distinctive_terms_dead_and_still_described_as_live_in_the_retrieve_docstring_both_removed
   - calibrate_retrieval_script_added_so_all_four_corpus_fitted_constants_are_re_derivable_by_command_against_any_corpus
   - accuracy_work_deferred_by_owner_decision_until_the_real_re_corpus_is_supplied_locally_after_internal_handover
+  - d12_option_c_hosted_model_api_excluded_permanently_by_owner_decision_and_enforced_by_an_import_guard
 current_focus:
   - HOLDING for the real RE corpus. Every PoC corpus and benchmark target is met against synthetic documents; further accuracy tuning against them would be fitting to prose this repository wrote about itself
   - hold the trunk on `main` now that the divergent default branch is folded in
@@ -95,10 +96,17 @@ next_action:
   - on the day the real RE documents land - run `python3 scripts/calibrate_retrieval.py --corpus <DIR> --benchmark <CASES>`; it re-derives all four corpus-fitted constants and exits non-zero if any shipped value no longer fits. Do this BEFORE trusting any benchmark number measured against the new corpus
   - author a benchmark for the real corpus. The synthetic one names DOC-RE-* identifiers and the calibration tool refuses a benchmark whose expected documents are absent, which is the intended guard rather than an obstacle
   - then revisit OPEN_DECISIONS D-11 with real vocabulary breadth, and D-12 with whatever D-11 turns out to cost
-  - D-12 option C (hosted model API) can be settled independently of the corpus - it breaks SHA-reproducibility whatever the documents contain
+  - D-12 options A, B and D go to comparative trial on the real corpus using scripts/calibrate_retrieval.py; option C is closed
 
 blocked_until: []
 forbidden:
+  # OPEN_DECISIONS D-12 option C, excluded 2026-08-26. A run that calls a hosted
+  # model cannot be re-derived from the commit it names, which is what
+  # AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1 requires. Enforced by
+  # tests/test_no_hosted_model_dependency.py, which also asserts this entry
+  # exists so the guard and the record cannot drift apart. A *local* model
+  # (option B) is not covered by this: it does not affect reproducibility.
+  - hosted_model_api_dependency
   - GEPA_implementation
   # Discharged 2026-08-25: the gate this was bounded by is GREEN, so RC-07 no
   # longer demands it. Retained as the record of the bound, not as a live ban.
@@ -181,4 +189,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-26T02:00:00+00:00
+updated_at_utc: 2026-08-26T02:45:00+00:00
