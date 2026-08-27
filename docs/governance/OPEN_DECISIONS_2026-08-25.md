@@ -611,6 +611,7 @@ what makes the number usable.
 > measured as *not* the fix.** Claim-evidence verification is now a kernel
 > capability and the CER gate acts on its verdict, which closed a separate and
 > more serious hole and moved near-miss abstention from 3/8 to 4/8 as a side
+> *(the 4/8 was reverted on 2026-08-26 — see D-14)*
 > effect. It does not resolve this entry. The band stays open and the
 > recommendation below is revised: **B is now the only remaining option that
 > can close it.** Notes at the end of this entry.
@@ -627,6 +628,9 @@ against a near-miss"* — and this is that test coming back.
 | `subject_outside_domain` | *"What quarterly revenue did the test laboratory report?"* | **5/5** |
 | `entity_absent_from_corpus` | *"What was the outcome of the EUT-72 emission retest?"* | **7/7** |
 | `near_miss_domain_subject` | *"What field strength is applied during a radiated immunity test?"* | **3/8** |
+
+(The near-miss row read **4/8** between 2026-08-25 and 2026-08-26; see the
+reversion note below and D-14.)
 
 The first two are decidable from corpus statistics: the terms carrying the
 question are simply absent. The third is real RE subject matter — conducted
@@ -736,7 +740,21 @@ decide the near-miss was not.
 
 Near-miss abstention moved 3/8 → 4/8, at no cost to Evidence Recall@10 (0.914,
 unchanged). The grounding floor is **0.25** against a measured answerable
-minimum of 0.300. It was deliberately not raised to chase this band: 0.30
+minimum of 0.300.
+
+> **Reverted 2026-08-26 — the fourth catch was a defect, not a mechanism.**
+> D-14 found that every caller cited `evidence[0]` alone, so the verifier was
+> judging each claim against a fraction of the evidence retrieved for it. The
+> evidence looked thin because most of it was never handed over, and one
+> near-miss fell below the floor for that reason. Citing what answers the claim
+> removed the accident and the number with it: **the band is 3/8 again**, and
+> the count of near-miss questions answered outright — the number D-11's risk
+> statement is actually about — is 5/8.
+>
+> Restoring 4/8 by raising the floor was measured and rejected: it takes 0.70
+> and costs 16.5% false abstention on answerable questions against 8.6% today.
+> 8/8 is reachable at 0.85 and costs 46.8%. Which is this decision's own
+> conclusion, arrived at from the other direction. It was deliberately not raised to chase this band: 0.30
 catches two of five but leaves zero margin, and 0.32 starts costing answerable
 cases. **The floor is not an abstention mechanism and must not be tuned as
 one** — that is how the coverage floor became corpus-dependent in D-10.
@@ -1164,3 +1182,191 @@ between the highest out-of-scope score measured (0.102) and the lowest in-scope
 one (0.191); a test asserts that band so the constant cannot drift out of the
 evidence that justifies it. Both constants must be re-derived when real corpora
 of markedly different sizes are loaded together.
+
+---
+
+## D-14 — What a claim cites, what its confidence is worth, and what a number is measured against
+
+**Raised and closed 2026-08-26**, from a RAG-practitioner audit of the retrieval
+path. Three defects, each measured before it was touched, and one of the fixes
+uncovered a fourth that had been unreachable since it was written.
+
+### 1 — Both callers cited `evidence[0]` and threw the rest away
+
+`re_demo.py`, `run_domain.py` and `re_demo.py --report` each built their own
+`Claim`, and all three cited the top fragment alone. The verifier grounds
+against `claim.evidence_ids`, so an answer resting on two fragments could not
+be grounded however well retrieval had done.
+
+The demonstration, run against the shipped tree:
+
+```
+Q: What was the EUT-7 132 MHz level before mitigation and how far above the limit was it?
+CER: PASS   grounding 0.375   unsupported: ['level','befor','mitigation','far','abov']
+   0.655 DOC-RE-001/REV-A  38.2 dBuV/m ... 2.6 dB           <- the only citation
+   0.606 DOC-RE-001/REV-B  Retest of EUT-7 after mitigation  <- retrieved, discarded
+   0.518 DOC-RE-001/REV-B  dropped to 31.4 dBuV/m            <- retrieved, discarded
+```
+
+`mitigation` is reported as unsupported by evidence the system is holding.
+`unsupported_terms` is what D-11 relies on to put a gap in front of a reviewer,
+and it was saying something false.
+
+Fixed by `ClaimVerifier.select_citations`: a greedy set cover over the claim's
+informative terms, fragments taken in rank order and kept only when they supply
+a term no kept fragment supplied. Not "cite all ten" — a citation that supports
+nothing is padding, and the fix for an under-cited claim must not be an
+over-cited one. Measured: 2.40 fragments cited per answered case out of 10
+retrieved.
+
+Claim construction now lives in `GenericDomainPack.build_claim`, one definition
+in the kernel. Three copies of one definition is the pattern this register has
+recorded four times, and the third copy had already drifted: `--report` gated
+without passing a verification report at all, so it rendered CER decisions that
+had never checked grounding.
+
+### 2 — `confidence` was structurally pinned and could not inform
+
+`Claim.confidence` carried the retrieval score. `rank` normalizes BM25 against
+each query's own maximum, so the top fragment's lexical component is **always
+exactly 1.0** (measured mean 0.9999) and the score is `0.6 + 0.4·jaccard` by
+construction. Over 127 answerable cases it spanned 0.642 to 0.815, mean 0.693,
+sd 0.029.
+
+Candidates measured by how well each separates a correct top hit from a wrong
+one (Cohen's d, n=115 correct / 12 wrong):
+
+| candidate | correct | wrong | gap | d |
+| --- | --- | --- | --- | --- |
+| **coverage (IDF mass)** | 0.6198 | 0.4667 | +0.1531 | **0.87** |
+| coverage × margin | 0.7435 | 0.5149 | +0.2286 | 0.87 |
+| margin, rank 1 − rank 2 | 0.1814 | 0.0970 | +0.0844 | 0.64 |
+| raw BM25 | 17.98 | 15.00 | +2.98 | 0.53 |
+| the shipped score | 0.6939 | 0.6822 | +0.0117 | 0.40 |
+
+Confidence is now the IDF-weighted share of the question the cited evidence
+accounts for: bounded in [0, 1], comparable between queries, twice the
+separation, and a sentence a reader can act on. Coverage × margin scores
+identically and is more machinery for it, so it was not taken.
+
+A correction to how this was first written up: the shipped score was described
+in the audit as carrying "essentially no signal". d=0.40 is a small but real
+effect. The defect is that its absolute value is uninterpretable and it is
+beaten better than two to one, not that it is noise.
+
+### 3 — Every recall figure was read against a floor of zero, and the floor is 0.356
+
+| | random | measured | share of available headroom |
+| --- | --- | --- | --- |
+| Evidence Recall@10 | **0.356** | 0.906 | 85.4% |
+| Recall@1 | **0.043** | 0.827 | 81.9% |
+
+Drawing ten fragments uniformly from 108 reaches 4.9 of the corpus's 25
+documents, so a third of the headline is paid before retrieval does anything.
+0.906 against a floor of 0.356 is a different sentence from 0.906 against zero,
+and the acceptance target of 0.90 is +0.54 over a coin rather than +0.90. This
+also settles why Recall@10 could not separate the retrieval methods, which the
+2026-08-26 note attributed to the metric being insensitive: it is insensitive
+*because* it starts a third of the way up.
+
+Reported, never gated on — the target is what the RE PoC specifies and this
+does not move it.
+
+**And it is not a recall.** Every case has exactly one gold document, so the
+score is 0 or 1 with no partial set to recover: it is a hit rate.
+`evidence_recall_at_10` is kept as the name the acceptance contract and
+`evidence_gate.py` were written against, with `hit_rate_at_10` reporting the
+same number under the name it earns. A test asserts the gold sets are all size
+one, so if that ever stops being true the alias is revisited rather than
+quietly becoming wrong.
+
+### 4 — The fix reached a gate rule that had never been reachable
+
+`cer_runtime` flagged `CONTRADICTORY_EVIDENCE` when a claim cited two or more
+evidence items whose texts differed. That is a test for **plurality**, not
+contradiction — two paragraphs corroborating each other are also two distinct
+texts — and it had never fired, because every caller cited exactly one item.
+With citations fixed it fired on **103 of 139** answerable questions.
+
+The replacement was to be narrower: the same document cited at a revision and
+at its retest, which is the one conflict decidable from a citation list. It was
+built, measured, and **rejected on the measurement**: it referred 38 of 139
+answerable questions, and **15 of those were `revision_comparison` cases** —
+"how did the peak change between the original test and the retest" — where two
+revisions in view is precisely what was asked for. A rule that refers the
+question it was built to answer is not narrow enough to keep.
+
+Separating those needs one of two things the system does not have:
+
+- the question's **time scope**, which is a semantic judgement — D-11 again, in
+  a new place;
+- a corpus that declares **which revision supersedes which**. `revision_id` is
+  an opaque string; nothing in `REV-B` says it replaces `REV-A`.
+
+So nothing gates on it. The verifier reports `conflicting_revisions` and
+`run_domain.py` prints it, because the reader needs to know regardless:
+
+```
+NOTE: DOC-RE-001 is in evidence at REV-A and REV-B; these may not agree,
+      and nothing here records which supersedes which
+```
+
+The check reads the **retrieved** set, not the cited one. Scoped to citations
+it missed its own headline example: asked what EUT-7 measured at 132 MHz,
+retrieval returns 38.2 dBuV/m (REV-A) and 31.4 dBuV/m (REV-B), and REV-B
+supplies no term REV-A had not, so the selector correctly drops it and the
+conflict went with it. A retest that disagrees in *numbers* while agreeing in
+*words* is invisible to any lexical selector, which is the whole reason the
+check exists.
+
+**This leaves a decision that is not the system's to make.** Whether a query
+should prefer the newest revision, return both and mark the disagreement, or
+refer to a person when the question carries no time scope is a working rule for
+how RE documents are managed. It waits for the internal handover, together with
+whether the corpus can carry supersession metadata at all.
+
+`FactoryRuntime.evaluate_gate` also turned out not to forward `verification`,
+so the grounding and conflict checks were unreachable through the runtime
+wrapper entirely. Fixed with the rest.
+
+### What it cost
+
+| | before | after |
+| --- | --- | --- |
+| Evidence Recall@10 (earned) | 0.906 | 0.906 |
+| Recall@1 / MRR | 0.827 / 0.868 | 0.827 / 0.868 |
+| `subject_outside_domain` held | 5/5 | 5/5 |
+| `entity_absent_from_corpus` held | 7/7 | 7/7 |
+| **`near_miss_domain_subject` held** | **4/8** | **3/8** |
+| answerable questions answered | 127/139 | 127/139 |
+
+Retrieval is untouched, so every retrieval number is identical. The one change
+is the fourth near-miss abstention, and it was never a capability: the record
+already said it came from "claim verification catching one more as a side
+effect: where the cited evidence supplies too little of what the question
+asks." The evidence only *looked* thin because most of it was never handed to
+the verifier. Abstaining because you failed to cite your own evidence is not
+abstention — the same class as the headline recall inflated by eleven
+self-answering cases, a number real as arithmetic and false as a claim.
+
+Restoring 4/8 by raising the grounding floor was measured and rejected: it
+takes a floor of 0.70 and costs 16.5% false abstention against 8.6% today. 8/8
+is reachable at 0.85 and costs **46.8%** — nearly half of all answerable
+questions refused, which is D-11's point stated in numbers.
+
+`abstention_by_band` now also reports `silently_answered`. `held` counts BLOCK
+only, deliberately — collapsing BLOCK and REVIEW would let a system that
+referred everything score perfectly — but the risk D-11 describes is the pack
+*answering* a question it should refuse, and that number was not being
+reported at all.
+
+### Still open from the same audit, not fixed here
+
+Measured, recorded, not addressed: the hybrid blend contributes 6.5 : 1 in
+BM25's favour at rank 1 and is close to a no-op (RRF is the dependency-free
+alternative); chunking has 0% overlap and splits mid-sentence on `;`, which
+produced the orphan fragment *"use an isolated ground strap if this is
+suspected"*; there is no de-duplication of near-identical fragments; and there
+is no acronym or alias table, so adding "equipment under test" to a query
+changes which revision comes back. All four are retrieval-quality work that
+should be measured against the real corpus rather than fitted to this one.

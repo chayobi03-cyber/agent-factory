@@ -1,4 +1,4 @@
-state_version: 29
+state_version: 30
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -98,13 +98,30 @@ last_completed:
   - two_benchmark_cases_labelled_ambiguous_on_wording_were_measured_as_decisively_one_domain_and_relabelled_with_the_correction_recorded_in_the_file
   - the_ambiguous_band_removed_because_the_six_example_corpora_are_subject_disjoint_and_the_requires_human_path_is_tested_over_constructed_overlap_instead
   - run_domain_routes_when_domain_is_omitted_and_exits_3_when_no_loaded_domain_covers_the_question
+  - d14_opened_and_closed_rag_audit_of_the_retrieval_path_found_three_defects_and_a_fourth_uncovered_by_fixing_them
+  - every_caller_cited_evidence_zero_alone_so_a_two_fragment_answer_could_not_be_grounded_and_unsupported_terms_named_evidence_the_system_was_holding
+  - claim_construction_moved_into_the_kernel_as_build_claim_after_finding_three_copies_of_it_one_of_which_gated_without_verification_at_all
+  - citations_now_a_greedy_set_cover_over_the_claims_terms_2_40_cited_of_10_retrieved_rather_than_1_or_all
+  - confidence_was_structurally_pinned_because_rank_normalises_bm25_per_query_so_rank_one_always_scored_exactly_1_0
+  - confidence_replaced_by_idf_weighted_coverage_after_measuring_five_candidates_cohens_d_0_87_against_the_shipped_scores_0_40
+  - random_retrieval_baseline_measured_at_0_356_recall_at_10_and_0_043_recall_at_1_and_is_now_reported_alongside_every_figure
+  - evidence_recall_at_10_is_a_hit_rate_every_case_has_exactly_one_gold_document_and_hit_rate_at_10_now_reports_it_under_that_name
+  - contradictory_evidence_gate_rule_found_to_test_plurality_not_contradiction_and_to_have_been_unreachable_since_it_was_written
+  - narrower_revision_conflict_rule_built_measured_and_rejected_it_referred_15_revision_comparison_questions_that_were_asking_about_the_difference
+  - conflicting_revisions_now_reported_to_the_reader_and_not_gated_on_because_no_lexical_rule_separates_the_ambiguous_case_from_the_comparison
+  - factory_runtime_evaluate_gate_did_not_forward_verification_so_grounding_and_conflict_checks_were_unreachable_through_the_wrapper
+  - d11_near_miss_reverted_from_4_of_8_to_3_of_8_the_fourth_catch_came_from_under_citation_not_from_a_mechanism
+  - abstention_by_band_now_reports_silently_answered_because_held_counts_block_only_and_the_risk_d11_describes_is_answering_not_reviewing
 current_focus:
+  - the answer path is honest about itself now - it cites the evidence that answers the claim, its confidence is IDF coverage rather than a score pinned at 1.0 by normalisation, and it tells the reader when a cited document is also in evidence at another revision
   - routing works across all six domains at once - `scripts/run_domain.py --query "..."` with no --domain picks the domain, refuses, or refers to a person. 30/32 on the routing benchmark with out-of-scope refusal at 6/6
   - six domains ship ready for documents - re, thermal, structural, battery, manufacturing, firmware. Each has a policy and a small example corpus so `scripts/run_domain.py --domain <d> --corpus domains/<d>/examples` answers a real question on a fresh clone
   - ready for documents in any domain, not only RE: domains/<id>/domain_pack.yaml plus a folder of JSON, queried with scripts/run_domain.py. See docs/ADDING_A_DOMAIN.md
   - HOLDING for the real RE corpus. Every PoC corpus and benchmark target is met against synthetic documents; further accuracy tuning against them would be fitting to prose this repository wrote about itself
   - hold the trunk on `main` now that the divergent default branch is folded in
 current_risk:
+  - four retrieval-quality defects are measured and unfixed (OPEN_DECISIONS D-14, final section): the hybrid blend contributes 6.5:1 in BM25's favour and is close to a no-op where RRF would not be; chunking has 0 percent overlap and splits mid-sentence on a semicolon, producing fragments that are meaningless when quoted; there is no de-duplication of near-identical fragments; and there is no alias table, so adding "equipment under test" to a query changes which revision comes back. All four should be measured against the real corpus rather than fitted to this one
+  - nothing decides which revision of a document applies. The verifier names the conflict and the reader is told, but whether a query should prefer the newest revision, return both, or refer to a person when the question carries no time scope is a working rule for how RE documents are managed - and revision_id carries no supersession metadata to decide it from. Needs the internal handover
   - routing thresholds are fitted to the example corpora exactly as the retrieval thresholds are fitted to the synthetic RE corpus. MINIMUM_SCORE 0.15 sits between the highest out-of-scope score measured (0.102) and the lowest in-scope one (0.191), and a test asserts that band so the constant cannot drift out of its evidence - but both it and DECISIVE_MARGIN must be re-derived when real corpora of markedly different sizes are loaded together
   - routing picks the corpus and says nothing about whether the answer from it is right. A question routed correctly to a domain whose corpus cannot answer it still reaches the claim verifier and the CER gate and is still refused there; the two mechanisms are independent and both run, but neither covers the other
   - near-miss abstention is 4/8 and no lexical statistic fixes it - eight retrieval-side and five verification-side statistics were scored, and the claim verifier that was expected to resolve it was built and measured as not the fix (OPEN_DECISIONS D-11); a semantic retrieval method is now the only remaining option, and until it lands the pack answers a question it should refuse half the time in that class. The verifier does name the unanswered part of the question in `unsupported_terms`, so the gap reaches a reviewer rather than passing silently
@@ -115,6 +132,7 @@ current_risk:
   - the acceptance margin is thin. Gated on the earned figure (0.906 excluding 11 self-answering cases) the retriever clears the 0.90 target by 0.006, which is one case. The headline 0.914 reads more comfortable than the system is
   - the Context Guard compares `git branch --show-current` to EXPECTED_BRANCH, so it fails on any local feature-branch checkout; local verification currently requires naming the checkout after the trunk, which is friction the base-ref fix removed only for CI (OPEN_DECISIONS D-02)
 next_action:
+  - settle at handover how document revisions are managed - does a retest supersede the test, and can the corpus carry that as metadata? Until then a query answered from one revision while another is in evidence is flagged to the reader and nothing more (OPEN_DECISIONS D-14)
   - when two real corpora of very different sizes are loaded together, re-derive MINIMUM_SCORE and DECISIVE_MARGIN with scripts/routing_benchmark.py against a routing benchmark written for them. The shipped values are fitted to corpora of 3 documents against RE's 30
   - for any domain - drop documents in a folder, copy domains/thermal/domain_pack.yaml, then run scripts/calibrate_retrieval.py before trusting an accuracy number. The four thresholds default to values fitted to synthetic RE documents and carry no authority over another corpus
   - on the day the real RE documents land - run `python3 scripts/calibrate_retrieval.py --corpus <DIR> --benchmark <CASES>`; it re-derives all four corpus-fitted constants and exits non-zero if any shipped value no longer fits. Do this BEFORE trusting any benchmark number measured against the new corpus
@@ -213,4 +231,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-26T09:56:30Z
+updated_at_utc: 2026-08-27T13:58:26Z

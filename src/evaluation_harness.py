@@ -58,7 +58,8 @@ class FactoryKernelHarness:
             "review_reject": self._review_reject,
             "review_modify": self._review_modify,
             "stale_snapshot": self._stale_snapshot,
-            "contradictory_evidence": self._contradictory_evidence,
+            "conflicting_revisions": self._conflicting_revisions,
+            "differing_evidence_is_not_contradiction": self._differing_evidence,
             "retry_loop": self._retry_loop,
             "duplicate_execution": self._duplicate_execution,
         }
@@ -97,8 +98,9 @@ class FactoryKernelHarness:
         return runtime, snapshot, run
 
     @staticmethod
-    def _evidence(eid: str = "E1", text: str = "supported") -> EvidenceCandidate:
-        return EvidenceCandidate(eid, "D1", "R1", "F1", 1.0, text, {})
+    def _evidence(eid: str = "E1", text: str = "supported", *,
+                  document_id: str = "D1", revision_id: str = "R1") -> EvidenceCandidate:
+        return EvidenceCandidate(eid, document_id, revision_id, f"F-{eid}", 1.0, text, {})
 
     def _supported_claim(self):
         runtime, snapshot, run = self._runtime()
@@ -171,13 +173,69 @@ class FactoryKernelHarness:
             return "REJECT_EXECUTION", runtime._runs[run.run_id].status, "stale snapshot rejected"
         return "ACCEPT_EXECUTION", runtime._runs[run.run_id].status, "stale snapshot was accepted"
 
-    def _contradictory_evidence(self):
+    def _conflicting_revisions(self):
+        """One document at two revisions: named by the verifier, not gated on.
+
+        This case used to be called `contradictory_evidence` and passed because
+        the rule fired on any claim citing two items with differing text. That
+        is plurality, not contradiction, so the case was green for a reason
+        unrelated to its name. What it asserts now is the honest pair: the
+        conflict is *detected* and reported, and the gate does *not* act on it.
+        """
         runtime, snapshot, run = self._runtime()
-        evidence = [self._evidence("E1", "claim is true"), self._evidence("E2", "claim is false")]
-        claim = Claim("C1", "contradictory", "fact", ["E1", "E2"], .9)
+        evidence = [
+            self._evidence("E1", "measured 38.2 dBuV/m", document_id="DOC-1", revision_id="REV-A"),
+            self._evidence("E2", "measured 31.4 dBuV/m", document_id="DOC-1", revision_id="REV-B"),
+        ]
+        claim = Claim("C1", "the measured level", "fact", ["E1", "E2"], .9)
+        verification = self._verify(claim, evidence)
         decision = runtime.evaluate_gate(run_id=run.run_id, gate_id="G1", snapshot=snapshot,
-                                         claims=[claim], evidence=evidence)
-        return decision.result, runtime._runs[run.run_id].status, "contradiction detection is not yet enforced"
+                                         claims=[claim], evidence=evidence,
+                                         verification=verification)
+        # Reported, not gated: the verifier names the conflict and the gate lets
+        # the answer through, because the version that referred it also referred
+        # 15 questions that were *asking* about the difference between revisions.
+        assert verification.conflicting_revision_claim_ids == ("C1",)
+        runtime.record_execution_evidence(run_id=run.run_id, command="harness",
+                                          commit_sha=self.repository_commit, exit_code=0,
+                                          stdout="PASS", stderr="", result_summary="revisions")
+        runtime._set_state(runtime._runs[run.run_id], "COMPLETED")
+        return (decision.result, runtime._runs[run.run_id].status,
+                "one document at two revisions: reported by the verifier, not gated")
+
+    def _differing_evidence(self):
+        """Two documents saying different things is *not* a detected contradiction.
+
+        A pinned gap, not a capability. Judging whether two fragments assert
+        incompatible things is a semantic call no lexical method here can make,
+        and OPEN_DECISIONS D-11 records why. The gate passes this, and the case
+        exists so that fact is visible in the benchmark rather than assumed.
+        """
+        runtime, snapshot, run = self._runtime()
+        evidence = [
+            self._evidence("E1", "the claim is true", document_id="DOC-1", revision_id="REV-A"),
+            self._evidence("E2", "the claim is false", document_id="DOC-2", revision_id="REV-A"),
+        ]
+        claim = Claim("C1", "the claim", "fact", ["E1", "E2"], .9)
+        verification = self._verify(claim, evidence)
+        decision = runtime.evaluate_gate(run_id=run.run_id, gate_id="G1", snapshot=snapshot,
+                                         claims=[claim], evidence=evidence,
+                                         verification=verification)
+        # Carried through to COMPLETED like `supported_claim`, because that is
+        # the point: this evidence pair reaches a finished run, unflagged.
+        runtime.record_execution_evidence(run_id=run.run_id, command="harness",
+                                          commit_sha=self.repository_commit, exit_code=0,
+                                          stdout="PASS", stderr="", result_summary="differing")
+        runtime._set_state(runtime._runs[run.run_id], "COMPLETED")
+        return decision.result, runtime._runs[run.run_id].status, "semantic contradiction is not detected"
+
+    @staticmethod
+    def _verify(claim, evidence):
+        from claim_verification import ClaimVerifier
+
+        return ClaimVerifier(lambda t: t.lower().split(), grounding_floor=0.0).verify(
+            [claim], evidence
+        )
 
     def _retry_loop(self):
         runtime, snapshot, run = self._runtime()

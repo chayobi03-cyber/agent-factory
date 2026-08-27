@@ -306,6 +306,52 @@ class GenericDomainPack:
             )
         return self._verifier
 
+    def build_claim(self, query: str, evidence: Sequence[EvidenceCandidate],
+                    *, claim_id: str = "C-QUERY") -> Claim:
+        """The claim a query plus its evidence amounts to.
+
+        One definition, in the kernel. `re_demo.py` and `run_domain.py` each
+        built this themselves and each cited `evidence[0]` alone; the same
+        definition living in two places is the pattern this repository has now
+        hit four times, and it is how the two of them could have drifted apart
+        without anything noticing.
+
+        `confidence` is the IDF-weighted share of the question that the cited
+        evidence accounts for, not the retrieval score. The score cannot serve:
+        `rank` normalizes BM25 against each query's own maximum, so the top
+        fragment's lexical component is always exactly 1.0 and the number sits
+        near 0.69 whatever the match is worth. Measured over 127 answerable
+        benchmark cases it separates a correct top hit from a wrong one by
+        d=0.40; coverage separates the same cases by d=0.87, is bounded in
+        [0, 1], and means something a reader can act on -- how much of what was
+        asked the evidence speaks to.
+        """
+        self._ensure_loaded()
+        cited = self.claim_verifier.select_citations(query, evidence)
+        if not cited:
+            return Claim(claim_id=claim_id, statement=query, claim_type="answer",
+                         evidence_ids=["E-NO-EVIDENCE-FOUND"], confidence=0.0)
+        return Claim(
+            claim_id=claim_id, statement=query, claim_type="answer",
+            evidence_ids=[item.evidence_id for item in cited],
+            confidence=round(self.evidence_coverage(query, cited), 4),
+        )
+
+    def evidence_coverage(self, query: str, evidence: Sequence[EvidenceCandidate]) -> float:
+        """How much of a question's informative weight these fragments carry.
+
+        IDF-weighted, so a fragment matching `EUT-12` counts for more than one
+        matching `measured`, and bounded in [0, 1] so it is comparable between
+        one query and the next -- which the retrieval score is not.
+        """
+        weights = self._index.query_weights(self.tokenize(query))
+        if not weights:
+            return 0.0
+        supplied: set[str] = set()
+        for item in evidence:
+            supplied |= self.claim_verifier._supplied(item)
+        return self._index.coverage(weights, supplied)
+
     def verify(self, claims: Sequence[Claim], evidence: Sequence[EvidenceCandidate],
                **kwargs: Any) -> dict[str, Any]:
         report = self.claim_verifier.verify(claims, evidence)

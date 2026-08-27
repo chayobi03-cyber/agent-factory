@@ -295,16 +295,39 @@ def test_near_miss_abstention_limitation_is_still_what_the_record_says() -> None
     measured for eight retrieval-side statistics and again for five
     verification-side ones.
 
-    4/8 rather than 3/8 because claim verification catches one more as a side
-    effect: where the cited evidence supplies too little of what the question
-    asks, the gate BLOCKs. That is not a fix for the band -- it is a partial
-    catch, and the register says which is which. If this number moves again,
-    update D-11 and this test together.
+    3/8, corrected from 4/8 on 2026-08-26. The fourth was never a capability.
+
+    This docstring used to explain the extra catch as claim verification
+    working "as a side effect: where the cited evidence supplies too little of
+    what the question asks, the gate BLOCKs." That was accurate and the cause
+    was a defect: both callers cited `evidence[0]` and nothing else, so the
+    evidence looked thin because most of it was never handed to the verifier.
+    One near-miss fell below the grounding floor for that reason and was
+    blocked. Citing the evidence that answers the claim (D-14) removed the
+    accident and the number with it.
+
+    Abstaining because you failed to cite your own evidence is not abstention.
+    It is the same class of finding as the 2026-08-26 audit's headline recall,
+    which was inflated by eleven cases that restated their own answers: a
+    number that was real as arithmetic and false as a claim about capability.
+
+    Restoring 4/8 by raising the grounding floor was measured and rejected --
+    it takes a floor of 0.70, and costs 16.5% false abstention on answerable
+    questions against 8.6% today. 8/8 is reachable at 0.85 and costs 46.8%,
+    which is D-11's point exactly: no lexical threshold separates this band.
+    If this number moves again, update D-11 and this test together.
     """
     band = _bands()["near_miss_domain_subject"]
-    assert band == {"held": 4, "total": 8}, (
-        f"near-miss abstention is now {band}, recorded as 4/8. "
+    assert (band["held"], band["total"]) == (3, 8), (
+        f"near-miss abstention is now {band['held']}/{band['total']}, recorded as 3/8. "
         "Update OPEN_DECISIONS D-11 and this test together."
+    )
+    # `held` counts BLOCK. What D-11 is actually about is the pack answering a
+    # question it should refuse, which is this -- and it is the same 5, because
+    # nothing in this band reaches REVIEW.
+    assert band["silently_answered"] == 5, (
+        f"near-miss questions answered outright is now {band['silently_answered']}/8, "
+        "recorded as 5/8. This is the number D-11's risk statement describes."
     )
 
 

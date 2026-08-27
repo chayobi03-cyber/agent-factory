@@ -226,14 +226,24 @@ class FactoryRuntime:
 
     def evaluate_gate(self, *, run_id: str, gate_id: str, snapshot: CERSnapshot,
                       claims: Sequence[Claim], evidence: Sequence[EvidenceCandidate],
-                      risk_level: str = "low") -> CERDecision:
+                      risk_level: str = "low",
+                      verification: Any = None) -> CERDecision:
+        """
+        `verification` was absent until 2026-08-26, so the gate's grounding and
+        revision-conflict checks were unreachable through this runtime -- the
+        wrapper accepted claims and evidence and silently dropped the one
+        argument that makes either check possible. Callers that passed it got a
+        TypeError; callers that did not got a decision that had checked less
+        than they had reason to think.
+        """
         state = self._runs[run_id]
         if snapshot.snapshot_id != state.cer_snapshot_id:
             raise ValueError("active WorkflowRun CER snapshot is immutable")
         if state.status == "CREATED":
             self._set_state(state, "RUNNING")
         decision = self.gate.evaluate(snapshot=snapshot, run_id=run_id, gate_id=gate_id,
-                                      claims=claims, evidence=evidence, risk_level=risk_level)
+                                      claims=claims, evidence=evidence, risk_level=risk_level,
+                                      verification=verification)
         self.record_trace(run_id, "CER_DECISION", asdict(decision))
         if decision.result == "BLOCK":
             self._set_state(self._runs[run_id], "BLOCKED")

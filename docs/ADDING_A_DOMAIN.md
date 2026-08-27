@@ -107,6 +107,19 @@ verification_policy:
   claim_grounding_floor: 0.25
 ```
 
+## Read your accuracy number against a floor
+
+```bash
+python3 scripts/re_demo.py     # reports the random-retrieval baseline with every figure
+```
+
+A hit rate has a floor and it is not zero. Drawing ten fragments at random from
+the 108 in the RE corpus reaches a fifth of its documents, which scores 0.356
+before retrieval does anything — so 0.906 is 85% of the distance available, not
+91% of the way from nothing. Measure the floor for your corpus before quoting a
+number against it, and check how many gold documents each benchmark case has:
+with exactly one, "recall" is a hit rate and moves in steps of 1/n.
+
 ## Then calibrate, before trusting any number
 
 Every one of those four values is **corpus-fitted**. The defaults are fitted to
@@ -172,6 +185,13 @@ Two limits are measured rather than assumed, and both are recorded in
   not contain, are refused reliably. Near-misses are refused about half the
   time. The verifier names the unsupported part of the question so a reviewer
   can see the gap, which is a person catching it, not the system.
+- **D-14** — nothing decides which *revision* of a document applies. If your
+  corpus holds a report and its retest, both are indexed and both can be
+  retrieved; the answer says so — `DOC-X is in evidence at REV-A and REV-B` —
+  and stops there. `revision_id` carries no supersession, and the one rule that
+  could be built from a citation list was measured referring the questions that
+  were *asking* about the difference between revisions. Semantic contradiction
+  between two documents is not detected at all.
 - **D-13** — routing picks the corpus and says nothing about whether the
   answer from it is right. A question routed correctly to a domain that cannot
   answer it still reaches the claim verifier and the CER gate and is still
