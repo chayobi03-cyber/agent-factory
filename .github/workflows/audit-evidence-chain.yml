@@ -105,7 +105,7 @@ jobs:
               'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
               'expected_results': {
                   'factory_demo': 'PASS',
-                  'harness_passed': 10,
+                  'harness_passed': 'all cases, at least 10',
                   'harness_failed': 0,
                   'harness_green': True,
                   'opro_regression': 'PASS',

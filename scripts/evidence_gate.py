@@ -38,6 +38,20 @@ EXPECTED_IDS = {
 }
 
 
+#: The protected harness cannot shrink below this. It is a floor, not an exact
+#: count, and the difference matters in both directions.
+#:
+#: This was `== 10` in three places, so adding an eleventh golden case turned CI
+#: red for a passing harness (D-14: the new case pins that semantic
+#: contradiction is *not* detected, which is a gap worth a case). An exact count
+#: also buys less than it looks: it fails on a case being added, which is
+#: harmless, and cannot notice a case being replaced, which is not. What must
+#: hold is that every protected case passes and none was dropped; the required
+#: case *ids* are asserted in tests/test_evaluation_harness.py, which is where a
+#: removal is actually caught.
+MINIMUM_HARNESS_CASES = 10
+
+
 def digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -93,8 +107,18 @@ def validate_expected_results(records: dict[str, dict], errors: list[str]) -> di
             "failed": harness.get("failed"),
             "green": harness.get("green"),
         }
-        if harness.get("case_count") != 10 or harness.get("passed") != 10 or harness.get("failed") != 0 or harness.get("green") is not True:
-            errors.append("E-HARNESS: protected harness result is not 10/10 with green=true")
+        case_count = harness.get("case_count")
+        if (not isinstance(case_count, int)
+                or case_count < MINIMUM_HARNESS_CASES
+                or harness.get("passed") != case_count
+                or harness.get("failed") != 0
+                or harness.get("green") is not True):
+            errors.append(
+                f"E-HARNESS: protected harness result is not all-passing over at least "
+                f"{MINIMUM_HARNESS_CASES} cases with green=true "
+                f"(observed {harness.get('passed')}/{case_count}, "
+                f"failed {harness.get('failed')}, green {harness.get('green')})"
+            )
 
     opro = load_json_output(records["E-OPRO-BASELINE"], "E-OPRO-BASELINE", errors)
     if opro is not None:
