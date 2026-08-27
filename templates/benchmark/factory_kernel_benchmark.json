@@ -4,15 +4,61 @@
   "judge": "deterministic-ground-truth",
   "llm_judge_is_ground_truth": false,
   "cases": [
-    {"case_id":"supported_claim","target":"PASS","expected_state":"COMPLETED"},
-    {"case_id":"unsupported_claim","target":"BLOCK","expected_state":"BLOCKED"},
-    {"case_id":"high_risk_claim","target":"REVIEW","expected_state":"REVIEW_REQUIRED"},
-    {"case_id":"review_approve","target":"PASS","expected_state":"COMPLETED"},
-    {"case_id":"review_reject","target":"BLOCK","expected_state":"BLOCKED"},
-    {"case_id":"review_modify","target":"CHANGE","expected_state":"WAITING"},
-    {"case_id":"stale_snapshot","target":"REJECT_EXECUTION","expected_state":"CREATED"},
-    {"case_id":"contradictory_evidence","target":"REVIEW","expected_state":"REVIEW_REQUIRED"},
-    {"case_id":"retry_loop","target":"REJECT_EXECUTION","expected_state":"RETRYING"},
-    {"case_id":"duplicate_execution","target":"IDEMPOTENT","expected_state":"CREATED"}
-  ]
+    {
+      "case_id": "supported_claim",
+      "target": "PASS",
+      "expected_state": "COMPLETED"
+    },
+    {
+      "case_id": "unsupported_claim",
+      "target": "BLOCK",
+      "expected_state": "BLOCKED"
+    },
+    {
+      "case_id": "high_risk_claim",
+      "target": "REVIEW",
+      "expected_state": "REVIEW_REQUIRED"
+    },
+    {
+      "case_id": "review_approve",
+      "target": "PASS",
+      "expected_state": "COMPLETED"
+    },
+    {
+      "case_id": "review_reject",
+      "target": "BLOCK",
+      "expected_state": "BLOCKED"
+    },
+    {
+      "case_id": "review_modify",
+      "target": "CHANGE",
+      "expected_state": "WAITING"
+    },
+    {
+      "case_id": "stale_snapshot",
+      "target": "REJECT_EXECUTION",
+      "expected_state": "CREATED"
+    },
+    {
+      "case_id": "conflicting_revisions",
+      "target": "PASS",
+      "expected_state": "COMPLETED"
+    },
+    {
+      "case_id": "retry_loop",
+      "target": "REJECT_EXECUTION",
+      "expected_state": "RETRYING"
+    },
+    {
+      "case_id": "duplicate_execution",
+      "target": "IDEMPOTENT",
+      "expected_state": "CREATED"
+    },
+    {
+      "case_id": "differing_evidence_is_not_contradiction",
+      "target": "PASS",
+      "expected_state": "COMPLETED"
+    }
+  ],
+  "note": "`contradictory_evidence` became `conflicting_revisions` on 2026-08-26 and both it and `differing_evidence_is_not_contradiction` now target PASS. The rule they tested checked whether a claim cited two evidence items with differing text -- plurality, not contradiction -- and passed for the wrong reason. It is gone: no contradiction is decidable here without either the question's time scope (a semantic judgement, OPEN_DECISIONS D-11) or a corpus that declares which revision supersedes which (metadata revision_id does not carry). Conflicting revisions are reported by the verifier and shown to the reader; nothing gates on them. Both cases exist so that stays visible in the benchmark rather than being mistaken for coverage."
 }

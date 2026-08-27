@@ -50,6 +50,11 @@ class ClaimVerdict:
     grounding: float
     grounded: bool
     unsupported_terms: tuple[str, ...]
+    #: Documents cited at two or more revisions at once, as
+    #: (document_id, (revision_id, ...)). A retest and the test it supersedes
+    #: answer the same question differently, and a reader shown one of them
+    #: cannot tell that the other exists.
+    conflicting_revisions: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -57,6 +62,9 @@ class ClaimVerdict:
             "grounding": round(self.grounding, 4),
             "grounded": self.grounded,
             "unsupported_terms": list(self.unsupported_terms),
+            "conflicting_revisions": [
+                {"document_id": d, "revisions": list(r)} for d, r in self.conflicting_revisions
+            ],
         }
 
 
@@ -76,13 +84,63 @@ class VerificationReport:
     def ungrounded_claim_ids(self) -> tuple[str, ...]:
         return tuple(v.claim_id for v in self.verdicts if not v.grounded)
 
+    @property
+    def conflicting_revision_claim_ids(self) -> tuple[str, ...]:
+        return tuple(v.claim_id for v in self.verdicts if v.conflicting_revisions)
+
     def as_dict(self) -> dict[str, Any]:
         return {
             "grounding_floor": self.grounding_floor,
             "claims": {v.claim_id: v.as_dict() for v in self.verdicts},
             "all_grounded": self.all_grounded,
             "ungrounded_claim_ids": list(self.ungrounded_claim_ids),
+            "conflicting_revision_claim_ids": list(self.conflicting_revision_claim_ids),
         }
+
+
+def _conflicting_revisions(
+    cited: "Sequence[EvidenceCandidate]",
+    retrieved: "Sequence[EvidenceCandidate]",
+) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """Documents cited at more than one revision in the same answer.
+
+    This is a narrow claim, made narrow on purpose. It does not detect
+    contradiction in general -- two documents asserting incompatible things is
+    a semantic judgement that no lexical method here can make, and
+    OPEN_DECISIONS D-11 records why. What it does detect is the case that is
+    decidable from the citation list alone: the same report cited at a revision
+    *and* its retest.
+
+    That case is not hypothetical. Asked what EUT-7 measured at 132 MHz, the
+    corpus answers 38.2 dBuV/m (REV-A, over the limit) and 31.4 dBuV/m (REV-B,
+    under it after mitigation). Both are true of their moment, they answer the
+    question oppositely, and nothing in a citation list marks which one is
+    current. A person has to say which applies, which is what REVIEW is for.
+
+    Two fragments of the *same* revision are not a conflict -- that is an
+    answer drawn from two paragraphs, which is the normal case.
+
+    The other revision counts whether or not it was *cited*. Scoped to the
+    citations alone this missed its own headline example: asked what EUT-7
+    measured at 132 MHz, retrieval returns 38.2 dBuV/m from REV-A and 31.4
+    dBuV/m from REV-B, but REV-B contributes no term REV-A had not already
+    supplied, so the citation selector correctly drops it and the conflict
+    disappeared with it. A retest that disagrees in *numbers* while agreeing in
+    *words* is invisible to any lexical selector -- which is the whole reason
+    this check exists, so it reads the retrieved set instead.
+    """
+    cited_revisions: dict[str, set[str]] = {}
+    for item in cited:
+        cited_revisions.setdefault(item.document_id, set()).add(item.revision_id)
+    available: dict[str, set[str]] = {}
+    for item in retrieved:
+        if item.document_id in cited_revisions:
+            available.setdefault(item.document_id, set()).add(item.revision_id)
+    return tuple(
+        (document_id, tuple(sorted(revisions)))
+        for document_id, revisions in sorted(available.items())
+        if len(revisions) > 1
+    )
 
 
 class ClaimVerifier:
@@ -111,6 +169,49 @@ class ClaimVerifier:
     def _informative(self, text: str) -> list[str]:
         return [t for t in dict.fromkeys(self._tokenize(text)) if t not in self._ignore]
 
+    def select_citations(
+        self, statement: str, evidence: Sequence[EvidenceCandidate]
+    ) -> list[EvidenceCandidate]:
+        """Which of the retrieved fragments the claim should actually cite.
+
+        Both callers used to cite `evidence[0]` and nothing else, so a claim
+        needing two fragments could not be grounded however well retrieval had
+        done. Asked what the EUT-7 level was *before mitigation and how far
+        above the limit*, the pack retrieved the before-figure at rank 1 and
+        the mitigation at ranks 2 and 3, cited only rank 1, and then reported
+        `mitigation` as unsupported -- by evidence it was holding.
+
+        Nor is the answer to cite all ten. A citation that supports nothing is
+        padding, and it inflates grounding without adding support: the fix for
+        an under-cited claim must not be an over-cited one.
+
+        So this is a greedy set cover over the claim's informative terms.
+        Fragments are considered in rank order and kept only when they supply a
+        term no kept fragment supplied, which stops as soon as the evidence
+        stops adding anything. Rank 1 is always kept when there is any evidence
+        at all -- it is what the answer is drawn from, whether or not it
+        happens to widen the cover.
+        """
+        if not evidence:
+            return []
+        wanted = set(self._informative(statement))
+        kept = [evidence[0]]
+        covered = self._supplied(evidence[0])
+        for item in evidence[1:]:
+            supplies = self._supplied(item)
+            if wanted & supplies - covered:
+                kept.append(item)
+                covered |= supplies
+        return kept
+
+    def _supplied(self, item: EvidenceCandidate) -> set[str]:
+        """Every term a fragment puts on the table, body and title alike."""
+        supplied = set(self._tokenize(item.text))
+        title = item.metadata.get("title") if item.metadata else None
+        if title:
+            supplied |= set(self._tokenize(str(title)))
+        return supplied
+
     def verify(
         self, claims: Sequence[Claim], evidence: Sequence[EvidenceCandidate]
     ) -> VerificationReport:
@@ -120,17 +221,16 @@ class ClaimVerifier:
             cited = [by_id[eid] for eid in claim.evidence_ids if eid in by_id]
             terms = self._informative(claim.statement)
 
+            # The title carries what the document *is*, which is often the part
+            # of a claim the body never restates. Retrieval indexes it for the
+            # same reason, and `select_citations` reads it through the same
+            # helper so the two cannot drift.
             supplied: set[str] = set()
             for item in cited:
-                supplied |= set(self._tokenize(item.text))
-                # The title carries what the document *is*, which is often the
-                # part of a claim the body never restates. Retrieval indexes it
-                # for the same reason.
-                title = item.metadata.get("title") if item.metadata else None
-                if title:
-                    supplied |= set(self._tokenize(str(title)))
+                supplied |= self._supplied(item)
 
             unsupported = tuple(t for t in terms if t not in supplied)
+            conflicting = _conflicting_revisions(cited, evidence)
             grounding = (len(terms) - len(unsupported)) / len(terms) if terms else 0.0
             # No evidence is never grounded, whatever the arithmetic says: with
             # no cited text `terms` is entirely unsupported, but a claim with no
@@ -144,6 +244,7 @@ class ClaimVerifier:
                     grounding=grounding,
                     grounded=grounded,
                     unsupported_terms=unsupported,
+                    conflicting_revisions=conflicting,
                 )
             )
         return VerificationReport(verdicts=tuple(verdicts), grounding_floor=self._floor)

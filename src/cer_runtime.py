@@ -70,12 +70,31 @@ class CERGateRuntime:
             claim for claim in claims
             if claim.claim_id in ungrounded_ids and claim not in unsupported
         ]
-        contradictory = [
-            claim for claim in claims
-            if len(claim.evidence_ids) >= 2
-            and len({evidence_by_id[eid].text.strip() for eid in claim.evidence_ids if eid in evidence_by_id}) >= 2
-        ]
-
+        # There is no contradiction rule here, and that is a finding rather than
+        # an omission.
+        #
+        # What stood here checked whether a claim cited two evidence items whose
+        # texts differed. That is plurality, not contradiction -- two paragraphs
+        # corroborating each other are also two distinct texts -- and it never
+        # fired, because every caller cited exactly one item. When citations were
+        # fixed to cover the claim (D-14) it fired on 103 of 139 answerable
+        # questions, which is how a rule unreachable since it was written finally
+        # showed what it actually said.
+        #
+        # Its replacement was to be narrower: the same document cited at a
+        # revision and at its retest, which is the one conflict decidable from a
+        # citation list. Measured, it flagged 38 of 139 answerable questions and
+        # 15 of those were `revision_comparison` cases -- "how did the peak
+        # change between the original test and the retest" -- where two revisions
+        # in view is what was asked for. A rule that refers the question it was
+        # built to answer is not narrow enough to keep.
+        #
+        # Separating them needs one of two things the system does not have: the
+        # question's time scope, which is a semantic judgement (OPEN_DECISIONS
+        # D-11), or a corpus that declares which revision supersedes which, which
+        # is metadata `revision_id` does not carry. `VerificationReport` reports
+        # the conflicting revisions either way, so a reader is told; nothing gates
+        # on it until one of those exists.
         if unsupported or ungrounded:
             result = "BLOCK"
             human_required = False
@@ -84,11 +103,6 @@ class CERGateRuntime:
                 + tuple(f"UNGROUNDED_CLAIM:{claim.claim_id}" for claim in ungrounded)
             )
             actions = ("REMEDIATE_EVIDENCE",)
-        elif contradictory:
-            result = "REVIEW"
-            human_required = True
-            findings = tuple(f"CONTRADICTORY_EVIDENCE:{claim.claim_id}" for claim in contradictory)
-            actions = ("HUMAN_REVIEW_REQUIRED", "RECONCILE_EVIDENCE")
         elif risk_level in {"critical", "high"}:
             result = "REVIEW"
             human_required = True

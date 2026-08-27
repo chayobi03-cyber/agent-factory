@@ -118,13 +118,7 @@ def load_all(*, examples: bool = False) -> dict[str, GenericDomainPack]:
 
 def answer(pack: GenericDomainPack, query: str, *, top_k: int, mode: str | None) -> dict:
     evidence = pack.retrieve(query, top_k=top_k, mode=mode)
-    claim = Claim(
-        claim_id="C-QUERY",
-        statement=query,
-        claim_type="answer",
-        evidence_ids=[evidence[0].evidence_id] if evidence else ["E-NO-EVIDENCE-FOUND"],
-        confidence=round(evidence[0].score, 4) if evidence else 0.0,
-    )
+    claim = pack.build_claim(query, evidence)
     report = pack.claim_verifier.verify([claim], evidence)
     decision = CERGateRuntime().evaluate(
         snapshot=SNAPSHOT, run_id="RUN-QUERY", gate_id=f"{pack.domain_id}-QA",
@@ -138,7 +132,13 @@ def answer(pack: GenericDomainPack, query: str, *, top_k: int, mode: str | None)
         "cer_result": decision.result,
         "findings": list(decision.triggered_findings),
         "grounding": verdict.grounding if verdict else 0.0,
+        "confidence": claim.confidence,
+        "cited_evidence_ids": list(claim.evidence_ids),
         "unsupported_terms": list(verdict.unsupported_terms) if verdict else [],
+        "conflicting_revisions": [
+            {"document_id": d, "revisions": list(r)}
+            for d, r in (verdict.conflicting_revisions if verdict else ())
+        ],
         "evidence": [
             {"evidence_id": e.evidence_id, "document_id": e.document_id,
              "revision_id": e.revision_id, "score": e.score, "text": e.text}
@@ -234,6 +234,14 @@ def main() -> int:
         print("\nNo evidence. The corpus does not answer this question.")
         print("How far that refusal can be trusted is recorded in OPEN_DECISIONS D-11.")
         return 0
+    for conflict in result["conflicting_revisions"]:
+        # A retest and the test it supersedes answer the same question
+        # differently, and nothing in a citation marks which one is current.
+        # Not gated on -- 15 of the 38 questions this would have referred were
+        # asking about the change between revisions -- but never hidden either.
+        print(f"NOTE: {conflict['document_id']} is in evidence at "
+              f"{' and '.join(conflict['revisions'])}; these may not agree, and "
+              f"nothing here records which supersedes which")
     if result["unsupported_terms"]:
         # The part of the question the evidence never mentions. Where the
         # threshold cannot decide, this is what puts the gap in front of a

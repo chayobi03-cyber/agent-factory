@@ -196,6 +196,45 @@ def test_protected_harness_result_cannot_regress(tmp_path):
     assert any("E-HARNESS" in e for e in errors)
 
 
+def test_adding_a_harness_case_does_not_block(tmp_path):
+    """The failure that produced this rule.
+
+    The gate demanded exactly 10/10, so an eleventh golden case -- pinning that
+    semantic contradiction is *not* detected -- turned CI red for a harness that
+    was entirely green. A floor admits a case being added; the required case
+    *ids* are asserted in tests/test_evaluation_harness.py, which is where a
+    case being dropped is actually caught.
+    """
+    def mutate(records):
+        payload = {"case_count": 11, "passed": 11, "failed": 0, "green": True}
+        records["E-HARNESS"]["stdout"] = json.dumps(payload)
+        records["E-HARNESS"]["stdout_sha256"] = sha(records["E-HARNESS"]["stdout"])
+    decision, errors = decide(write_pack(tmp_path, mutate=mutate))
+    assert decision == "GREEN", errors
+
+
+def test_dropping_below_the_protected_minimum_blocks(tmp_path):
+    """All-passing is not enough on its own: nine of nine is still a harness
+    that lost a case, and the floor is what notices."""
+    def mutate(records):
+        payload = {"case_count": 9, "passed": 9, "failed": 0, "green": True}
+        records["E-HARNESS"]["stdout"] = json.dumps(payload)
+        records["E-HARNESS"]["stdout_sha256"] = sha(records["E-HARNESS"]["stdout"])
+    decision, errors = decide(write_pack(tmp_path, mutate=mutate))
+    assert decision == "AMBER"
+    assert any("E-HARNESS" in e for e in errors)
+
+
+def test_a_harness_failure_blocks_at_any_case_count(tmp_path):
+    def mutate(records):
+        payload = {"case_count": 11, "passed": 10, "failed": 1, "green": False}
+        records["E-HARNESS"]["stdout"] = json.dumps(payload)
+        records["E-HARNESS"]["stdout_sha256"] = sha(records["E-HARNESS"]["stdout"])
+    decision, errors = decide(write_pack(tmp_path, mutate=mutate))
+    assert decision == "AMBER"
+    assert any("E-HARNESS" in e for e in errors)
+
+
 def test_opro_best_below_baseline_blocks(tmp_path):
     def mutate(records):
         payload = dict(PAYLOADS["E-OPRO-BASELINE"], best_score=0.5)
