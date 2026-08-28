@@ -14,6 +14,11 @@ forbidden:
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
 ---
+> **Superseded 2026-08-27 by `NEXT_SESSION_HANDOFF_2026-08-27.md`.** Retained
+> as the record of the project-context remediation it documents. It is no
+> longer the resume pointer: `CURRENT_SESSION_STATE.yaml.handoff` names the
+> current document and every validator follows that pointer.
+
 # AgentFactory Next Session Handoff — 2026-08-20 Project Context Remediation
 
 ## Canonical identity

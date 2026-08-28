@@ -199,3 +199,79 @@ def test_neither_validator_honours_the_override_inside_ci(monkeypatch, module_na
     branch, source = module.resolve_branch()
     assert branch == "some-ci-checkout"
     assert source == "git.branch"
+
+
+# --- one handoff pointer, followed by every validator ------------------------
+
+
+def test_the_guard_follows_the_handoff_named_by_state(tmp_path, monkeypatch):
+    """The path was hardcoded here while the resume validator read state.handoff.
+
+    The two agreed only because nobody had written a second handoff document
+    yet. The first one would have left this guard checking the old document's
+    identity and the resume validator checking the new one's, with both green
+    and each satisfied by a different file.
+    """
+    from scripts import validate_project_context as guard
+
+    root = Path(__file__).resolve().parents[1]
+    (tmp_path / "docs" / "governance").mkdir(parents=True)
+    for name in ("CURRENT_SESSION_STATE.yaml", "AGENT_FACTORY_SCOPE_V1.md"):
+        (tmp_path / "docs" / "governance" / name).write_text(
+            (root / "docs" / "governance" / name).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    state_path = tmp_path / "docs" / "governance" / "CURRENT_SESSION_STATE.yaml"
+
+    import yaml
+
+    state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
+    declared = state["handoff"]
+    assert declared.endswith("NEXT_SESSION_HANDOFF_2026-08-27.md"), (
+        "the state's handoff pointer moved; this test names the file it expects"
+    )
+
+    # Point state at a handoff carrying the wrong identity. If the guard were
+    # still reading a path of its own it would never see this file.
+    (tmp_path / "docs" / "governance" / "OTHER_HANDOFF.md").write_text(
+        "project_id: `not-agent-factory`\n", encoding="utf-8"
+    )
+    state["handoff"] = "docs/governance/OTHER_HANDOFF.md"
+    state_path.write_text(yaml.safe_dump(state, sort_keys=False), encoding="utf-8")
+
+    monkeypatch.setenv("AGENTFACTORY_TARGET_BRANCH", EXPECTED_BRANCH)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    # tmp_path is not a git checkout; the identity checks under test do not need
+    # one, so git answers as the real repository would.
+    monkeypatch.setattr(
+        guard, "run_git",
+        lambda *args: ("https://github.com/chayobi03-cyber/agent-factory.git"
+                       if args[:1] == ("config",) else EXPECTED_BRANCH),
+    )
+    # The tree scans shell out to git themselves and are not what is under test.
+    monkeypatch.setattr(guard, "scan_cross_project_references", lambda root: [])
+    monkeypatch.setattr(guard, "scan_forbidden_paths", lambda root: [])
+    failures = guard.validate_identity(tmp_path)
+    assert any("handoff" in f for f in failures), failures
+
+
+def test_a_missing_handoff_target_is_an_error_not_a_pass(tmp_path):
+    from scripts import validate_project_context as guard
+
+    root = Path(__file__).resolve().parents[1]
+    (tmp_path / "docs" / "governance").mkdir(parents=True)
+    for name in ("CURRENT_SESSION_STATE.yaml", "AGENT_FACTORY_SCOPE_V1.md"):
+        (tmp_path / "docs" / "governance" / name).write_text(
+            (root / "docs" / "governance" / name).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    state_path = tmp_path / "docs" / "governance" / "CURRENT_SESSION_STATE.yaml"
+
+    import yaml
+
+    state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
+    state["handoff"] = "docs/governance/NO_SUCH_HANDOFF.md"
+    state_path.write_text(yaml.safe_dump(state, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(guard.ContextGuardError, match="missing file"):
+        guard.validate_identity(tmp_path)
