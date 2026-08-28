@@ -140,3 +140,23 @@ def test_all_three_validators_honour_the_same_variable(monkeypatch: pytest.Monke
         assert "AGENTFACTORY_TARGET_BRANCH" in source, f"{name} ignores the override"
         assert "GITHUB_ACTIONS" in source, f"{name} would let the override weaken CI"
         ast.parse(source)
+
+
+def test_the_suite_does_not_inherit_the_local_branch_override() -> None:
+    """The guard that made this file's failure look intermittent.
+
+    `test_session_state_has_required_resume_fields` stubs git to return the
+    branch its fixture names, and `resolve_branch` prefers
+    AGENTFACTORY_TARGET_BRANCH over that stub. With the variable exported --
+    which the handoff tells contributors to do before running the validators --
+    the branch check compared the override against the fixture's branch and
+    raised. Set: fail. Unset: pass. Deterministic, and indistinguishable from a
+    flake unless you notice which shell each run happened in.
+
+    tests/conftest.py clears it for every test; this asserts the clearing is
+    real rather than assumed.
+    """
+    import os
+
+    assert "AGENTFACTORY_TARGET_BRANCH" not in os.environ
+    assert "GITHUB_ACTIONS" not in os.environ
