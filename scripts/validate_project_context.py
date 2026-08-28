@@ -137,9 +137,8 @@ def scan_forbidden_paths(root: Path) -> list[str]:
 def validate_identity(root: Path | None = None) -> list[str]:
     root = root or Path.cwd()
     state_path = root / "docs/governance/CURRENT_SESSION_STATE.yaml"
-    handoff_path = root / "docs/governance/NEXT_SESSION_HANDOFF_2026-08-18.md"
     scope_path = root / "docs/governance/AGENT_FACTORY_SCOPE_V1.md"
-    if not state_path.exists() or not handoff_path.exists() or not scope_path.exists():
+    if not state_path.exists() or not scope_path.exists():
         raise ContextGuardError("required governance identity/scope files are missing")
 
     import yaml
@@ -147,6 +146,23 @@ def validate_identity(root: Path | None = None) -> list[str]:
     state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
     if not isinstance(state, dict):
         raise ContextGuardError("CURRENT_SESSION_STATE.yaml must be a mapping")
+
+    # The handoff document is named by `state.handoff`, not by this file.
+    #
+    # This path was hardcoded as NEXT_SESSION_HANDOFF_2026-08-18.md while
+    # `validate_session_resume.py` had always read `state["handoff"]`. The two
+    # agreed only because nobody had written a second handoff document yet:
+    # the first one would have left the guard checking the old document's
+    # identity and the resume validator checking the new one's, with both
+    # green. One pointer, in the state file, followed by everything.
+    declared = state.get("handoff")
+    if not isinstance(declared, str) or not declared:
+        raise ContextGuardError("state.handoff must name the handoff document")
+    handoff_path = Path(declared)
+    if not handoff_path.is_absolute():
+        handoff_path = root / handoff_path
+    if not handoff_path.exists():
+        raise ContextGuardError(f"state.handoff names a missing file: {declared}")
 
     branch, branch_source = resolve_branch()
     remote = normalize_remote(run_git("config", "--get", "remote.origin.url"))
