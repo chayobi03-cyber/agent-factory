@@ -25,7 +25,6 @@ follows that pointer rather than a path of its own.
 - repository: `chayobi03-cyber/agent-factory`
 - branch: `main`
 - governance_namespace: `AgentFactory`
-- external_project_reference: `chayobi03-cyber/investment` (boundary reference only)
 
 ## Where the work stands
 
