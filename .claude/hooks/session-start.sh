@@ -62,6 +62,19 @@ if isinstance(branch, str) and branch.strip():
 PY
 )"
 
+# PYTHONPATH matches what factory-kernel.yml sets. Six of the eight scripts in
+# scripts/ insert the repository root on sys.path themselves and run without it;
+# `opro_baseline.py` and `domain_matrix_demo.py` do not, and fail with
+# ModuleNotFoundError outside CI. Import resolution is handled two different
+# ways across one directory, and only the env-var half is invisible until you
+# run those two -- so reproduce CI's environment rather than the half of it that
+# happens to work.
+if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
+  echo "export PYTHONPATH=\"${project_dir}:${project_dir}/src\${PYTHONPATH:+:\$PYTHONPATH}\"" \
+    >> "$CLAUDE_ENV_FILE"
+  echo "session-start: PYTHONPATH=${project_dir}:${project_dir}/src"
+fi
+
 if [ -n "$target_branch" ] && [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   # Safe for the test suite: tests/conftest.py clears this variable per test,
   # so a value exported into the session cannot reach a test that did not ask
