@@ -130,18 +130,97 @@ corpus.
 python3 scripts/calibrate_retrieval.py --corpus /your/docs --benchmark /your/cases.json
 ```
 
-It changes nothing, prints what each candidate value would buy, and exits
-non-zero when a shipped constant is no longer the right choice for the corpus
-it just measured. It refuses to run against a benchmark naming documents your
-corpus lacks — pointing it at real documents while still holding someone else's
-benchmark would otherwise report a catastrophic recall that reads as a model
-regression.
+It changes nothing and prints what each candidate value would buy. It exits
+non-zero on two different outcomes, and they mean different things:
 
-You need a benchmark of your own for this: questions with the document ids that
-should answer them. Write the questions as a person would ask them, not by
-paraphrasing a sentence from the answer — a benchmark whose queries are lifted
-from their own documents measures the person who wrote it. The RE benchmark
-reports its own figure both ways for exactly this reason.
+- **STALE** — the sweep measured the constant and a different value fits your
+  corpus better. Re-derive before quoting any number.
+- **UNVERIFIED** — the sweep could not measure the constant at all, because
+  your benchmark lacks the cases it needs. The shipped value is neither
+  confirmed nor refuted, so it carries exactly the authority it had before you
+  ran anything: none, over your corpus.
+
+`UNVERIFIED` is the one to watch, because it is the one that used to read as
+success. Both `_UNSEEN_TERM_CEILING` and `RETRIEVAL_MODES` can land there, and
+a benchmark written without reading the next section will put the first one
+there every time.
+
+It also refuses to run against a benchmark naming documents your corpus lacks —
+pointing a tool at real documents while it still holds someone else's benchmark
+would otherwise report a catastrophic recall that reads as a model regression.
+`scripts/re_demo.py --corpus ... --benchmark ...` refuses the same mismatch,
+through the same check in `src/corpus_source.py`.
+
+## Write the benchmark
+
+A benchmark is a JSON file of cases. Seven fields, of which two are optional:
+
+```json
+{
+  "benchmark_id": "YOURDOMAIN-BENCH",
+  "version": "0.1",
+  "cases": [
+    {
+      "case_id": "YD-001",
+      "query": "What is the minimum margin required against the Class B limit?",
+      "query_type": "definition_factual",
+      "expected_document_ids": ["SPEC-007"],
+      "expect_abstain": false,
+      "min_recall": 1.0
+    },
+    {
+      "case_id": "YD-002",
+      "query": "What is the shear modulus of the potting compound?",
+      "query_type": "evidence_sufficiency_abstention",
+      "expected_document_ids": [],
+      "expect_abstain": true,
+      "abstention_band": "entity_absent_from_corpus",
+      "min_recall": 0.0
+    }
+  ],
+  "acceptance_targets": {"evidence_recall_at_10": 0.90}
+}
+```
+
+Write the questions as a person would ask them, not by paraphrasing a sentence
+from the answer — a benchmark whose queries are lifted from their own documents
+measures the person who wrote it. The RE benchmark reports its own figure both
+ways for exactly this reason.
+
+### Every abstention case needs a band
+
+`abstention_band` is required on any case with `expect_abstain: true`, and it
+is the field most easily missed: nothing rejects a benchmark without it, but
+`calibrate_retrieval.py` then cannot check `_UNSEEN_TERM_CEILING` and reports
+`UNVERIFIED` for it. Three bands, and the distinction is not cosmetic — two of
+them are decidable from corpus statistics and one is not:
+
+| band | the question asks about | decidable |
+| --- | --- | --- |
+| `subject_outside_domain` | something this domain does not cover at all | yes |
+| `entity_absent_from_corpus` | a named thing your documents have never seen | yes |
+| `near_miss_domain_subject` | your subject, but a fact the corpus does not carry | **no** |
+
+The first two are what the ceiling is derived from: the tool picks the largest
+ceiling at which both stay perfect. Write several of each or the derivation
+rests on one case.
+
+The third is a known open limitation (`OPEN_DECISIONS` D-11) — no lexical
+statistic separates "we have this document but not this fact" from "we can
+answer this", and eight retrieval-side and five verification-side candidates
+were measured and rejected. Label those cases honestly anyway. They are
+excluded from the pass/fail gate and reported separately, so they tell you the
+size of the gap rather than hiding it.
+
+### Then score it
+
+```bash
+python3 scripts/re_demo.py --corpus /your/docs --benchmark /your/cases.json
+```
+
+`query_type` is free text and is used only to group the report, so use whatever
+taxonomy your domain thinks in. `docs/RE_POC.md` lists the nine categories the
+RE work uses if you want a starting point.
 
 ## More than one domain at a time
 

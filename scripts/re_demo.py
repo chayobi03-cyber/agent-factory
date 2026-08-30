@@ -23,7 +23,13 @@ if str(SRC) not in sys.path:
 
 from interfaces import CERSnapshot, Claim  # noqa: E402
 from cer_runtime import CERGateRuntime  # noqa: E402
-from corpus_source import CorpusError, from_directory  # noqa: E402
+from corpus_source import (  # noqa: E402
+    DECIDABLE_ABSTENTION_BANDS,
+    UNDECIDABLE_ABSTENTION_BANDS,
+    CorpusError,
+    from_directory,
+    missing_benchmark_documents,
+)
 from re_domain_pack import RETRIEVAL_MODES, REDomainPack  # noqa: E402
 
 BENCHMARK_PATH = ROOT / "templates" / "benchmark" / "re_hybrid_rag_v0.1.json"
@@ -38,8 +44,12 @@ SNAPSHOT = CERSnapshot(
 )
 
 
-def load_benchmark() -> dict:
-    return json.loads(BENCHMARK_PATH.read_text(encoding="utf-8"))
+class BenchmarkError(ValueError):
+    """A benchmark that cannot be scored against the corpus it was given."""
+
+
+def load_benchmark(path: str | Path | None = None) -> dict:
+    return json.loads(Path(path or BENCHMARK_PATH).read_text(encoding="utf-8"))
 
 
 # docs/RE_POC.md states the acceptance target as Evidence Recall@10, so the run
@@ -180,7 +190,7 @@ def score_benchmark(benchmark: dict, results: list[dict], pack: REDomainPack) ->
                                      if by_result[cid]["cer_result"] == "PASS")}
         for b, v in bands.items()
     }
-    gated = ("subject_outside_domain", "entity_absent_from_corpus")
+    gated = DECIDABLE_ABSTENTION_BANDS
     decidable_ok = all(
         band_scores[b]["held"] == band_scores[b]["total"] for b in gated if b in band_scores
     )
@@ -228,17 +238,33 @@ def score_benchmark(benchmark: dict, results: list[dict], pack: REDomainPack) ->
         "abstention_overall": round(sum(all_abstain) / len(all_abstain), 4) if all_abstain else None,
         "abstention_by_band": band_scores,
         "abstention_decidable_bands_perfect": decidable_ok,
-        "known_limitation": "near_miss_domain_subject -- OPEN_DECISIONS D-11",
+        "known_limitation": f"{', '.join(UNDECIDABLE_ABSTENTION_BANDS)} -- OPEN_DECISIONS D-11",
         "meets_acceptance_targets": recall_ok and decidable_ok,
     }
 
 
 def run(benchmark_id: str | None = None, *, mode: str | None = None,
-        corpus: str | None = None) -> dict:
+        corpus: str | None = None, benchmark_path: str | Path | None = None) -> dict:
     pack = REDomainPack()
-    loaded = pack.load(from_directory(corpus) if corpus else None)
+    source = from_directory(corpus) if corpus else None
+    loaded = pack.load(source)
     gate = CERGateRuntime()
-    benchmark = load_benchmark()
+    benchmark = load_benchmark(benchmark_path)
+
+    # The in-tree benchmark names DOC-RE-* documents. Pointed at someone else's
+    # corpus it scores one corpus against another's answer key and reports a
+    # recall near zero, which reads as a broken retriever rather than as the
+    # mismatch it is. calibrate_retrieval.py has always refused this; this tool
+    # reported 0.000 instead, and it is the one a new corpus reaches first.
+    if source is not None:
+        missing = missing_benchmark_documents(benchmark["cases"], source.documents)
+        if missing:
+            raise BenchmarkError(
+                f"{len(missing)} expected document(s) named by the benchmark are absent "
+                f"from the corpus: {missing[:5]}{'...' if len(missing) > 5 else ''}\n"
+                f"A benchmark that names documents the corpus lacks measures nothing. "
+                f"Author one for this corpus and pass it with --benchmark."
+            )
     benchmark["retrieval_mode"] = mode or pack.default_retrieval_mode
     cases = benchmark["cases"]
     results = [run_case(pack, gate, case, mode=mode) for case in cases]
@@ -272,19 +298,28 @@ def main() -> int:
                              "in-tree synthetic corpus. The result is recorded with the "
                              "corpus origin and digest, because it is no longer reproducible "
                              "from the commit SHA alone (OPEN_DECISIONS D-08)")
+    parser.add_argument("--benchmark", metavar="PATH",
+                        help="benchmark JSON to score, instead of the in-tree synthetic set. "
+                             "A corpus of your own needs one: the in-tree benchmark names "
+                             "DOC-RE-* documents and measures nothing against anything else. "
+                             "See docs/ADDING_A_DOMAIN.md for the case schema")
     args = parser.parse_args()
 
     try:
-        summary = run(mode=args.mode, corpus=args.corpus)
+        summary = run(mode=args.mode, corpus=args.corpus, benchmark_path=args.benchmark)
     except CorpusError as exc:
         print(f"corpus error: {exc}", file=sys.stderr)
+        return 2
+    except BenchmarkError as exc:
+        print(f"benchmark error: {exc}", file=sys.stderr)
         return 2
 
     if args.report:
         pack = REDomainPack()
         pack.load()
         gate = CERGateRuntime()
-        case = next(c for c in load_benchmark()["cases"] if c["case_id"] == args.report)
+        case = next(c for c in load_benchmark(args.benchmark)["cases"]
+                    if c["case_id"] == args.report)
         evidence = pack.retrieve(case["query"], top_k=TOP_K)
         claims = [pack.build_claim(case["query"], evidence, claim_id=f"C-{case['case_id']}")]
         # This path built its own claim *and* gated without a verification
@@ -332,7 +367,7 @@ def main() -> int:
               f"   (mode: {acc['retrieval_mode']})")
         print("Abstention by band :   held = BLOCK; silent = answered anyway")
         for band, s_ in sorted(acc["abstention_by_band"].items()):
-            gated = band != "near_miss_domain_subject"
+            gated = band in DECIDABLE_ABSTENTION_BANDS
             note = "" if gated else "   (known limitation, OPEN_DECISIONS D-11)"
             print(f"  {band:28s} held {s_['held']}/{s_['total']}"
                   f"   silent {s_['silently_answered']}/{s_['total']}{note}")

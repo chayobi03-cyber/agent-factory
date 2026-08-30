@@ -157,3 +157,45 @@ def from_directory(path: str | Path) -> CorpusSource:
     # The origin is the resolved path, not what the caller typed: a relative
     # path recorded in evidence is not an identity.
     return from_documents(documents, origin=f"directory:{root.resolve()}")
+
+
+#: The bands an `expect_abstain` benchmark case is labelled with, and whether a
+#: lexical retriever can decide them from corpus statistics alone.
+#:
+#: Two of the three are decidable, and `scripts/calibrate_retrieval.py` derives
+#: `_UNSEEN_TERM_CEILING` as the largest ceiling at which both stay perfect;
+#: `scripts/re_demo.py` gates on the same two. The tuple was written out
+#: literally in both, which is the split this repository keeps paying for, and
+#: `docs/ADDING_A_DOMAIN.md` documenting it was about to become a third copy.
+#:
+#: `near_miss_domain_subject` is the undecidable one -- the question is about
+#: this domain but names a fact the corpus does not carry. Eight retrieval-side
+#: and five verification-side statistics were measured against it and rejected
+#: (OPEN_DECISIONS D-11), so it is reported separately rather than gated on.
+DECIDABLE_ABSTENTION_BANDS = ("subject_outside_domain", "entity_absent_from_corpus")
+UNDECIDABLE_ABSTENTION_BANDS = ("near_miss_domain_subject",)
+ABSTENTION_BANDS = DECIDABLE_ABSTENTION_BANDS + UNDECIDABLE_ABSTENTION_BANDS
+
+
+def missing_benchmark_documents(
+    cases: Iterable[Mapping[str, Any]],
+    documents: Sequence[Mapping[str, Any]],
+) -> list[str]:
+    """Expected document ids named by `cases` that `documents` does not contain.
+
+    A benchmark whose gold documents are absent from the corpus measures
+    nothing. What it reports instead is a recall near zero, which reads exactly
+    like a retrieval regression -- so the first person to point a tool at their
+    own documents concludes the retriever is broken, when in fact they are
+    scoring one corpus against another corpus's answer key.
+
+    This lived in `scripts/calibrate_retrieval.py`, which refused the mismatch,
+    while `scripts/re_demo.py` -- the tool that reports the acceptance numbers,
+    and the one a new corpus reaches first -- had no equivalent check and
+    happily reported 0.000. One rule enforced in one of the two places that
+    need it is the split this repository keeps paying for, so the rule lives
+    here and both callers import it.
+    """
+    present = {d["document_id"] for d in documents}
+    wanted = {did for case in cases for did in (case.get("expected_document_ids") or [])}
+    return sorted(wanted - present)

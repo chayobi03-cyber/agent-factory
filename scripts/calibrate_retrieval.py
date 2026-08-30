@@ -45,7 +45,13 @@ if str(SRC) not in sys.path:
 
 import re_domain_pack as rdp  # noqa: E402
 from claim_verification import ClaimVerifier  # noqa: E402
-from corpus_source import CorpusError, from_directory, from_documents  # noqa: E402
+from corpus_source import (  # noqa: E402
+    CorpusError,
+    from_directory,
+    DECIDABLE_ABSTENTION_BANDS,
+    from_documents,
+    missing_benchmark_documents,
+)
 from interfaces import Claim  # noqa: E402
 from re_corpus import CORPUS, adversarial_corpus, term_saturating_documents  # noqa: E402
 from re_domain_pack import RETRIEVAL_MODES, REDomainPack  # noqa: E402
@@ -112,8 +118,24 @@ def build_shapes(documents: Sequence[dict], synthetic: bool) -> dict[str, Callab
 
 
 # --- sweeps ------------------------------------------------------------------
+#
+# A sweep answers one of three things, not two. `STALE` and `FITS` were the
+# whole vocabulary, so a sweep that could not decide had to claim one of them,
+# and both existing cases claimed `FITS`: `sweep_unseen_ceiling` returned it
+# when the benchmark carried no banded abstention cases, and `sweep_modes`
+# returned it unconditionally. Pointed at a corpus whose benchmark lacked
+# `abstention_band`, the tool printed a sweep showing the shipped ceiling
+# costing a third of the recall and then declared every constant the right
+# choice, exit 0 -- while the handoff tells the reader it exits non-zero when a
+# shipped value no longer fits. `UNVERIFIED` is the missing answer: not a
+# failure of the constant, a failure to have measured it, and non-zero either
+# way because a green light neither has earned.
 
-def sweep_coverage_floor(packs: dict[str, REDomainPack], cases, shipped: float) -> bool:
+FITS = "fits"
+STALE = "stale"
+UNVERIFIED = "unverified"
+
+def sweep_coverage_floor(packs: dict[str, REDomainPack], cases, shipped: float) -> str:
     print("\n## _COVERAGE_FLOOR")
     print(f"{'floor':>7} {'Recall@10':>10} {'R@1':>7} {'unstable':>9}   ")
     base = packs[next(iter(packs))]
@@ -142,10 +164,10 @@ def sweep_coverage_floor(packs: dict[str, REDomainPack], cases, shipped: float) 
     ok = any(abs(f - shipped) < 1e-9 for f in band)
     print(f"   best Recall@10 {top:.3f} at floors {band}; shipped {shipped} "
           f"{'is in the band' if ok else 'IS NOT in the band'}")
-    return ok
+    return FITS if ok else STALE
 
 
-def sweep_unseen_ceiling(pack: REDomainPack, cases, shipped: float) -> bool:
+def sweep_unseen_ceiling(pack: REDomainPack, cases, shipped: float) -> str:
     print("\n## _UNSEEN_TERM_CEILING")
     print(f"{'ceiling':>8} {'Recall@10':>10} {'abstention':>11}   bands")
     rows = []
@@ -165,24 +187,27 @@ def sweep_unseen_ceiling(pack: REDomainPack, cases, shipped: float) -> bool:
 
     # The selection rule the register records: the largest ceiling at which the
     # abstention bands that are decidable from corpus statistics stay perfect.
-    decidable = ("subject_outside_domain", "entity_absent_from_corpus")
+    decidable = DECIDABLE_ABSTENTION_BANDS
     perfect = [
         c for c, s in rows
         if all(s["bands"].get(b, (0, 0))[0] == s["bands"].get(b, (0, 0))[1] for b in decidable)
         and any(b in s["bands"] for b in decidable)
     ]
     if not perfect:
-        print("   no ceiling keeps the decidable bands perfect -- benchmark has no banded "
-              "abstention cases, or the corpus cannot decide them")
-        return True
+        print("   UNVERIFIED: no ceiling keeps the decidable bands perfect -- the benchmark "
+              "carries no case labelled with an `abstention_band` of "
+              f"{' or '.join(decidable)}, or the corpus cannot decide them.")
+        print("   The shipped ceiling is neither confirmed nor refuted by this benchmark. "
+              "Add banded abstention cases (docs/ADDING_A_DOMAIN.md) and re-run.")
+        return UNVERIFIED
     chosen = max(perfect)
     ok = abs(chosen - shipped) < 1e-9
     print(f"   largest ceiling keeping the decidable bands perfect: {chosen}; "
           f"shipped {shipped} {'matches' if ok else 'DOES NOT match'}")
-    return ok
+    return FITS if ok else STALE
 
 
-def sweep_modes(pack: REDomainPack, cases) -> bool:
+def sweep_modes(pack: REDomainPack, cases) -> str:
     print("\n## RETRIEVAL_MODES")
     print(f"{'mode':<10} {'R@1':>7} {'R@10':>7} {'MRR@10':>8}")
     results = {}
@@ -196,14 +221,34 @@ def sweep_modes(pack: REDomainPack, cases) -> bool:
             rdp.RETRIEVAL_MODES = original
         results[mode] = s
         print(f"{mode:<10} {s['recall_at_1']:7.3f} {s['recall_at_10']:7.3f} {s['mrr_at_10']:8.3f}")
-    recalls = {round(s["recall_at_10"], 4) for s in results.values()}
-    if len(recalls) == 1:
+    # Tied on every metric, not merely on Recall@10. A first version of this
+    # check keyed off Recall@10 alone and turned the in-tree run non-zero:
+    # all three modes score 0.914 there, while R@1 and MRR separate trigram
+    # (0.799 / 0.841) from BM25 and hybrid (0.827 / 0.868). Recall@10 being
+    # blind is the D-14 finding, not an inability to compare -- the sweep's own
+    # advice is to judge on R@1/MRR, and that advice is only honest if the
+    # table can still be read.
+    tied = {
+        metric: len({round(s[metric], 4) for s in results.values()}) == 1
+        for metric in ("recall_at_1", "recall_at_10", "mrr_at_10")
+    }
+    if tied["recall_at_10"] and not all(tied.values()):
         print("   Recall@10 is identical for every mode -- it cannot compare retrieval "
-              "methods on this corpus. Judge on R@1/MRR.")
-    return True
+              "methods on this corpus. Judge on R@1/MRR, which do separate them.")
+    if all(tied.values()):
+        print("   UNVERIFIED: every mode scores identically on R@1, Recall@10 and MRR -- "
+              "this benchmark cannot compare retrieval methods at all.")
+        return UNVERIFIED
+    # Deliberately no staleness rule for the blend itself. That the shipped
+    # hybrid contributes about 6.5:1 in BM25's favour is a measured, recorded,
+    # open item (OPEN_DECISIONS D-14); picking a threshold at which the blend
+    # becomes "stale" would fit that decision to whichever corpus ran last,
+    # which is the one thing this repository does not do to a retrieval
+    # constant. The table is the finding; the reader makes the call.
+    return FITS
 
 
-def sweep_grounding_floor(pack: REDomainPack, cases, shipped: float) -> bool:
+def sweep_grounding_floor(pack: REDomainPack, cases, shipped: float) -> str:
     print("\n## claim_grounding_floor  (domains/re/domain_pack.yaml)")
     print(f"{'floor':>7} {'answerable ungrounded':>22} {'abstention caught':>18}")
     answerable = [c for c in cases if not c.get("expect_abstain")]
@@ -237,12 +282,12 @@ def sweep_grounding_floor(pack: REDomainPack, cases, shipped: float) -> bool:
     safe = [f for f, lost, _ in rows if lost == 0]
     if not safe:
         print("   every floor rejects a legitimately grounded claim -- lower the range")
-        return False
+        return STALE
     highest = max(safe)
     ok = abs(shipped - highest) < 1e-9 or shipped in safe
     print(f"   floors rejecting no answerable case: {safe}; shipped {shipped} "
           f"{'is safe' if ok else 'REJECTS answerable cases'}")
-    return ok
+    return FITS if ok else STALE
 
 
 def _outcome(pack: REDomainPack, case: dict) -> bool:
@@ -275,16 +320,6 @@ def _score_with(retrieve, cases) -> dict[str, Any]:
 
 # --- entry point -------------------------------------------------------------
 
-def check_benchmark_matches_corpus(cases, documents) -> list[str]:
-    """A benchmark whose expected documents are not in the corpus measures
-    nothing, and would report a catastrophic recall that looks like a model
-    regression. Caught before any sweep runs."""
-    present = {d["document_id"] for d in documents}
-    wanted = {did for c in cases for did in (c.get("expected_document_ids") or [])}
-    missing = sorted(wanted - present)
-    return missing
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -302,7 +337,7 @@ def main() -> int:
 
     benchmark = json.loads(args.benchmark.read_text(encoding="utf-8"))
     cases = benchmark["cases"]
-    missing = check_benchmark_matches_corpus(cases, source.documents)
+    missing = missing_benchmark_documents(cases, source.documents)
     if missing:
         print(f"benchmark error: {len(missing)} expected document(s) absent from the corpus: "
               f"{missing[:5]}{'...' if len(missing) > 5 else ''}", file=sys.stderr)
@@ -339,18 +374,24 @@ def main() -> int:
         "claim_grounding_floor": sweep_grounding_floor(primary, cases, grounding_shipped),
     }
 
-    stale = sorted(k for k, ok in verdicts.items() if not ok)
+    stale = sorted(k for k, v in verdicts.items() if v == STALE)
+    unverified = sorted(k for k, v in verdicts.items() if v == UNVERIFIED)
     print()
     if stale:
         print(f"STALE: {', '.join(stale)} no longer fit this corpus. "
               f"Re-derive before trusting any benchmark number measured against it.")
-    else:
+    if unverified:
+        print(f"UNVERIFIED: {', '.join(unverified)} could not be checked against this "
+              f"benchmark. The shipped values are neither confirmed nor refuted, so a "
+              f"number measured with them here carries no more authority than before.")
+    if not stale and not unverified:
         print("All shipped constants remain the right choice for this corpus.")
 
     if args.json:
         print(json.dumps({"corpus": source.identity(), "verdicts": verdicts,
-                          "stale": stale}, indent=2, sort_keys=True))
-    return 0 if not stale else 1
+                          "stale": stale, "unverified": unverified},
+                         indent=2, sort_keys=True))
+    return 0 if not stale and not unverified else 1
 
 
 if __name__ == "__main__":

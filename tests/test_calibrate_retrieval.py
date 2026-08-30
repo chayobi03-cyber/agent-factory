@@ -51,36 +51,40 @@ def test_the_shipped_unseen_ceiling_is_the_one_the_rule_selects(pack, capsys):
     """Not "a reasonable value" -- the value the documented selection rule
     picks: the largest ceiling at which the decidable abstention bands stay
     perfect."""
-    assert cal.sweep_unseen_ceiling(pack, CASES, rdp._UNSEEN_TERM_CEILING)
+    assert cal.sweep_unseen_ceiling(pack, CASES, rdp._UNSEEN_TERM_CEILING) == cal.FITS
     assert "matches" in capsys.readouterr().out
 
 
 def test_a_stale_unseen_ceiling_is_reported_stale(pack, capsys):
-    assert not cal.sweep_unseen_ceiling(pack, CASES, 0.50)
+    assert cal.sweep_unseen_ceiling(pack, CASES, 0.50) == cal.STALE
     assert "DOES NOT match" in capsys.readouterr().out
 
 
 def test_the_shipped_grounding_floor_rejects_no_answerable_case(pack, capsys):
     policy = (pack.policy or {}).get("verification_policy", {}) or {}
     shipped = float(policy["claim_grounding_floor"])
-    assert cal.sweep_grounding_floor(pack, CASES, shipped)
+    assert cal.sweep_grounding_floor(pack, CASES, shipped) == cal.FITS
     assert "is safe" in capsys.readouterr().out
 
 
 def test_a_grounding_floor_that_rejects_real_claims_is_reported(pack, capsys):
-    assert not cal.sweep_grounding_floor(pack, CASES, 0.40)
+    assert cal.sweep_grounding_floor(pack, CASES, 0.40) == cal.STALE
     assert "REJECTS answerable cases" in capsys.readouterr().out
 
 
 def test_a_benchmark_naming_documents_the_corpus_lacks_is_caught():
     """The check that runs before any sweep. Without it, pointing the tool at a
     real corpus while still holding the synthetic benchmark would report a
-    catastrophic recall that reads as a model regression."""
-    missing = cal.check_benchmark_matches_corpus(CASES, [
+    catastrophic recall that reads as a model regression.
+
+    It now lives in the kernel, because `re_demo.py` needed the same rule and
+    did not have it. This test reaches it through the calibration tool's own
+    import so that the tool losing the guard fails here."""
+    missing = cal.missing_benchmark_documents(CASES, [
         {"document_id": "SOMETHING-ELSE", "revision_id": "REV-A"}
     ])
     assert "DOC-RE-001" in missing
-    assert not cal.check_benchmark_matches_corpus(CASES, CORPUS)
+    assert not cal.missing_benchmark_documents(CASES, CORPUS)
 
 
 def test_stability_shapes_are_not_faked_for_a_real_corpus():
