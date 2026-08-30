@@ -178,3 +178,35 @@ def test_the_document_does_not_hardcode_a_handoff_filename():
         f"docs/AGENT_CONTEXT.md hardcodes {stale}; it should tell the reader to "
         f"follow state.handoff instead"
     )
+
+
+def _highest_decision_in_the_register() -> int:
+    register = (ROOT / "docs/governance/OPEN_DECISIONS_2026-08-25.md").read_text(encoding="utf-8")
+    numbers = [int(n) for n in re.findall(r"^## D-(\d+) ", register, re.MULTILINE)]
+    assert numbers, "found no decision headings in the register"
+    return max(numbers)
+
+
+@pytest.mark.parametrize(
+    "doc",
+    ["docs/AGENT_CONTEXT.md", None],
+    ids=["agent-context", "handoff"],
+)
+def test_a_stated_decision_range_matches_the_register(doc: str | None):
+    """`D-01..D-14` was written into two documents and went stale the moment a
+    fifteenth decision was opened.
+
+    `None` follows `state.handoff` rather than naming a file: the handoff moves,
+    and a test that hardcoded its name would be the same defect one level up --
+    which is exactly what the context guard was caught doing on 2026-08-27.
+    """
+    path = ROOT / (doc if doc else _state()["handoff"])
+    ranges = re.findall(r"D-01\.\.D-(\d+)", path.read_text(encoding="utf-8"))
+    if not ranges:
+        pytest.skip(f"{path.name} states no decision range")
+    highest = _highest_decision_in_the_register()
+    for stated in ranges:
+        assert int(stated) == highest, (
+            f"{path.name} says the register runs to D-{stated} while its highest "
+            f"entry is D-{highest:02d}"
+        )

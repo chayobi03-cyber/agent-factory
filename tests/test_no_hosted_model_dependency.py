@@ -33,9 +33,39 @@ ROOT = Path(__file__).resolve().parents[1]
 
 #: Clients for model services that run somewhere else. A run that calls one of
 #: these cannot be re-derived from its commit.
+#:
+#: `google` was missing while `vertexai` -- Google's *other* hosted entry point
+#: -- was listed, so the single most likely way to reach a hosted model from
+#: this repository went unguarded: `import google.generativeai` and
+#: `from google import genai` both resolve to the top-level name `google`, and
+#: neither was caught. Found by probe, not by reading: a file importing both
+#: passed all 35 tests. A namespace rather than one package, deliberately --
+#: nothing under `src/` or `scripts/` has any use for `google.*`, which is the
+#: same reasoning `NETWORK_TRANSPORTS` already runs on.
+#:
+#: `litellm` is the same omission one step removed: a router whose entire
+#: purpose is to call whichever hosted provider you configure.
+#:
+#: Adding to this set enforces an owner ruling that is already final (D-12
+#: option C, excluded 2026-08-26). It cannot permit anything, only refuse more,
+#: so it does not need the decision reopened -- unlike a removal, which would.
 HOSTED_MODEL_SDKS = {
     "openai", "anthropic", "cohere", "mistralai", "replicate",
-    "together", "groq", "vertexai", "boto3",
+    "together", "groq", "vertexai", "boto3", "google", "litellm",
+}
+
+#: Deliberately absent, and the reason matters: OPEN_DECISIONS D-12 option B --
+#: a model running locally -- is open, and the state file's exclusion covers a
+#: hosted API only. `transformers`, `sentence_transformers`, `torch`,
+#: `llama_cpp` and `ollama` all reach a local model and none of them break the
+#: property this guard protects, so blocking them here would quietly close an
+#: option the owner left open. `huggingface_hub` is the awkward one: it is how
+#: option B would fetch weights, and also carries an inference client for
+#: hosted calls. Left permitted, because refusing it would block the download
+#: that option B needs.
+LOCAL_MODEL_PATHS_STAY_OPEN = {
+    "transformers", "sentence_transformers", "torch", "llama_cpp", "ollama",
+    "huggingface_hub",
 }
 
 #: Generic transports. Forbidden in these trees not because HTTP is wrong, but
@@ -101,6 +131,37 @@ def test_the_guard_can_actually_fail(tmp_path: Path) -> None:
     disguised = tmp_path / "disguised.py"
     disguised.write_text("from openai.types import Thing\n", encoding="utf-8")
     assert _modules_imported_by(disguised) & FORBIDDEN == {"openai"}
+
+
+def test_the_gemini_sdk_is_caught(tmp_path: Path) -> None:
+    """The hole this set was widened to close.
+
+    `vertexai` was listed and `google` was not, so both import spellings of the
+    Gemini SDK reached the kernel untouched. Written as its own test because
+    the omission was invisible in the list -- it reads as covering Google.
+    """
+    for source in ("import google.generativeai as genai\n",
+                   "from google import genai\n",
+                   "from google.genai import Client\n"):
+        probe = tmp_path / "gemini.py"
+        probe.write_text(source, encoding="utf-8")
+        assert _modules_imported_by(probe) & FORBIDDEN == {"google"}, source
+
+
+def test_a_local_model_is_still_reachable(tmp_path: Path) -> None:
+    """Widening the set must not close OPEN_DECISIONS D-12 option B.
+
+    The exclusion is of a *hosted* API, because that is what breaks
+    re-derivation from a commit. A local model does not, so every import that
+    reaches one has to keep passing -- otherwise this guard would have quietly
+    decided a question the owner left open.
+    """
+    probe = tmp_path / "local_model.py"
+    probe.write_text(
+        "".join(f"import {name}\n" for name in sorted(LOCAL_MODEL_PATHS_STAY_OPEN)),
+        encoding="utf-8",
+    )
+    assert not _modules_imported_by(probe) & FORBIDDEN
 
 
 def test_a_mention_in_prose_is_not_an_import(tmp_path: Path) -> None:

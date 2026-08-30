@@ -6,7 +6,30 @@ import argparse
 import json
 from pathlib import Path
 
-from synthetic_domain_matrix import run_matrix
+import sys
+from pathlib import Path
+
+# The other six scripts in this directory each put `src/` on `sys.path`
+# themselves; these two read the ambient PYTHONPATH, which only
+# `.github/workflows/factory-kernel.yml` and the session-start hook set. They
+# therefore raised ModuleNotFoundError for anyone running them directly, and
+# the failure was invisible until you ran exactly these two -- checking the
+# other six proved nothing about them (recorded in the 2026-08-29 handoff as
+# an open question about which convention should win).
+#
+# Resolved towards the majority, and in the direction that removes a
+# dependency rather than adding one: all eight now run on a bare clone with no
+# environment set. The exported PYTHONPATH stays valid and is now redundant
+# rather than required. `tests/test_scripts_run_standalone.py` fails if a
+# script goes back to needing it.
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from synthetic_domain_matrix import run_matrix  # noqa: E402
 
 
 def main() -> int:

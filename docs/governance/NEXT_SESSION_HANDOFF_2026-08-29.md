@@ -186,7 +186,7 @@ And a live one, still open:
 > change.
 
 ## Governance
-- Open decisions: `docs/governance/OPEN_DECISIONS_2026-08-25.md` (D-01..D-14)
+- Open decisions: `docs/governance/OPEN_DECISIONS_2026-08-25.md` (D-01..D-16)
 - Session state: `docs/governance/CURRENT_SESSION_STATE.yaml`
 - Adding a domain: `docs/ADDING_A_DOMAIN.md`
 - Context guard: `scripts/validate_project_context.py`

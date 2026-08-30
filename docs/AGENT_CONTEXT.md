@@ -58,11 +58,12 @@ Two traps, both measured rather than assumed:
   distribution-managed PyYAML, pip cannot uninstall it (`RECORD file not
   found`) and the aborted install takes pytest down with it. Install only what
   is missing.
-- **`scripts/` resolves imports two ways.** Six scripts insert the repository
-  root on `sys.path` themselves; `opro_baseline.py` and `domain_matrix_demo.py`
-  do not and read the ambient `PYTHONPATH`, which only CI sets. Checking the
-  other six proves nothing about those two. Which convention wins is still
-  open.
+- **`PYTHONPATH` is no longer required, only harmless.** Every script in
+  `scripts/` puts `src/` on `sys.path` itself, so all of them run on a bare
+  clone. Two of them did not until 2026-08-30 and failed for anyone outside CI
+  — and CI *sets* `PYTHONPATH`, so no workflow could ever have caught it.
+  `tests/test_scripts_run_standalone.py` runs each script with the variable
+  scrubbed and fails if one goes back to needing it.
 
 Verifying a change to tooling means running every step above, not a sample.
 
@@ -143,7 +144,7 @@ Practically:
 | --- | --- |
 | session state | `docs/governance/CURRENT_SESSION_STATE.yaml` |
 | current handoff | named by `state.handoff` — follow the pointer, never a filename you remember |
-| open decisions | `docs/governance/OPEN_DECISIONS_2026-08-25.md` (D-01..D-14) |
+| open decisions | `docs/governance/OPEN_DECISIONS_2026-08-25.md` (D-01..D-16) |
 | scope | `docs/governance/AGENT_FACTORY_SCOPE_V1.md` |
 | context guard | `scripts/validate_project_context.py` |
 | adding a domain | `docs/ADDING_A_DOMAIN.md` |

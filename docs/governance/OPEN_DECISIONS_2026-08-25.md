@@ -6,10 +6,18 @@ states what was verified, what the options are, and what it costs to be wrong.
 Trunk at time of writing: `main`, `gate: FACTORY_KERNEL_GREEN`,
 `audited_baseline_sha: 20a54b92aad0857f75c6200d984b13098c6f4927`.
 
-**Status:** D-01 through D-10 resolved 2026-08-25. **D-11 and D-12 are open and
-deferred** — both raised by the M1 work itself, both about the same wall (what a
-dependency-free lexical retriever cannot do), and both now sequenced behind the
-arrival of the real RE corpus. See *Deferral* at the end of this register.
+**Status:** D-01 through D-10 resolved 2026-08-25; D-13 and D-14 raised and
+closed 2026-08-26. **D-11 and D-12 are open and deferred** — both raised by the
+M1 work itself, both about the same wall (what a dependency-free lexical
+retriever cannot do), and both now sequenced behind the arrival of the real RE
+corpus. See *Deferral* at the end of this register.
+
+**D-15 and D-16 are open and are not deferred.** Both were raised by the
+2026-08-30 goal-and-milestone audit, both are about what this repository claims
+about itself rather than about what it can retrieve, and both want an answer
+*before* the internal handover rather than after: each is a sentence the
+receiving team will read as meaning more than it does.
+
 Entries are kept as the record of why, not cleared; add new decisions here
 rather than starting a fresh register.
 
@@ -1370,3 +1378,121 @@ suspected"*; there is no de-duplication of near-identical fragments; and there
 is no acronym or alias table, so adding "equipment under test" to a query
 changes which revision comes back. All four are retrieval-quality work that
 should be measured against the real corpus rather than fitted to this one.
+
+
+---
+
+## D-15 — Five of the seven PoC acceptance targets are neither met nor unmet
+
+> **OPEN, raised 2026-08-30.** Needs a person: the options differ in what the
+> project promises, not in what it can build.
+
+`docs/RE_POC.md` states seven acceptance targets. `scripts/re_demo.py` prints
+`acceptance targets MET` and `scripts/evidence_gate.py` takes that flag as the
+pass condition for the M1 evidence step. The flag is two conditions:
+
+```python
+# scripts/re_demo.py, in score_benchmark()
+"meets_acceptance_targets": recall_ok and decidable_ok,
+```
+
+Measured on the current tree, against the seven as written:
+
+| target | stated | measured | in the flag |
+| --- | --- | --- | --- |
+| Evidence Recall@10 | ≥ 0.90 | 0.914 headline, 0.906 earned | yes |
+| Citation Accuracy | ≥ 0.95 | not computed | no |
+| Critical Claim Unsupported Rate | ≤ 0.02 | not computed | no |
+| Negative-case Abstention | ≥ 0.90 | **0.75** | no — a different rule is |
+| Revision correctness | ≥ 0.95 | not computed | no |
+| Trace completeness | = 100% | not computed | no |
+| Domain Pack load without kernel fork | PASS | PASS | via its own test |
+
+Verified rather than inferred: the `acceptance` block of `re_demo.py --json`
+carries no key containing `citation`, `unsupported`, `revision` or `trace`, and
+the only occurrences of `0.95` or `0.02` anywhere under `src/` and `scripts/`
+are a demo claim's confidence value. The mechanisms exist — citation building,
+claim verification, HOTL, trace, run manifest are all real and tested. What
+does not exist is any of them being computed as a number against its threshold.
+
+The abstention row is the sharper one, because it is measured and reported and
+still does not gate. The target is 0.90 over negative cases; the figure is 0.75
+(15/20). The flag instead requires the two *decidable* bands to be perfect,
+which they are (5/5 and 7/7), and excludes `near_miss_domain_subject` (3/8) as
+D-11's known limitation. That exclusion is defensible and well documented. What
+is not defensible is that the summary line does not say the target it names was
+not met on its own terms.
+
+**Why it needs a person.** Nothing here is a measurement problem. Four of the
+five could be implemented; whether they *should* be, at PoC scale, against a
+synthetic corpus, before the real documents land, is a scope call. So is
+restating the abstention target against the band rule that replaced it.
+
+- **A — Measure them.** Implement the four missing metrics and gate on all
+  seven. Most honest, and the most work; three of the four (citation accuracy,
+  unsupported rate, revision correctness) need labelled ground truth the
+  benchmark does not currently carry, so this is benchmark work before it is
+  code work.
+- **B — Restate the targets.** Reduce `RE_POC.md` to what the PoC actually
+  gates, and record the rest as M2/M3 acceptance rather than M1. Cheapest, and
+  it makes the "MET" claim true as written.
+- **C — Keep both, and disclose.** Leave the targets, leave the gate, and have
+  the tool report which targets it checks and which it does not. Costs little
+  and removes the misreading, but leaves the register carrying a target nobody
+  intends to measure at PoC scale.
+
+**Cost of being wrong.** Low if decided, high if left. The receiving team reads
+"M1 meets every PoC acceptance target" as a statement about seven numbers. Five
+of them are not measurements that failed — they are measurements that were
+never taken, which is a different thing and reads identically from outside.
+
+**Deliberately not pre-empted.** The 2026-08-30 session implemented the three
+handover blockers around this and left the flag and the output untouched:
+changing what the tool reports is this decision's implementation, not its
+preparation.
+
+---
+
+## D-16 — `RE_POC.md` requires two model providers and the kernel may have none
+
+> **OPEN, raised 2026-08-30.** Two canonical documents contradict each other and
+> neither records it.
+
+`docs/RE_POC.md`, under *PoC target*:
+
+> - 2 model providers minimum
+
+D-12 option C — a hosted model API — was excluded permanently by owner decision
+on 2026-08-26 and is enforced by `tests/test_no_hosted_model_dependency.py`.
+Nothing under `src/` or `scripts/` performs network access of any kind. So the
+PoC target as written is unreachable by the route anyone would take to reach it,
+and has been since the day the exclusion was recorded. Neither document mentions
+the other.
+
+**What is still open underneath it.** D-12 option B — a model running locally —
+is not excluded, and does not affect re-derivation from a commit. Two local
+models would satisfy "2 model providers" on a literal reading. Whether that is
+what the target meant is the question: the target sits next to "3 retrieval
+methods minimum" in a list about breadth of comparison, which suggests it meant
+*independent* providers for generation and verification (`docs/MDD.md`: "may use
+different providers when risk justifies it") rather than two of anything.
+
+- **A — Strike the target.** The PoC is provider-free by decision; say so, and
+  move multi-provider comparison to M5 where method ensemble already lives.
+- **B — Reinterpret it as two local models.** Keeps the target and satisfies it
+  within D-12 option B. Adds a heavyweight dependency and needs D-11's cost
+  measured first, which is already sequenced behind the real corpus.
+- **C — Leave it and record the conflict.** Cheapest, and the worst of the
+  three: it is what the repository has now, and it is how a target survives
+  four months without anyone noticing it cannot be met.
+
+**Cost of being wrong.** Contained, but it is the pattern this codebase keeps
+paying for — a document declaring something that is not so. It is also the
+first thing an outside reviewer would find, because the two statements sit two
+directories apart and contradict each other flatly.
+
+**Related, already done.** The guard enforcing the exclusion did not cover the
+provider most likely to be reached for: `HOSTED_MODEL_SDKS` listed `vertexai`
+and not `google`, so `import google.generativeai` and `from google import genai`
+both passed. Closed 2026-08-30, with a test proving option B's local-model
+imports still pass — widening the guard must not quietly decide D-12.
