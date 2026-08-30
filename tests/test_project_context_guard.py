@@ -227,7 +227,7 @@ def test_the_guard_follows_the_handoff_named_by_state(tmp_path, monkeypatch):
 
     state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
     declared = state["handoff"]
-    assert declared.endswith("NEXT_SESSION_HANDOFF_2026-08-29.md"), (
+    assert declared.endswith("NEXT_SESSION_HANDOFF_2026-08-30.md"), (
         "the state's handoff pointer moved; this test names the file it expects"
     )
 

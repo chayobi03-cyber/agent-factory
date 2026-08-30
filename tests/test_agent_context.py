@@ -201,9 +201,15 @@ def test_a_stated_decision_range_matches_the_register(doc: str | None):
     which is exactly what the context guard was caught doing on 2026-08-27.
     """
     path = ROOT / (doc if doc else _state()["handoff"])
-    ranges = re.findall(r"D-01\.\.D-(\d+)", path.read_text(encoding="utf-8"))
+    # Only a range stated *about the register* counts. A first version matched
+    # any `D-01..D-NN` and failed on "**Closed.** D-01..D-10, D-13, D-14,
+    # D-16" -- a list of which decisions are closed, not a claim about how far
+    # the register runs. Tying the match to the register's filename is what
+    # separates the two, and both real statements are written that way.
+    text = path.read_text(encoding="utf-8")
+    ranges = re.findall(r"OPEN_DECISIONS_[0-9-]+\.md`?[^\n]{0,20}?D-01\.\.D-(\d+)", text)
     if not ranges:
-        pytest.skip(f"{path.name} states no decision range")
+        pytest.skip(f"{path.name} states no decision range for the register")
     highest = _highest_decision_in_the_register()
     for stated in ranges:
         assert int(stated) == highest, (

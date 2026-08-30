@@ -14,6 +14,15 @@ forbidden:
   - audited_baseline_redefinition
   - PASS_without_primary_execution_evidence
 ---
+> **Superseded 2026-08-30 by `NEXT_SESSION_HANDOFF_2026-08-30.md`.** Retained
+> as the record of the position it documents. It is no longer the resume
+> pointer: `CURRENT_SESSION_STATE.yaml.handoff` names the current document
+> and every validator follows that pointer.
+>
+> Two instructions below are now false and are left in place rather than
+> edited, because this is a historical record: `PYTHONPATH` is no longer
+> required by any script, and PR #39 merged.
+
 # AgentFactory Next Session Handoff — 2026-08-29
 
 Supersedes `NEXT_SESSION_HANDOFF_2026-08-27.md`, which is retained as history.
