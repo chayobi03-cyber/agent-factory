@@ -1,4 +1,4 @@
-state_version: 33
+state_version: 34
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -117,8 +117,11 @@ last_completed:
   - next_session_handoff_2026_08_27_written_and_the_2026_08_18_document_marked_superseded_and_retained
   - web_session_start_hook_added_after_finding_pytest_absent_and_all_three_validators_exiting_2_on_a_claude_branch
   - next_session_handoff_2026_08_29_written_and_the_2026_08_27_document_marked_superseded_and_retained
+  - agent_context_written_once_and_imported_by_both_claude_md_and_gemini_md_so_two_clients_cannot_drift
+  - identity_test_first_written_as_a_substring_check_passed_against_a_trunk_renamed_to_master_and_was_rebuilt_to_parse_the_row
   - two_scripts_never_self_bootstrapped_syspath_and_failed_outside_ci_hook_now_exports_the_pythonpath_factory_kernel_yml_sets
 current_focus:
+  - Claude Code and Gemini CLI read the same instructions - `docs/AGENT_CONTEXT.md` is the only body, `CLAUDE.md` and `GEMINI.md` each `@`-import it, and tests/test_agent_context.py fails if either grows a body of its own or if the identity table drifts from state
   - the handoff's local verification block now runs unchanged in a Claude Code web session. `.claude/hooks/session-start.sh` installs pytest and exports AGENTFACTORY_TARGET_BRANCH from state.working_branch, so the context guard, resume and session-state validators resolve the trunk from a `claude/*` checkout instead of exiting 2
   - the answer path is honest about itself now - it cites the evidence that answers the claim, its confidence is IDF coverage rather than a score pinned at 1.0 by normalisation, and it tells the reader when a cited document is also in evidence at another revision
   - routing works across all six domains at once - `scripts/run_domain.py --query "..."` with no --domain picks the domain, refuses, or refers to a person. 30/32 on the routing benchmark with out-of-scope refusal at 6/6
@@ -238,4 +241,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-29T14:05:00Z
+updated_at_utc: 2026-08-30T01:40:00Z
