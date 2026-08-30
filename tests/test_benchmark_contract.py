@@ -312,3 +312,56 @@ def test_the_guide_tells_the_reader_how_to_score_with_their_own_benchmark():
     text = GUIDE.read_text(encoding="utf-8")
     assert "--benchmark" in text
     assert "UNVERIFIED" in text
+
+
+# --- 4. RE_POC's abstention target says what the gate actually does ----------
+
+RE_POC = ROOT / "docs/RE_POC.md"
+
+
+def _abstention_targets_stated_in_re_poc() -> dict[str, bool]:
+    """{band: is it gated} as `docs/RE_POC.md` states it.
+
+    A gated band carries a numeric target; the undecidable one is marked
+    "reported, not gated". Parsed rather than eyeballed because this exact
+    statement is what drifted: the document said `>= 0.90` over all abstention
+    cases while the gate required the two decidable bands to be perfect and
+    reported the third separately. The run scored 0.75 against a target the
+    gate had never checked, and both readings looked correct in isolation.
+    """
+    text = RE_POC.read_text(encoding="utf-8")
+    start = text.index("Negative-case Abstention — stated per band")
+    end = text.index("This replaces", start)
+    stated: dict[str, bool] = {}
+    for band, rest in re.findall(r"- `([a-z_]+)`([^\n]*)", text[start:end]):
+        stated[band] = "not gated" not in rest
+    return stated
+
+
+def test_re_poc_states_a_target_for_every_band():
+    assert set(_abstention_targets_stated_in_re_poc()) == set(ABSTENTION_BANDS)
+
+
+def test_re_poc_gates_exactly_the_bands_the_kernel_calls_decidable():
+    """The document and the gate have to name the same rule.
+
+    Not the measured figures -- those move legitimately and pinning them would
+    make the document brittle. What must not drift is *which* bands are gated,
+    because a document describing a different rule than the code is the defect
+    this entry was opened for (OPEN_DECISIONS D-15, branch 4).
+    """
+    stated = _abstention_targets_stated_in_re_poc()
+    gated = {band for band, is_gated in stated.items() if is_gated}
+    assert gated == set(DECIDABLE_ABSTENTION_BANDS), (
+        f"RE_POC.md gates {sorted(gated)} while the kernel calls "
+        f"{sorted(DECIDABLE_ABSTENTION_BANDS)} decidable"
+    )
+    ungated = {band for band, is_gated in stated.items() if not is_gated}
+    assert ungated == set(UNDECIDABLE_ABSTENTION_BANDS)
+
+
+def test_re_poc_no_longer_states_the_single_abstention_figure():
+    """The superseded target, kept out of the list rather than left beside it."""
+    text = RE_POC.read_text(encoding="utf-8")
+    listed = re.findall(r"^- Negative-case Abstention >= 0\.90\s*$", text, re.MULTILINE)
+    assert listed == [], "the single-figure target is still stated as a live target"

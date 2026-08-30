@@ -12,11 +12,13 @@ M1 work itself, both about the same wall (what a dependency-free lexical
 retriever cannot do), and both now sequenced behind the arrival of the real RE
 corpus. See *Deferral* at the end of this register.
 
-**D-15 and D-16 are open and are not deferred.** Both were raised by the
-2026-08-30 goal-and-milestone audit, both are about what this repository claims
-about itself rather than about what it can retrieve, and both want an answer
-*before* the internal handover rather than after: each is a sentence the
-receiving team will read as meaning more than it does.
+**D-16 is resolved** and **D-15 is partly resolved**, both 2026-08-30. Each was
+raised by the goal-and-milestone audit of that day, and each was about what this
+repository claims about itself rather than about what it can retrieve. D-16 is
+struck and moved to M5. D-15 turned out not to be one decision: measuring the
+five targets split them into four kinds of problem, of which one (the abstention
+target) is decided and applied, two are engineering decisions that can be taken
+now, and one waits for the handover.
 
 Entries are kept as the record of why, not cleared; add new decisions here
 rather than starting a fresh register.
@@ -1382,117 +1384,177 @@ should be measured against the real corpus rather than fitted to this one.
 
 ---
 
-## D-15 — Five of the seven PoC acceptance targets are neither met nor unmet
+## D-15 — Five acceptance targets, four different problems
 
-> **OPEN, raised 2026-08-30.** Needs a person: the options differ in what the
-> project promises, not in what it can build.
+> **PARTLY RESOLVED 2026-08-30.** Branch 4 decided and applied. Branches 1, 2,
+> 3 and 5 remain open, and each wants a different kind of answer.
 
-`docs/RE_POC.md` states seven acceptance targets. `scripts/re_demo.py` prints
-`acceptance targets MET` and `scripts/evidence_gate.py` takes that flag as the
-pass condition for the M1 evidence step. The flag is two conditions:
+**Rewritten 2026-08-30 after measuring.** The first draft of this entry offered
+"measure them all / restate them all / disclose", which was the wrong shape: it
+assumed the five were one problem. Computing them showed they are not. Three of
+the five were derivable from output every run already emits, and the reason
+they read as unmeasurable was that nobody had computed them, not that they
+could not be computed.
 
-```python
-# scripts/re_demo.py, in score_benchmark()
-"meets_acceptance_targets": recall_ok and decidable_ok,
+| target | stated | measured | what actually blocks it |
+| --- | --- | --- | --- |
+| Citation Accuracy | ≥ 0.95 | 0.969 / 0.567 / 0.864 | the definition |
+| Critical Claim Unsupported Rate | ≤ 0.02 | 0.086 | the threshold |
+| Trace completeness | = 100% | 0 | the path emits none |
+| Negative-case Abstention | ≥ 0.90 | 0.75 | **decided — see 4** |
+| Revision correctness | ≥ 0.95 | — | D-14, the handover |
+
+Two corrections worth keeping, both against the first attempt at this
+measurement. The unsupported rate came out at 0.170 over all claims, which
+counted twenty *correct* abstentions as failures; over answerable cases it is
+`12/139 = 0.086`, and that agrees with the 8.6% false-abstention figure D-14
+already recorded — a cross-check, not a coincidence. And the citation figure
+depends entirely on which of three readings is used, which is the finding
+rather than a nuisance.
+
+### 1 — Citation Accuracy: the definition decides the verdict
+
+Three defensible readings of one target, measured on the same tree:
+
+```
+A  at least one cited fragment comes from a gold document   0.969  (123/127)
+B  share of cited fragments that come from a gold document  0.567
+C  mean IDF coverage of the claim's terms by its citations  0.864
 ```
 
-Measured on the current tree, against the seven as written:
+B is low because the benchmark labels **one gold document per case** while a
+claim cites 2.35 fragments on average, over the 127 cases that cite anything —
+the greedy set cover deliberately spans
+documents to cover the claim's terms, and B penalises exactly that. Measuring
+citation accuracy at fragment resolution needs fragment-level ground truth,
+which no benchmark here carries.
 
-| target | stated | measured | in the flag |
-| --- | --- | --- | --- |
-| Evidence Recall@10 | ≥ 0.90 | 0.914 headline, 0.906 earned | yes |
-| Citation Accuracy | ≥ 0.95 | not computed | no |
-| Critical Claim Unsupported Rate | ≤ 0.02 | not computed | no |
-| Negative-case Abstention | ≥ 0.90 | **0.75** | no — a different rule is |
-| Revision correctness | ≥ 0.95 | not computed | no |
-| Trace completeness | = 100% | not computed | no |
-| Domain Pack load without kernel fork | PASS | PASS | via its own test |
+**Recommendation: adopt A**, and record the definition in `RE_POC.md` next to
+the number. A is the only one of the three the benchmark can actually label,
+and stating it stops the target from meaning three things. Note alongside it
+that a fragment-level figure waits for fragment-level gold, so a later move to
+B reads as higher resolution rather than as a moved goalpost.
 
-Verified rather than inferred: the `acceptance` block of `re_demo.py --json`
-carries no key containing `citation`, `unsupported`, `revision` or `trace`, and
-the only occurrences of `0.95` or `0.02` anywhere under `src/` and `scripts/`
-are a demo claim's confidence value. The mechanisms exist — citation building,
-claim verification, HOTL, trace, run manifest are all real and tested. What
-does not exist is any of them being computed as a number against its threshold.
+**Cost of being wrong:** low. A is measurable today and the choice is
+reversible; leaving it undefined is what makes the target unusable.
 
-The abstention row is the sharper one, because it is measured and reported and
-still does not gate. The target is 0.90 over negative cases; the figure is 0.75
-(15/20). The flag instead requires the two *decidable* bands to be perfect,
-which they are (5/5 and 7/7), and excludes `near_miss_domain_subject` (3/8) as
-D-11's known limitation. That exclusion is defensible and well documented. What
-is not defensible is that the summary line does not say the target it names was
-not met on its own terms.
+### 2 — Unsupported Claim Rate: report it, do not gate on 0.02
 
-**Why it needs a person.** Nothing here is a measurement problem. Four of the
-five could be implemented; whether they *should* be, at PoC scale, against a
-synthetic corpus, before the real documents land, is a scope call. So is
-restating the abstention target against the band rule that replaced it.
+`verification.ungrounded_claim_ids` is already in every run's output, so the
+metric is aggregation, not implementation. The threshold is the problem.
+Reaching it by tightening `claim_grounding_floor` was measured under D-14:
+perfect abstention arrives at a floor of 0.85 and costs **46.8%** false
+abstention — nearly half of all answerable questions refused. A gate at 0.02
+optimises the system towards silence.
 
-- **A — Measure them.** Implement the four missing metrics and gate on all
-  seven. Most honest, and the most work; three of the four (citation accuracy,
-  unsupported rate, revision correctness) need labelled ground truth the
-  benchmark does not currently carry, so this is benchmark work before it is
-  code work.
-- **B — Restate the targets.** Reduce `RE_POC.md` to what the PoC actually
-  gates, and record the rest as M2/M3 acceptance rather than M1. Cheapest, and
-  it makes the "MET" claim true as written.
-- **C — Keep both, and disclose.** Leave the targets, leave the gate, and have
-  the tool report which targets it checks and which it does not. Costs little
-  and removes the misreading, but leaves the register carrying a target nobody
-  intends to measure at PoC scale.
+**Recommendation:** add the metric and report it; do not put it in
+`meets_acceptance_targets`. Restate the target as **"reported, and must not
+regress"** against the current 0.086 baseline. Set an absolute threshold after
+D-11 moves, not before.
 
-**Cost of being wrong.** Low if decided, high if left. The receiving team reads
-"M1 meets every PoC acceptance target" as a statement about seven numbers. Five
-of them are not measurements that failed — they are measurements that were
-never taken, which is a different thing and reads identically from outside.
+**Cost of being wrong:** gating now would turn CI red on a known, recorded,
+deliberately-unfixed limitation, and the pressure to clear it points at the
+worst available fix.
 
-**Deliberately not pre-empted.** The 2026-08-30 session implemented the three
-handover blockers around this and left the flag and the output untouched:
-changing what the tool reports is this decision's implementation, not its
-preparation.
+### 3 — Trace completeness: not a metric gap, an integration gap
+
+There is nothing to measure, because nothing is produced:
+
+```
+scripts/re_demo.py   -> constructs CERGateRuntime, never FactoryRuntime
+src/cer_runtime.py   -> contains no trace machinery
+re_demo.py --json    -> no trace key in the output
+declared lifecycle   -> ten stages (ingest>...>trace)
+domain_matrix_demo   -> trace_events 7, with nothing relating 7 to 10
+```
+
+So the path that reports the M1 acceptance numbers does not pass through the
+M0.5 runtime that traces, and "100%" has never had a denominator.
+
+**Recommendation:** move this out of M1's acceptance list and into M0.5↔M1
+integration — routing the RE path through `FactoryRuntime`. Do it against the
+real corpus, not before: doing it now fits the plumbing to synthetic documents.
+`RE_POC.md` now states the measured position rather than implying the target is
+met.
+
+**Cost of being wrong:** contained, but it is the sharpest instance of the
+pattern this register keeps recording — a target that reads as satisfied
+because nobody asked what it was measured against.
+
+### 4 — Negative-case Abstention: the code was right, the document was not
+
+**Decided and applied 2026-08-30.** The stated target was a single
+`>= 0.90` over all abstention cases; the run scores 0.75. But the gate never
+checked that figure — it requires the two bands decidable from corpus
+statistics to be perfect and reports the third separately, which is the correct
+design and is what D-11 concluded.
+
+`RE_POC.md` now states the target per band, matching the gate:
+
+```
+subject_outside_domain      = 1.00     measured 5/5
+entity_absent_from_corpus   = 1.00     measured 7/7
+near_miss_domain_subject    reported, not gated   measured 3/8   (D-11)
+```
+
+The document was moved to the code rather than the reverse, because the code's
+rule is the one that survives contact with what a lexical retriever can decide.
+
+### 5 — Revision correctness: the only one genuinely blocked
+
+Not a measurement problem and not a definition problem: which revision applies
+is a document-management rule this project does not have, and `revision_id`
+carries no supersession metadata to derive one from. It is D-14's question and
+an input to the internal handover.
+
+**Recommendation:** leave it. Define the metric and the target together, in the
+session where the working rule is settled — the corpus format may have to
+change too.
+
+### What remains open
+
+Branches 1, 2 and 3 are engineering decisions that can be taken now; branch 5
+waits for the handover. None is blocked on further analysis: each states what
+was measured and what it costs to choose wrongly.
+
+**Deliberately not pre-empted.** `meets_acceptance_targets` and the tool's
+output are untouched. Changing what the gate checks is branch 1 and 2's
+implementation, and it should follow the definition decision rather than
+anticipate it.
 
 ---
 
-## D-16 — `RE_POC.md` requires two model providers and the kernel may have none
+## D-16 — `RE_POC.md` required two model providers and the kernel may have none
 
-> **OPEN, raised 2026-08-30.** Two canonical documents contradict each other and
-> neither records it.
+> **RESOLVED 2026-08-30 — struck, and moved to M5.** Decided by the owner.
 
-`docs/RE_POC.md`, under *PoC target*:
+`docs/RE_POC.md` listed `2 model providers minimum` under *PoC target*. D-12
+option C — a hosted model API — was excluded permanently on 2026-08-26 and is
+enforced by `tests/test_no_hosted_model_dependency.py`; nothing under `src/` or
+`scripts/` performs network access of any kind. The target was therefore
+unreachable by the route anyone would take to reach it, and had been since the
+day the exclusion was recorded. Neither document mentioned the other.
 
-> - 2 model providers minimum
+**What was decided.** The target is struck from the PoC list and multi-provider
+comparison moves to **M5 Method Ensemble**, where method comparison and
+arbitration already live. Both documents now record why, so the item cannot
+return as an oversight.
 
-D-12 option C — a hosted model API — was excluded permanently by owner decision
-on 2026-08-26 and is enforced by `tests/test_no_hosted_model_dependency.py`.
-Nothing under `src/` or `scripts/` performs network access of any kind. So the
-PoC target as written is unreachable by the route anyone would take to reach it,
-and has been since the day the exclusion was recorded. Neither document mentions
-the other.
+Option B — two *local* models — would have satisfied the target on a literal
+reading and is not excluded by D-12. It was rejected as the answer here because
+its chain is long: a local model needs D-11's cost measured first, and D-11 is
+sequenced behind the arrival of the real corpus. Choosing it now would have
+kept a target nobody could start work on.
 
-**What is still open underneath it.** D-12 option B — a model running locally —
-is not excluded, and does not affect re-derivation from a commit. Two local
-models would satisfy "2 model providers" on a literal reading. Whether that is
-what the target meant is the question: the target sits next to "3 retrieval
-methods minimum" in a list about breadth of comparison, which suggests it meant
-*independent* providers for generation and verification (`docs/MDD.md`: "may use
-different providers when risk justifies it") rather than two of anything.
+**What was deliberately not changed.** Provider neutrality remains an
+architecture principle in `docs/MDD.md`. The PoC demonstrates that the kernel
+needs no provider at all, which is a stronger claim than running two — but it
+is not a demonstration that the adapter boundary works, and that distinction is
+recorded in M5 rather than glossed.
 
-- **A — Strike the target.** The PoC is provider-free by decision; say so, and
-  move multi-provider comparison to M5 where method ensemble already lives.
-- **B — Reinterpret it as two local models.** Keeps the target and satisfies it
-  within D-12 option B. Adds a heavyweight dependency and needs D-11's cost
-  measured first, which is already sequenced behind the real corpus.
-- **C — Leave it and record the conflict.** Cheapest, and the worst of the
-  three: it is what the repository has now, and it is how a target survives
-  four months without anyone noticing it cannot be met.
-
-**Cost of being wrong.** Contained, but it is the pattern this codebase keeps
-paying for — a document declaring something that is not so. It is also the
-first thing an outside reviewer would find, because the two statements sit two
-directories apart and contradict each other flatly.
-
-**Related, already done.** The guard enforcing the exclusion did not cover the
-provider most likely to be reached for: `HOSTED_MODEL_SDKS` listed `vertexai`
-and not `google`, so `import google.generativeai` and `from google import genai`
-both passed. Closed 2026-08-30, with a test proving option B's local-model
-imports still pass — widening the guard must not quietly decide D-12.
+**Related, closed the same day.** The guard enforcing the exclusion did not
+cover the provider most likely to be reached for: `HOSTED_MODEL_SDKS` listed
+`vertexai` and not `google`, so `import google.generativeai` and `from google
+import genai` both passed while `import openai` failed. Closed with a test
+proving option B's local-model imports still pass — widening a guard must not
+quietly decide a question the owner left open.

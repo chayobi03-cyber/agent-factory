@@ -1,4 +1,4 @@
-state_version: 36
+state_version: 37
 session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
@@ -129,8 +129,15 @@ last_completed:
   - all_eight_scripts_now_run_on_a_bare_clone_and_ci_could_never_have_caught_the_two_that_did_not_because_ci_sets_pythonpath
   - d15_and_d16_opened_five_of_seven_acceptance_targets_unmeasured_and_re_poc_requiring_two_providers_the_kernel_cannot_have
   - stated_decision_range_d01_to_d14_had_drifted_in_two_documents_and_is_now_pinned_to_the_registers_highest_entry
+  - d15_rewritten_after_measuring_showed_five_targets_were_four_different_problems_not_one_decision
+  - citation_accuracy_measured_at_0_969_0_567_and_0_864_under_three_defensible_definitions_so_the_definition_decides_the_verdict
+  - unsupported_rate_first_computed_as_0_170_by_counting_correct_abstentions_and_corrected_to_0_086_over_answerable_cases
+  - trace_completeness_found_to_be_zero_because_re_demo_drives_cer_gate_runtime_and_never_constructs_a_factory_runtime
+  - d15_branch_4_applied_re_poc_states_abstention_per_band_matching_the_gate_and_a_test_pins_which_bands_gate
+  - d16_resolved_two_model_providers_struck_from_the_poc_target_and_moved_to_m5_method_ensemble
   - two_scripts_never_self_bootstrapped_syspath_and_failed_outside_ci_hook_now_exports_the_pythonpath_factory_kernel_yml_sets
 current_focus:
+  - RE_POC acceptance targets now say what is gated and what is not - three are gated, four carry the measured position and a pointer to the decision that is still open. The single 0.90 abstention figure is replaced by per-band targets that match the gate, pinned by test to the kernel's band vocabulary
   - the handover blockers are cleared and the two questions that need the owner are registered rather than answered - D-15 on five unmeasured acceptance targets and D-16 on a PoC target the kernel is forbidden to meet
   - the day-one handover path works on documents this repository has never seen - `re_demo.py --corpus DIR --benchmark PATH` scores a foreign corpus and refuses a benchmark that does not match it, and `calibrate_retrieval.py` answers `unverified` rather than green when it cannot measure a constant. Rehearsed end to end on an out-of-tree corpus
   - Claude Code and Gemini CLI read the same instructions - `docs/AGENT_CONTEXT.md` is the only body, `CLAUDE.md` and `GEMINI.md` each `@`-import it, and tests/test_agent_context.py fails if either grows a body of its own or if the identity table drifts from state
@@ -253,4 +260,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-30T03:15:00Z
+updated_at_utc: 2026-08-30T04:00:00Z

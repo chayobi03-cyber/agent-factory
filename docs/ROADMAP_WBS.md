@@ -37,6 +37,15 @@ Planner/iterative retrieval/tool use for complex queries.
 ### M5 Method Ensemble
 Vector vs hybrid vs graph vs agentic comparison and arbitration.
 
+Multi-provider comparison lands here, moved from the RE PoC target list on
+2026-08-30 (OPEN_DECISIONS D-16). A hosted model API is permanently excluded
+(D-12 option C), so "2 model providers minimum" was unreachable as a PoC
+acceptance target by the route anyone would take. Comparing providers is a
+method-ensemble question, and M5 is where method comparison and arbitration
+already live. Provider neutrality stays an architecture principle
+(`docs/MDD.md`); what M5 owes is a demonstration that the adapter boundary
+holds, which the provider-free PoC does not make.
+
 ### M6 EMI/RFI
 Reuse kernel; create Domain Packs and benchmark suites.
 
