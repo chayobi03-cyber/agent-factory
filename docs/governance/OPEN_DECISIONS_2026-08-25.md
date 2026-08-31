@@ -1370,3 +1370,169 @@ suspected"*; there is no de-duplication of near-identical fragments; and there
 is no acronym or alias table, so adding "equipment under test" to a query
 changes which revision comes back. All four are retrieval-quality work that
 should be measured against the real corpus rather than fitted to this one.
+
+---
+
+## D-15 — Whether the kernel earns its place above the substrates it replaces
+
+**Raised 2026-08-31** by the APF Living Specification vNext 0.1 audit
+(`11_Audit/APF_LIVING_SPEC_VNEXT_AUDIT_2026-08-30.md`). That package was
+rejected wholesale, but one of its eight hypotheses — *does this layer add
+value above the agent-runtime / durable-execution / telemetry substrate, or
+does it duplicate them?* — is the only one this repository cannot currently
+answer, and it is worth keeping.
+
+### What was verified
+
+The kernel implements its own minimal version of all three substrate concerns:
+execution state (`WorkflowRunState`), resume (RC-01..RC-08), and evidence
+records with digests. None is delegated. No ablation or substitution experiment
+has ever been run, so the duplication question has never been measured.
+
+`EXTERNAL_CAPABILITY_BOUNDARY_V1.md` §2 supplies most of an answer for anything
+networked: the evidence chain requires re-derivability from a commit SHA, so a
+remote substrate cannot enter the governed path regardless of how good it is.
+That is a structural answer, not a measured one, and it only covers the
+networked case.
+
+What it does not cover is the in-process case — an embeddable checkpointer, a
+local tracing library — where the reproducibility argument does not apply and
+the duplication question is live.
+
+### Options
+
+| | Approach | Consequence |
+|---|---|---|
+| A | Declare the question structurally closed by the evidence-chain constraint | Cheap, and wrong for the in-process case, which is precisely where a substrate could actually be adopted. |
+| B | Scope it to the in-process case and answer it once, per capability, when that capability is next touched | No standing project; the question gets answered by the work that has reason to ask it. D-17 is the first such occasion. |
+| C | Run a standalone substitution/ablation benchmark | The imported package's Tests 2 and 8. Both are unmeasurable as it wrote them — no metric, no threshold — so this means designing the benchmark first, against no current need. |
+
+**Recommendation: B.** The question is real but it is not urgent in the
+abstract, and it becomes concrete and cheap the moment a specific capability is
+in hand. D-17 is that moment for durable execution; take it there rather than
+building a benchmark for a decision nobody is currently making.
+
+### What it costs to be wrong
+
+Answering A and being wrong means the kernel carries a hand-written
+checkpointer forever because nobody re-asked. Answering C and being wrong means
+spending a milestone on a benchmark whose result changes no decision. B risks
+only that the question stays open longer, which it can afford to.
+
+---
+
+## D-16 — `supersedes_revision_id` is declared and populated by nothing
+
+**Raised 2026-08-31**, from the audit's RA-009 salvage (provenance as a
+relation rather than a field) — but the concrete form is sharper than that
+finding, and contradicts a premise recorded in D-14.
+
+### What was verified
+
+`schemas/document_revision.schema.yaml` declares:
+
+```yaml
+    supersedes_revision_id: string|null
+    validity: [active, superseded, rejected]
+```
+
+`supersedes_revision_id` appears **exactly once in the repository** — in that
+declaration. Nothing writes it, nothing reads it, no corpus populates it, no
+test asserts it.
+
+This matters because D-14 stopped on what it took to be the absence of the
+data. `src/cer_runtime.py` records the blocker as needing "a corpus that
+declares which revision supersedes which, which is metadata `revision_id` does
+not carry." That is half right: the *schema* carries it and the *corpus* does
+not populate it. The revision-conflict rule was withdrawn partly for want of a
+field that was already specified.
+
+Whether populating it would have saved that rule is not established — D-14's
+other blocker, the query's time scope, is a semantic judgement (D-11) and
+remains. But the two were recorded as one wall, and they are not one wall.
+
+### Options
+
+| | Approach | Consequence |
+|---|---|---|
+| A | Populate `supersedes_revision_id` in the RE corpus and let the conflict rule read it | Smallest change that tests D-14's premise. The corpus is synthetic, so this proves the mechanism, not the domain. |
+| B | Promote provenance to a first-class record with identity and relations (PROV-style) | What RA-009 actually proposed. A schema migration across three schemas and their tests, for a relation nothing yet consumes. |
+| C | Leave it, and delete the field | Honest — an unpopulated field is the D-09 pattern in miniature — but it discards the one piece of lineage the schema already got right. |
+
+**Recommendation: A, deferred to the real corpus.** The field should be
+populated where the supersession is real. Doing it against the synthetic corpus
+fits the mechanism to invented data, which is the failure D-14's own postscript
+warns about for the retrieval-quality items. Until then the field stays,
+documented here as declared-and-unpopulated so the next reader is not misled by
+it the way D-14 was.
+
+### What it costs to be wrong
+
+Deferring costs nothing while no domain needs lineage. Choosing B now costs a
+migration for a consumer that does not exist. Choosing C and being wrong means
+re-deriving a supersession model later, from scratch, having deleted the
+specification for it.
+
+---
+
+## D-17 — WorkflowRun durability exists at the session layer and nowhere else
+
+**Raised 2026-08-31.** The audit's row for the imported package's Test 7
+("interrupt execution at a decision boundary and resume") credited RC-01..RC-08
+as covering it. That was too generous, and the correction is the one place the
+rejected benchmark would have found something real.
+
+### What was verified
+
+The two are different layers.
+
+RC-01..RC-08 (`scripts/validate_session_resume.py`, 22 tests) is **session**
+resume: it checks that a new session's branch, HEAD, checkpoint SHA, handoff
+identity, and gate constraints agree before work continues. It is fail-closed
+and enforced in CI.
+
+`WorkflowRunState` is **run** state, and it is:
+
+```python
+        self._runs: dict[str, WorkflowRunState] = {}
+```
+
+`src/factory_runtime.py` contains no file write, no serialization, and no store
+of any kind for it. A run interrupted between a tool call and its gate
+evaluation loses its state entirely. There is no resume path, and no test
+asserts one, because there is nothing to assert.
+
+The imported package's Test 7 failure condition — *"correctness depends on
+process memory only"* — is met at this layer. It is the only hypothesis in that
+package whose failure condition this repository actually satisfies.
+
+### Why it has not bitten
+
+Every current consumer is a single-process, single-invocation script:
+`factory_demo.py`, `re_demo.py`, `run_domain.py`, `run_harness.py`. A run is
+created, gated, and finished inside one interpreter lifetime. HOTL is the
+exception in principle — `REVIEW_REQUIRED` is a state a human is supposed to
+act on later — and in practice `HOTLReviewQueue` holds its items in the same
+in-memory object, so a review that outlives the process is already impossible.
+Nothing has needed it yet, so nothing has caught it.
+
+### Options
+
+| | Approach | Consequence |
+|---|---|---|
+| A | Serialize `WorkflowRunState` and the HOTL queue to a run journal on the local filesystem | In-process and deterministic, so it stays inside the evidence chain (`EXTERNAL_CAPABILITY_BOUNDARY_V1.md` §3 row one). Modest work; makes HOTL honest. |
+| B | Adopt an external durable-execution engine | Networked, so it collides with the evidence chain and needs D-15 answered first. Large. |
+| C | Record the limit and keep runs single-process by contract | Free, and defensible while every consumer is a script — but it means `REVIEW_REQUIRED` remains a state the architecture claims and cannot honour across a restart. |
+
+**Recommendation: A, when HOTL gets its first non-demo consumer.** Not before:
+a journal with no reader is the pattern this register keeps catching. Until
+then C is the honest position, and it is now recorded rather than implied.
+
+### What it costs to be wrong
+
+C is safe only as long as no run outlives its process. The first real HOTL
+review — a human asked to decide something hours later — breaks it silently:
+the queue is simply empty on restart, with no error, and the decision is lost
+rather than refused. That is a fail-open in a system whose gate semantics are
+otherwise fail-closed, which is why this is recorded as a decision and not a
+backlog item.

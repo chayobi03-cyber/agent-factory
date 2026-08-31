@@ -11,6 +11,23 @@
 
 Rating scale and evidence levels are those of `INTERNAL_AUDIT_RATING_MATRIX_2026-08-15.md`.
 
+> **Corrections — 2026-08-31.** Two findings below were wrong on the facts and
+> are corrected in place, marked `[CORRECTED 08-31]`. Both were found while
+> landing the salvage in §7, and both changed the recommendation.
+>
+> 1. §7.5 proposed making RA-012's falsification test executable. **It already
+>    is** — `tests/test_claim_verification.py:151-166` is exactly its case, and
+>    green. RA-012 therefore leaves the salvage list; nothing needs building.
+> 2. §2 credited RC-01..RC-08 as covering the package's Test 7 (durability).
+>    That conflated two layers. Session resume is enforced; **run-layer
+>    durability does not exist** — `WorkflowRunState` is an in-memory dict with
+>    no persistence path. Test 7's failure condition is genuinely met, the one
+>    place the rejected benchmark would have found something real. Recorded as
+>    `OPEN_DECISIONS` D-17.
+>
+> The verdict is unchanged. Correction 1 strengthens it; correction 2 is the
+> single point where the package was right and this audit was not.
+
 ---
 
 ## Verdict
@@ -93,7 +110,7 @@ truth is the specific defect this repository already paid to close.
 | H6 — domain semantics outside core runtime | OPEN, "3-domain portability test" | **six** declarative domain packs (re, thermal, battery, firmware, structural, manufacturing) + Domain Matrix E2E in CI |
 | H7 — verified outcomes become reusable assets | OPEN | partially: `11_Audit/LSN-*.yaml` lessons carry claim/root-cause/candidate-change/validation-plan/status |
 | H8 — APF adds value above telemetry/durability/agent runtime | OPEN | **genuinely open.** Correctly identified. |
-| Test 7 — durability/resume | not started | RC-01..RC-08 resume contract, fail-closed, 22 tests in `test_session_resume_contract.py`, enforced in CI |
+| Test 7 — durability/resume | not started | **[CORRECTED 08-31]** Partly, and at the wrong layer. RC-01..RC-08 (22 tests, CI-enforced) is *session* resume. *Run* state is an in-memory dict with no persistence path — Test 7's failure condition is met. See D-17. |
 
 Seven of eight hypotheses and at least four of eight benchmark tests have
 material evidence sitting in the tree, unconsulted. The suite runs in **12
@@ -202,8 +219,11 @@ A cold audit is not a hit job. The following survive, and some are valuable:
   distinction is real, and its proposed test is the only genuinely
   constructible one in the package: build a case where a tool call passes
   runtime guardrails and the resulting outcome still fails domain validation.
-  That is buildable here this week against the CER gate. It has no dependency
-  on any of the package's structure.
+  **[CORRECTED 08-31] — the test already exists and passes**
+  (`tests/test_claim_verification.py:151-166`): a claim citing a real evidence
+  id reaches PASS on structural checks alone, and BLOCKs as `UNGROUNDED_CLAIM`
+  once verification is supplied. The distinction is correct and already settled
+  here, so RA-012 leaves the salvage list — nothing needs building.
 - **H8 (does the layer earn its place above the substrate?) — GREEN-W.** The
   right existential question, correctly left open, and the only hypothesis the
   repository cannot currently answer. It deserves the effort the other seven
@@ -254,11 +274,13 @@ creates a second source of truth and re-opens resolved drift.
 
 Recommended handling, in order:
 
-1. **Reject the structure. Keep four items.** RA-012 (validation vs guardrail),
-   H8 (value above substrate), RA-009's provenance-as-first-class-record gap,
-   and ADR-002. Land them as four normal entries in the existing governance
-   tree — `docs/governance/` and the existing decision/lesson conventions — not
-   as a parallel `spec/` hierarchy.
+1. **Reject the structure. Keep three items.** **[CORRECTED 08-31 — was four;
+   RA-012 is already settled.]** H8 (value above substrate), RA-009's
+   provenance-as-relation gap, and ADR-002. Land them as normal entries in the
+   existing governance tree — not as a parallel `spec/` hierarchy.
+   **Done 2026-08-31:** ADR-002 became
+   `docs/governance/EXTERNAL_CAPABILITY_BOUNDARY_V1.md`; H8 became D-15;
+   RA-009 became D-16; the Test 7 correction became D-17.
 2. **Retire the rest into `11_Audit/` as an input document**, which is what it
    is: an outside-in position paper. It has value as a record of how the system
    looks to a reader with no repository access.
@@ -269,10 +291,12 @@ Recommended handling, in order:
    — promote a real lesson through DISCOVERED→VALIDATED with a real
    revalidation trigger. One executed instance settles more than fourteen
    registry rows.
-5. **Make one falsification test executable, or drop the benchmark.** RA-012's
-   is the candidate: a case that passes the guardrail and fails the CER gate.
-   With a threshold, in CI. Eight unfalsifiable tests are worth less than one
-   that can go red.
+5. **[CORRECTED 08-31] Drop the benchmark.** This step proposed building
+   RA-012's test; it already exists and is green
+   (`tests/test_claim_verification.py:151-166`). With its one constructible
+   test already built, the remaining seven have no measurable pass condition
+   and nothing to salvage. The benchmark goes; the run-durability gap it would
+   have caught is now tracked as D-17 instead.
 
 ## 8. Closing assessment
 
