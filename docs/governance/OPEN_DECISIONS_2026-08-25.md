@@ -1421,7 +1421,7 @@ only that the question stays open longer, which it can afford to.
 
 ---
 
-## D-16 — `supersedes_revision_id` is declared and populated by nothing
+## D-16 — Lineage is declared in three schemas and implemented in none
 
 **Raised 2026-08-31**, from the audit's RA-009 salvage (provenance as a
 relation rather than a field) — but the concrete form is sharper than that
@@ -1451,6 +1451,30 @@ Whether populating it would have saved that rule is not established — D-14's
 other blocker, the query's time scope, is a semantic judgement (D-11) and
 remains. But the two were recorded as one wall, and they are not one wall.
 
+### Widened 2026-08-31 — it is not one field
+
+`scripts/audit_schema_bindings.py` was written to run this check mechanically
+rather than by accident. It reports 58 declared field names that nothing outside
+`schemas/` mentions, and three of them are the same kind of thing:
+
+| Relation | Declared in | Implemented |
+|---|---|---|
+| `supersedes_revision_id` | `document_revision.schema.yaml` | no |
+| `previous_decision_id` | `human_decision.schema.yaml` | no |
+| `parent_fragment_id` | `document_revision.schema.yaml` | no |
+
+Each is a pointer from a record to the record it descends from: a revision to
+the one it replaces, a decision to the one it revises, a fragment to its parent.
+The repository declares lineage in three places and implements it nowhere.
+
+That is the concrete form of what the rejected APF package called
+provenance-as-relation. Provenance here is a set of fields describing where a
+thing came from; it is never a link between two records. The distinction was the
+one thing that audit found which the trunk did not already have, and this is
+what it looks like in this repository rather than in the abstract.
+
+`schemas/INDEX.md` now carries the per-schema status this was missing.
+
 ### Options
 
 | | Approach | Consequence |
@@ -1459,8 +1483,11 @@ remains. But the two were recorded as one wall, and they are not one wall.
 | B | Promote provenance to a first-class record with identity and relations (PROV-style) | What RA-009 actually proposed. A schema migration across three schemas and their tests, for a relation nothing yet consumes. |
 | C | Leave it, and delete the field | Honest — an unpopulated field is the D-09 pattern in miniature — but it discards the one piece of lineage the schema already got right. |
 
-**Recommendation: A, deferred to the real corpus.** The field should be
-populated where the supersession is real. Doing it against the synthetic corpus
+**Recommendation: A, deferred to the real corpus — and scoped to one relation
+at a time.** Widening the finding does not widen the fix: `previous_decision_id`
+has no consumer waiting either, and building all three because they rhyme is how
+an unpopulated field becomes three. The field should be populated where the
+supersession is real. Doing it against the synthetic corpus
 fits the mechanism to invented data, which is the failure D-14's own postscript
 warns about for the retrieval-quality items. Until then the field stays,
 documented here as declared-and-unpopulated so the next reader is not misled by
