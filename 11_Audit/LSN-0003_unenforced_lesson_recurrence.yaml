@@ -1,0 +1,72 @@
+lesson_id: LSN-0003
+source_run_id: N/A (cross-session document audit, not a workflow run)
+failure_type: process_divergence_recurrence
+pattern: >
+  LSN-0001 recorded a cross-session document proposing to build FactoryRuntime,
+  a workflow state machine, CER gate enforcement, idempotency, and a run
+  manifest from scratch -- all of which already existed, implemented and
+  tested. On 2026-08-30 the same failure arrived again as the "APF Living
+  Specification vNext 0.1" package: 24 files, 368 lines, declaring seven
+  candidate contracts, fourteen research assets, eight hypotheses and an
+  eight-test falsification benchmark for a system it never names. `APF` appears
+  zero times in this repository. Seven of its eight hypotheses were marked OPEN
+  against evidence already in the tree -- Protocol-based executor abstraction,
+  six domain packs behind a CI job, the CER gate, the HOTL queue, RC-01..RC-08 --
+  and the suite that settles most of them runs in twelve seconds. Its own best
+  item (RA-012, validation distinct from guardrail) was already implemented and
+  green at tests/test_claim_verification.py:151-166.
+root_cause: >
+  Not a new cause. LSN-0001 identified it exactly -- "each session/agent
+  instance re-derives its plan from whatever branch it happens to be pointed
+  at, with no branch-identity check as a mandatory first step" -- and
+  prescribed the fix in its own candidate_change.mandatory_first_step. The
+  recurrence happened because that lesson was never enforced: LSN-0001 carries
+  `regression_guard: N/A (process lesson, not a code regression)` and
+  `status: candidate`. It was written down and nothing was built, so the next
+  session could not fail the check that did not exist.
+lesson_text: >
+  A lesson recorded with `regression_guard: N/A` is a lesson that will recur.
+  "Process lesson, not a code regression" describes why LSN-0001 was
+  unenforced, not why it was unenforceable -- the check it prescribed is
+  mechanical and now exists as scripts/verify_plan_baseline.py. This is the
+  same defect the register already names in other clothing: D-09 found a
+  contract enforced by nothing, D-12 three retrieval modes declared and absent,
+  D-16 lineage declared in three schemas and implemented in none, and the
+  2026-08-26 audit a gating mechanism described in a docstring after its
+  deletion. LSN-0001 was that pattern applied to the lesson register itself.
+  Treat `regression_guard: N/A` as a finding to be justified, not a field to be
+  filled.
+  Corollary, learned while building the guard: LSN-0002's rule held. That
+  lesson says a fail-closed guard must be tested under every situation it
+  actually runs in. The first version of verify_plan_baseline.py reported
+  BLOCKED for any baseline it could not resolve, which in a shallow clone --
+  what web sessions and CI checkouts get -- would have failed every handoff in
+  this repository, since its own audited_baseline_sha (20a54b92) lies outside
+  the default fetch depth. An existing lesson caught a defect in the guard
+  written to enforce another one, before it shipped.
+candidate_change:
+  component: 11_Audit + scripts
+  change_type: automation
+  details:
+    added: scripts/verify_plan_baseline.py
+    check: >
+      Does an incoming plan declare a baseline; does this repository have it;
+      how far has the target moved since. Reports PASS / REVIEW_REQUIRED /
+      BLOCKED on validate_project_context.py's convention, and distinguishes a
+      baseline that is absent from one merely beyond a shallow clone's depth.
+    closes: "LSN-0001.validation_plan.regression_guard, previously N/A"
+    not_changed: >
+      LSN-0001 and LSN-0002 remain status:candidate. Promotion is a human
+      decision under HOTL_FAILURE_ANALYSIS_LOOP_V1 section 4; an agent must not
+      infer approval from a passing test.
+validation_plan:
+  benchmark_cases:
+    - tests/test_plan_baseline.py::test_a_plan_declaring_no_baseline_is_referred
+    - tests/test_plan_baseline.py::test_an_unresolvable_baseline_is_referred_not_blocked_in_a_shallow_clone
+    - tests/test_plan_baseline.py::test_the_guard_never_prints_pass_on_a_failure_path
+  success_metric: >
+    The APF package is referred on structure before content review: all 24 of
+    its files return REVIEW_REQUIRED for declaring no baseline. Verified
+    2026-08-31.
+  regression_guard: tests/test_plan_baseline.py (6 cases)
+status: candidate
