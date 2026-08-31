@@ -1,5 +1,5 @@
-state_version: 33
-session_id: 2026-08-25-agentfactory-factory-kernel-green-confirmed
+state_version: 34
+session_id: 2026-08-31-agentfactory-apf-living-spec-audit
 phase: M0.5-FACTORY-KERNEL-VERIFIED
 gate: FACTORY_KERNEL_GREEN
 project_id: agent-factory
@@ -118,6 +118,22 @@ last_completed:
   - web_session_start_hook_added_after_finding_pytest_absent_and_all_three_validators_exiting_2_on_a_claude_branch
   - next_session_handoff_2026_08_29_written_and_the_2026_08_27_document_marked_superseded_and_retained
   - two_scripts_never_self_bootstrapped_syspath_and_failed_outside_ci_hook_now_exports_the_pythonpath_factory_kernel_yml_sets
+  - apf_living_spec_vnext_package_audited_cold_and_rejected_red_as_specification_amber_as_position_paper
+  - audit_found_seven_of_eight_of_its_hypotheses_marked_open_against_evidence_already_in_the_tree
+  - audit_corrected_twice_ra_012_test_already_existed_and_green_and_test_7_row_conflated_session_resume_with_run_resume
+  - external_capability_boundary_v1_added_the_domain_boundary_was_fixed_and_the_capability_boundary_never_was
+  - d15_opened_whether_the_kernel_earns_its_place_above_the_substrates_it_replaces
+  - d16_opened_lineage_declared_in_three_schemas_supersedes_revision_previous_decision_parent_fragment_and_implemented_in_none
+  - d17_opened_run_layer_durability_absent_workflowrunstate_is_an_in_memory_dict_so_review_required_cannot_survive_a_restart
+  - audit_schema_bindings_script_added_58_declared_field_names_are_read_by_nothing_across_9_of_12_schema_files
+  - schemas_index_added_marking_each_schema_enforced_partial_aspirational_or_unbound_with_its_consumer_named
+  - execution_evidence_schema_and_evidence_gate_required_tuple_agreed_by_coincidence_and_are_now_bound_by_a_test
+  - lsn_0001_recurred_as_the_apf_package_because_its_regression_guard_was_recorded_as_n_a_and_nothing_enforced_it
+  - verify_plan_baseline_script_added_all_24_apf_files_return_review_required_for_declaring_no_baseline
+  - lsn_0002_caught_a_defect_in_that_guard_before_it_shipped_blocked_on_a_shallow_clone_would_have_failed_every_handoff_here
+  - lsn_0003_recorded_regression_guard_n_a_is_a_finding_to_be_justified_not_a_field_to_be_filled
+  - lsn_index_added_the_third_register_to_get_a_status_index_after_governance_and_schemas
+  - next_session_handoff_2026_08_31_written_and_the_2026_08_29_document_marked_superseded_and_retained
 current_focus:
   - the handoff's local verification block now runs unchanged in a Claude Code web session. `.claude/hooks/session-start.sh` installs pytest and exports AGENTFACTORY_TARGET_BRANCH from state.working_branch, so the context guard, resume and session-state validators resolve the trunk from a `claude/*` checkout instead of exiting 2
   - the answer path is honest about itself now - it cites the evidence that answers the claim, its confidence is IDF coverage rather than a score pinned at 1.0 by normalisation, and it tells the reader when a cited document is also in evidence at another revision
@@ -170,7 +186,7 @@ forbidden:
   - investment_strategy_optimization
   - stress
   - monte_carlo
-handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-29.md
+handoff: docs/governance/NEXT_SESSION_HANDOFF_2026-08-31.md
 resume_contract: docs/governance/CER_SESSION_CONTINUITY_CONTRACT_V1.md
 audit_evidence_contract: docs/governance/AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md
 hotl_rule: docs/governance/HOTL_FAILURE_ANALYSIS_LOOP_V1.md
@@ -238,4 +254,4 @@ checkpoint:
   checkpoint_sha: e11a663ab6a51029496934f0157af6ba2b1d7176
 m2_status: NOT_ACTIVE_IN_CANONICAL_AGENTFACTORY_SCOPE
 m2_execution: FORBIDDEN_IN_THIS_REMEDIATION_SESSION
-updated_at_utc: 2026-08-29T14:05:00Z
+updated_at_utc: 2026-08-31T00:00:00Z

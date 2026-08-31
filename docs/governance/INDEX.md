@@ -1,12 +1,14 @@
 # Governance Documents Index
-**Purpose:** so a new session can tell in under a minute which of the 27 documents in `docs/governance/` are the live, actively-enforced contracts versus historical record. Nothing below was deleted — this is a status index, not a cleanup.
+**Purpose:** so a new session can tell in under a minute which of the 29 documents in `docs/governance/` are the live, actively-enforced contracts versus historical record. Nothing below was deleted — this is a status index, not a cleanup.
 
 Status legend: **CANONICAL** (actively read/enforced by code, or the current live contract) · **HISTORICAL** (valid record of a past session, not enforced) · **SUPERSEDED** (replaced by a newer canonical doc, kept for history) · **NEEDS REVIEW** (stale reference found)
 
 | Document | Status | Why |
 |---|---|---|
 | `CURRENT_SESSION_STATE.yaml` | **CANONICAL** | The live state pointer. Read by `validate_project_context.py` and `validate_session_resume.py` on every run. |
-| `NEXT_SESSION_HANDOFF_2026-08-18.md` | **CANONICAL** | Read by RC-03..RC-07 (identity/baseline/constraint checks). Contains the structured YAML front-matter added 2026-08-24. |
+| `NEXT_SESSION_HANDOFF_2026-08-31.md` | **CANONICAL** | The current handoff. Read by RC-03..RC-07 via `CURRENT_SESSION_STATE.yaml.handoff`, never by a hardcoded path. Verified RESUME_ALLOWED 2026-08-31. |
+| `NEXT_SESSION_HANDOFF_2026-08-29.md` | **SUPERSEDED** by the 08-31 handoff | Retained as history; its PR #39 question is closed (merged). |
+| `NEXT_SESSION_HANDOFF_2026-08-27.md`, `..._2026-08-18.md` | **SUPERSEDED** | Retained as history. The 08-18 document carries the structured YAML front-matter introduced 2026-08-24. |
 | `AGENT_FACTORY_SCOPE_V1.md` | **CANONICAL** | Read by `validate_project_context.py` (canonical scope contract identity check). |
 | `EXTERNAL_CAPABILITY_BOUNDARY_V1.md` | **CANONICAL** | Fixes the boundary against external *capabilities* (agent runtimes, durable execution, telemetry, provenance vocabularies) — the one gap `AGENT_FACTORY_SCOPE_V1.md` never covered, since it fixes the domain boundary only. Salvaged 2026-08-31 from the APF living-spec audit, with its rule corrected: the discriminator is whether a capability runs in-process and deterministically inside the commit under test, not whether it is mature. Not machine-enforced — §7 says so plainly. |
 | `AUDIT_EVIDENCE_CHAIN_CI_CONTRACT_V1.md` | **CANONICAL** | Referenced by `CURRENT_SESSION_STATE.yaml.audit_evidence_contract`; defines the evidence-only-branch/PR pattern. **Now actually enforced** — `scripts/evidence_gate.py` validates the execution-evidence records and `scripts/verify_artifact_sha256.py` performs the independent digest check this contract requires. Until 2026-08-25 the trunk declared it with no implementation at all (OPEN_DECISIONS D-09). |
@@ -36,6 +38,9 @@ Status legend: **CANONICAL** (actively read/enforced by code, or the current liv
 | `EVIDENCE_MANIFEST_2026-08-18_RUN-32126799804.yaml` | **HISTORICAL** | Frozen evidence manifest for one specific past run. |
 
 | `../../schemas/INDEX.md` | **CANONICAL** | The same status index, for schemas rather than governance docs: which declarations are enforced by running code and which are not. Added 2026-08-31 after D-16 showed that nothing distinguished the two. Backed by `scripts/audit_schema_bindings.py`. |
+
+| `CER_SESSION_CLOSURE_2026-08-31_APF_AUDIT.md` | **HISTORICAL** | Session-close record, 08-31: the APF living-spec audit, its two corrections, and what landed. §1 states plainly that the session has **no primary execution evidence** — no PR was opened, and neither workflow triggers on `claude/**`. |
+| `../../11_Audit/LSN-INDEX.md` | **CANONICAL** | The lesson register in one view: what each lesson says, whether anything enforces it, and what it waits on. Added 2026-08-31 after LSN-0001 sat unenforced long enough to recur. All three lessons are `status: candidate` and await human review per `HOTL_FAILURE_ANALYSIS_LOOP_V1` §4. |
 
 ## Notes
 - Files quarantined from the Investment/M1B/M2 contamination episode (`M1B_*`, `M2_*`, `CER_M1B_LESSONS_*`) are intentionally absent from this tree — they are still enumerated in `scripts/validate_project_context.py`'s `FORBIDDEN_CANONICAL_PATHS` as a permanent guard against their reintroduction. See `11_Audit/REPOSITORY_CONTEXT_CONTAMINATION_2026-08-20.md`.
