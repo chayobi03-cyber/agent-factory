@@ -40,5 +40,19 @@ candidate_change:
 validation_plan:
   benchmark_cases: []
   success_metric: "no future session re-implements functionality that already exists on another unmerged branch"
-  regression_guard: N/A (process lesson, not a code regression)
+  regression_guard: >
+    Was `N/A (process lesson, not a code regression)` until 2026-08-31. That
+    was wrong, and LSN-0003 is the cost: with nothing enforcing this lesson,
+    the same failure recurred as the APF Living Specification package. The
+    check this lesson prescribed under
+    candidate_change.mandatory_first_step now exists as
+    scripts/verify_plan_baseline.py, with tests/test_plan_baseline.py as the
+    regression guard.
+recurrence:
+  - date: 2026-08-30
+    instance: >
+      APF Living Specification vNext 0.1 -- a 368-line specification for a
+      system it never names, marking seven of eight hypotheses OPEN against
+      evidence already in the tree. Recorded as LSN-0003; audited in
+      11_Audit/APF_LIVING_SPEC_VNEXT_AUDIT_2026-08-30.md.
 status: candidate

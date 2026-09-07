@@ -16,6 +16,10 @@ forbidden:
 ---
 # AgentFactory Next Session Handoff — 2026-08-29
 
+**SUPERSEDED 2026-08-31 by `NEXT_SESSION_HANDOFF_2026-08-31.md`.** Retained as
+history. `CURRENT_SESSION_STATE.yaml.handoff` names the current document, and
+every validator follows that pointer — do not resume from this file.
+
 Supersedes `NEXT_SESSION_HANDOFF_2026-08-27.md`, which is retained as history.
 `CURRENT_SESSION_STATE.yaml.handoff` names this file, and every validator
 follows that pointer rather than a path of its own.

@@ -227,8 +227,18 @@ def test_the_guard_follows_the_handoff_named_by_state(tmp_path, monkeypatch):
 
     state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
     declared = state["handoff"]
-    assert declared.endswith("NEXT_SESSION_HANDOFF_2026-08-29.md"), (
-        "the state's handoff pointer moved; this test names the file it expects"
+    # Precondition, not the assertion under test: the redirect below only means
+    # something if state currently names a handoff that is really there.
+    #
+    # This named the expected filename until 2026-08-31, as a tripwire for the
+    # pointer moving. Handoff rotation is routine here -- 08-18, 08-27, 08-29,
+    # 08-31 -- so the tripwire fired on an expected event and its fix was a
+    # mechanical string swap, which trains a reader to swap the string without
+    # looking. Checking the property instead is also strictly stronger: it
+    # catches state naming a file that no longer exists, which a name match
+    # never could.
+    assert (root / declared).is_file(), (
+        f"state.handoff names {declared!r}, which is not a file in the repository"
     )
 
     # Point state at a handoff carrying the wrong identity. If the guard were
