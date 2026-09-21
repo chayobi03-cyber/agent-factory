@@ -25,8 +25,7 @@ REQUIRED_CARD_KEYS = {
 
 def norm(value: str) -> str:
     value = value.strip().lower()
-    value = re.sub(r"[^0-9a-zA-Z가-힣]+", "", value)
-    return value
+    return re.sub(r"[^0-9a-zA-Z가-힣]+", "", value)
 
 
 def text_of(item: object) -> str:
@@ -36,6 +35,13 @@ def text_of(item: object) -> str:
         value = item.get("text")
         return value if isinstance(value, str) else ""
     return ""
+
+
+def id_of(item: object) -> str | None:
+    if isinstance(item, dict):
+        value = item.get("id")
+        return value if isinstance(value, str) else None
+    return None
 
 
 def aliases_of(item: dict) -> list[str]:
@@ -65,13 +71,23 @@ def map_items(candidates: list[object], gold_items: list[dict]) -> tuple[dict[in
     return mapping, unmatched
 
 
-def resolve_priority(item: object, objective_mapping: dict[int, str], candidates: list[object]) -> str | None:
-    value = text_of(item)
-    if isinstance(item, str):
-        value = item
-    direct = value.strip()
-    if direct in {x for x in objective_mapping.values()}:
-        return direct
+def resolve_priority(
+    item: object,
+    objective_mapping: dict[int, str],
+    candidates: list[object],
+) -> str | None:
+    direct = text_of(item).strip()
+
+    # A generated card's IDs are local to the candidate card. Never interpret
+    # "O1" as Gold O1 unless the candidate's O1 actually mapped to Gold O1.
+    candidate_ids = {
+        id_of(candidate): idx
+        for idx, candidate in enumerate(candidates)
+        if id_of(candidate) is not None
+    }
+    if direct in candidate_ids:
+        return objective_mapping.get(candidate_ids[direct])
+
     for idx, candidate in enumerate(candidates):
         if text_of(candidate) == direct and idx in objective_mapping:
             return objective_mapping[idx]
@@ -86,7 +102,6 @@ def evaluate(case: dict) -> dict:
     missing_keys = sorted(REQUIRED_CARD_KEYS - set(candidate))
     for key in missing_keys:
         errors.append({"code": "MISSING_FIELD", "field": key})
-
     if missing_keys:
         return result(case, errors)
 
@@ -103,9 +118,9 @@ def evaluate(case: dict) -> dict:
 
     gold_non_goals = gold.get("non_goals", [])
     for idx, item in enumerate(cand_obj):
-        text = text_of(item)
-        if any(matches(text, ng) for ng in gold_non_goals):
-            errors.append({"code": "NON_GOAL_PROMOTION", "index": idx, "text": text})
+        candidate_text = text_of(item)
+        if any(matches(candidate_text, ng) for ng in gold_non_goals):
+            errors.append({"code": "NON_GOAL_PROMOTION", "index": idx, "text": candidate_text})
 
     gold_constraints = gold.get("constraints", [])
     cand_constraints = candidate.get("constraints", [])
@@ -114,19 +129,28 @@ def evaluate(case: dict) -> dict:
         if item["id"] not in set(constraint_map.values()):
             errors.append({"code": "MISSING_CONSTRAINT", "id": item["id"], "text": item["text"]})
     for idx in extra_constraints:
-        errors.append({"code": "EXTRA_CONSTRAINT", "index": idx, "text": text_of(cand_constraints[idx])})
+        errors.append({
+            "code": "EXTRA_CONSTRAINT",
+            "index": idx,
+            "text": text_of(cand_constraints[idx]),
+        })
 
-    non_goal_map, extra_non_goals = map_items(candidate.get("non_goals", []), gold_non_goals)
+    cand_non_goals = candidate.get("non_goals", [])
+    non_goal_map, extra_non_goals = map_items(cand_non_goals, gold_non_goals)
     for item in gold_non_goals:
         if item["id"] not in set(non_goal_map.values()):
             errors.append({"code": "MISSING_NON_GOAL", "id": item["id"], "text": item["text"]})
     for idx in extra_non_goals:
-        errors.append({"code": "EXTRA_NON_GOAL", "index": idx, "text": text_of(candidate.get("non_goals", [])[idx])})
+        errors.append({
+            "code": "EXTRA_NON_GOAL",
+            "index": idx,
+            "text": text_of(cand_non_goals[idx]),
+        })
 
     expected_priority = list(gold.get("priority_order", []))
     observed_priority: list[str] = []
     for item in candidate.get("priority_order", []):
-        resolved = item if isinstance(item, str) and item in set(obj_map.values()) else resolve_priority(item, obj_map, cand_obj)
+        resolved = resolve_priority(item, obj_map, cand_obj)
         if resolved is None:
             errors.append({"code": "UNKNOWN_PRIORITY_ITEM", "item": item})
         else:
@@ -161,7 +185,12 @@ def result(case: dict, errors: list[dict]) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("fixture", nargs="?", type=Path, default=Path("fixtures/goal_alignment_goalcard_5case.json"))
+    parser.add_argument(
+        "fixture",
+        nargs="?",
+        type=Path,
+        default=Path("fixtures/goal_alignment_goalcard_5case.json"),
+    )
     args = parser.parse_args()
     data = json.loads(args.fixture.read_text(encoding="utf-8"))
     results = [evaluate(case) for case in data["cases"]]
