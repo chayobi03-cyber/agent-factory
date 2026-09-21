@@ -1,0 +1,56 @@
+{
+  "case_id": "T01",
+  "objective": {
+    "objective_key": "automate_emc_verification_while_preserving_evidence",
+    "statement": "Automate the EMC verification workflow without changing or discarding original measurement evidence."
+  },
+  "priorities": [
+    {
+      "priority_id": "P1",
+      "rank": 1,
+      "text": "Preserve original measurement evidence and traceability."
+    },
+    {
+      "priority_id": "P2",
+      "rank": 2,
+      "text": "Reduce repetitive manual verification work."
+    },
+    {
+      "priority_id": "P3",
+      "rank": 3,
+      "text": "Send uncertain decisions to human review."
+    }
+  ],
+  "constraints": [
+    {
+      "constraint_id": "C1",
+      "hard": true,
+      "text": "Raw measurement evidence must not be overwritten or discarded."
+    },
+    {
+      "constraint_id": "C2",
+      "hard": true,
+      "text": "Uncertain automated decisions must go to human review."
+    }
+  ],
+  "forbidden_scope": [
+    {
+      "forbidden_key": "fully_autonomous_final_decision_without_review",
+      "text": "Do not make final decisions fully autonomous when the evidence is uncertain."
+    }
+  ],
+  "success_criteria": [
+    {
+      "criterion_id": "SC1",
+      "text": "Original evidence remains traceable."
+    },
+    {
+      "criterion_id": "SC2",
+      "text": "Manual repetitive verification effort is reduced."
+    },
+    {
+      "criterion_id": "SC3",
+      "text": "Uncertain cases are routed to human review."
+    }
+  ]
+}
