@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/chayobi03-cyber/agent-factory/schemas/goal_alignment_v0.1.schema.json",
+  "title": "AgentFactory Goal Alignment v0.1",
+  "type": "object",
+  "required": [
+    "goal_id",
+    "objective",
+    "success_test",
+    "hard_constraints",
+    "soft_preferences",
+    "authority",
+    "allowed_actions",
+    "forbidden_actions",
+    "scope",
+    "required_evidence",
+    "freshness_requirement",
+    "stop_conditions",
+    "escalation_condition"
+  ],
+  "properties": {
+    "goal_id": {"type": "string", "minLength": 1},
+    "objective": {"type": "string", "minLength": 1},
+    "success_test": {"type": "string", "minLength": 1},
+    "hard_constraints": {"type": "array", "items": {"type": "string"}},
+    "soft_preferences": {"type": "array", "items": {"type": "string"}},
+    "authority": {"type": "string", "minLength": 1},
+    "allowed_actions": {"type": "array", "items": {"type": "string"}},
+    "forbidden_actions": {"type": "array", "items": {"type": "string"}},
+    "scope": {"type": "string", "minLength": 1},
+    "required_evidence": {"type": "array", "items": {"type": "string"}},
+    "freshness_requirement": {"type": "string"},
+    "stop_conditions": {"type": "array", "items": {"type": "string"}},
+    "escalation_condition": {"type": "string", "minLength": 1},
+    "uncertainty": {"type": "array", "items": {"type": "string"}},
+    "time_budget": {"type": ["string","null"]},
+    "cost_budget": {"type": ["string","null"]},
+    "risk_class": {"type": ["string","null"]},
+    "affected_entities": {"type": "array", "items": {"type": "string"}},
+    "fallback_plan": {"type": ["string","null"]}
+  },
+  "additionalProperties": false
+}
